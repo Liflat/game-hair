@@ -421,12 +421,6 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           const counterValue = Math.floor(80 * specialSkillBonus)
           currentPlayer.statusEffects.push({ type: "buff", name: "反撃準備", duration: 1, value: counterValue })
           setBattleLog((logs) => [...logs, `${currentPlayer.name}が全知の力発動! 完全回避+反撃準備!`])
-        } else if (selectedSkill.id === "end-world") {
-          if (target && !target.isEliminated) {
-            target.hp = 0
-            target.isEliminated = true
-            setBattleLog((logs) => [...logs, `${currentPlayer.name}のエンドワールド! ${target.name}は消滅した!`])
-          }
         }
       }
 
@@ -599,12 +593,6 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
               npc.statusEffects.push({ type: "buff", name: "反撃準備", duration: 1, value: 80 })
               setBattleLog((logs) => [...logs, `${npc.name}が全知の力発動!`])
             } else if (skill.id === "rebirth") {
-                          } else if (skill.id === "end-world") {
-                            const targetEnemy = enemyPlayers[Math.floor(Math.random() * enemyPlayers.length)]
-                            targetEnemy.hp = 0
-                            targetEnemy.isEliminated = true
-                            setBattleLog((logs) => [...logs, `${npc.name}のエンドワールド! ${targetEnemy.name}は消滅した!`])
-                          } else if (skill.id === "rebirth") {
               const healAmount = Math.floor(npc.maxHp * 0.7)
               npc.hp = Math.min(npc.maxHp, npc.hp + healAmount)
               setBattleLog((logs) => [...logs, `${npc.name}の不死鳥再生!`])
