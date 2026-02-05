@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>毛根伝説</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background-color: hsl(30, 20%, 10%);
+            color: hsl(45, 30%, 95%);
+            min-height: 100vh;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3) rotateY(180deg);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05) rotateY(0deg);
+            }
+            100% {
+                transform: scale(1) rotateY(0deg);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .header-title {
+            cursor: pointer;
+        }
+
+        .header-title h1 {
+            font-size: 24px;
+            font-weight: bold;
+            color: hsl(45, 30%, 95%);
+            margin-bottom: 4px;
+        }
+
+        .header-title p {
+            font-size: 14px;
+            color: hsl(30, 10%, 60%);
+        }
+
+        .coin-display {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: hsl(30, 25%, 15%);
+            padding: 8px 16px;
+            border-radius: 999px;
+            border: 1px solid hsl(30, 20%, 25%);
+        }
+
+        .coin-display span:first-child {
+            font-size: 20px;
+        }
+
+        .coin-display span:last-child {
+            font-weight: bold;
+            color: hsl(45, 70%, 50%);
+        }
+
+        /* Selected Hair Root Card */
+        .selected-card {
+            background: hsl(30, 25%, 15%);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 0 16px 24px;
+            border: 1px solid hsl(30, 20%, 25%);
+        }
+
+        .selected-card h2 {
+            font-size: 14px;
+            color: hsl(30, 10%, 60%);
+            margin-bottom: 8px;
+        }
+
+        .selected-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .hair-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .hair-info {
+            flex: 1;
+        }
+
+        .hair-info p:first-child {
+            font-weight: bold;
+            color: hsl(45, 30%, 95%);
+            margin-bottom: 4px;
+        }
+
+        .hair-info p:nth-child(2) {
+            font-size: 14px;
+            color: hsl(30, 10%, 60%);
+            margin-bottom: 8px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 8px;
+        }
+
+        .stat-badge {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: hsl(30, 15%, 20%);
+            color: hsl(30, 10%, 70%);
+        }
+
+        /* Menu Grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding: 0 16px 24px;
+        }
+
+        .menu-button {
+            position: relative;
+            overflow: hidden;
+            border-radius: 16px;
+            padding: 24px;
+            text-align: left;
+            border: none;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .menu-button:active {
+            transform: scale(0.95);
+        }
+
+        .menu-button.large {
+            grid-column: 1 / -1;
+        }
+
+        .menu-button .icon-bg {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 48px;
+            opacity: 0.3;
+        }
+
+        .menu-button .icon {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .menu-button h3 {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .menu-button p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        /* Gacha Screen */
+        .gacha-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 1px solid hsl(30, 20%, 25%);
+        }
+
+        .gacha-header button {
+            background: transparent;
+            border: none;
+            color: hsl(45, 30%, 95%);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .gacha-header h1 {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .gacha-content {
+            padding: 16px;
+            min-height: calc(100vh - 60px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pickup-section {
+            background: linear-gradient(to right, rgba(251, 191, 36, 0.1), rgba(236, 72, 153, 0.1), rgba(251, 191, 36, 0.1));
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .pickup-section h3 {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pickup-section h3 span:first-child {
+            color: #F59E0B;
+        }
+
+        .pickup-section h3 span:last-child {
+            font-size: 12px;
+            color: hsl(30, 10%, 60%);
+        }
+
+        .pickup-grid {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+        }
+
+        .pickup-card {
+            flex-shrink: 0;
+            width: 80px;
+            background: hsl(30, 25%, 15%);
+            border-radius: 8px;
+            padding: 8px;
+            border: 2px solid;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .pickup-card:hover {
+            transform: scale(1.05);
+        }
+
+        .pickup-card .emoji {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .pickup-card .name {
+            font-size: 10px;
+            font-weight: bold;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .rates-info {
+            background: hsl(30, 25%, 15%);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            border: 1px solid hsl(30, 20%, 25%);
+        }
+
+        .rates-info h3 {
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .rates-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .rate-item {
+            text-align: center;
+        }
+
+        .rate-item .dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin: 0 auto 4px;
+        }
+
+        .rate-item p:first-of-type {
+            color: hsl(30, 10%, 60%);
+            font-size: 10px;
+            margin-bottom: 2px;
+        }
+
+        .rate-item p:last-of-type {
+            font-weight: bold;
+            font-size: 10px;
+        }
+
+        .pull-buttons {
+            display: flex;
+            gap: 16px;
+            margin-top: auto;
+        }
+
+        .pull-button {
+            flex: 1;
+            height: 64px;
+            border-radius: 8px;
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .pull-button:active {
+            transform: scale(0.95);
+        }
+
+        .pull-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pull-button div {
+            text-align: center;
+        }
+
+        .pull-button p:first-child {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+
+        .pull-button p:last-child {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* Gacha Results */
+        .result-container {
+            text-align: center;
+            padding: 16px;
+        }
+
+        .result-container h2 {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 24px;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 640px) {
+            .result-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .result-card {
+            background: hsl(30, 25%, 15%);
+            border-radius: 8px;
+            padding: 12px;
+            border: 2px solid;
+            text-align: center;
+            cursor: pointer;
+            animation: bounceIn 0.6s ease-out;
+            transition: transform 0.2s;
+        }
+
+        .result-card:hover {
+            transform: scale(1.05);
+        }
+
+        .result-card .emoji-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            margin: 0 auto 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .result-card .name {
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .result-card .rarity {
+            font-size: 10px;
+            margin-top: 4px;
+            opacity: 0.8;
+        }
+
+        .summary {
+            background: hsl(30, 25%, 15%);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid hsl(30, 20%, 25%);
+        }
+
+        .summary h3 {
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        .summary-stats {
+            display: flex;
+            justify-content: space-around;
+            font-size: 12px;
+        }
+
+        .summary-stats > div {
+            text-align: center;
+        }
+
+        .summary-stats .dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin: 0 auto 4px;
+        }
+
+        .summary-stats p {
+            font-weight: bold;
+            margin-top: 4px;
+        }
+
+        .result-buttons {
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 1px solid hsl(30, 20%, 25%);
+            background: transparent;
+            color: hsl(45, 30%, 95%);
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: hsl(340, 80%, 55%);
+            border: none;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: hsl(340, 80%, 50%);
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading-spinner {
+            width: 160px;
+            height: 160px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, hsl(340, 80%, 55%), hsl(45, 70%, 50%));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg) scale(1);
+            }
+            50% {
+                transform: rotate(180deg) scale(1.1);
+            }
+            to {
+                transform: rotate(360deg) scale(1);
+            }
+        }
+
+        .loading-spinner span {
+            font-size: 64px;
+        }
+
+        .loading h3 {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+
+        .loading-bar {
+            width: 100%;
+            max-width: 300px;
+            height: 8px;
+            background: hsl(30, 15%, 20%);
+            border-radius: 999px;
+            margin: 16px auto;
+            overflow: hidden;
+        }
+
+        .loading-bar-fill {
+            height: 100%;
+            background: hsl(340, 80%, 55%);
+            border-radius: 999px;
+            animation: loadingBar 1.5s ease-in-out;
+        }
+
+        @keyframes loadingBar {
+            from {
+                width: 0%;
+            }
+            to {
+                width: 100%;
+            }
+        }
+
+        /* Collection Screen */
+        .collection-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 1px solid hsl(30, 20%, 25%);
+        }
+
+        .collection-header button {
+            background: transparent;
+            border: none;
+            color: hsl(45, 30%, 95%);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .collection-progress {
+            padding: 16px;
+            background: hsl(30, 25%, 15%);
+            border-bottom: 1px solid hsl(30, 20%, 25%);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            height: 12px;
+            background: hsl(30, 15%, 20%);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, hsl(340, 80%, 55%), hsl(45, 70%, 50%));
+            transition: width 0.5s;
+        }
+
+        .rarity-progress {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+        }
+
+        .rarity-item {
+            text-align: center;
+        }
+
+        .rarity-item .dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin: 0 auto 4px;
+        }
+
+        .rarity-item p {
+            font-size: 10px;
+            color: hsl(30, 10%, 60%);
+        }
+
+        .collection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .collection-card {
+            background: hsl(30, 25%, 15%);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid;
+            transition: all 0.2s;
+        }
+
+        .collection-card:hover {
+            transform: scale(1.05);
+        }
+
+        .collection-card.selected {
+            background: hsl(200, 30%, 25%);
+            box-shadow: 0 0 16px rgba(59, 130, 246, 0.5);
+        }
+
+        .collection-card .emoji {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .collection-card .name {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .collection-card .level {
+            font-size: 10px;
+            margin-bottom: 4px;
+        }
+
+        .collection-card .stats-mini {
+            font-size: 9px;
+            color: hsl(30, 10%, 60%);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+            animation: fadeIn 0.2s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: hsl(30, 25%, 15%);
+            border-radius: 16px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 85vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid;
+            animation: bounceIn 0.3s;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 24px 16px;
+        }
+
+        .modal-badge {
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: hsl(45, 30%, 95%);
+            font-size: 14px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .modal-body {
+            padding: 0 24px 24px;
+            overflow-y: auto;
+        }
+
+        .modal-icon {
+            width: 96px;
+            height: 96px;
+            border-radius: 16px;
+            margin: 0 auto 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+        }
+
+        .modal-body h2 {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .modal-body > p {
+            font-size: 14px;
+            color: hsl(30, 10%, 60%);
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .stats-section {
+            background: hsl(30, 15%, 20%);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .stats-section h3 {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 12px;
+        }
+
+        .stat-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .stat-row span:first-child {
+            width: 80px;
+            font-size: 12px;
+            color: hsl(30, 10%, 60%);
+        }
+
+        .stat-bar {
+            flex: 1;
+            height: 8px;
+            background: hsl(30, 20%, 10%);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            transition: width 0.3s;
+        }
+
+        .stat-row span:last-child {
+            width: 40px;
+            text-align: right;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* Gradients */
+        .gradient-primary-rose {
+            background: linear-gradient(135deg, hsl(340, 80%, 55%), hsl(340, 70%, 45%));
+        }
+
+        .gradient-secondary-amber {
+            background: linear-gradient(135deg, hsl(45, 70%, 50%), hsl(36, 70%, 50%));
+        }
+
+        .gradient-accent-emerald {
+            background: linear-gradient(135deg, hsl(160, 84%, 39%), hsl(160, 70%, 35%));
+        }
+
+        .gradient-purple-fuchsia {
+            background: linear-gradient(135deg, hsl(280, 60%, 60%), hsl(300, 60%, 60%));
+        }
+
+        .gradient-blue-indigo {
+            background: linear-gradient(135deg, hsl(200, 90%, 55%), hsl(240, 75%, 60%));
+        }
+
+        .gradient-orange-red {
+            background: linear-gradient(135deg, hsl(25, 80%, 55%), hsl(0, 80%, 55%));
+        }
+
+        /* Rarity Colors */
+        .rarity-common {
+            background: hsl(0, 0%, 50%);
+            color: white;
+        }
+
+        .rarity-common-border {
+            border-color: hsl(0, 0%, 50%) !important;
+        }
+
+        .rarity-uncommon {
+            background: hsl(130, 60%, 45%);
+            color: white;
+        }
+
+        .rarity-uncommon-border {
+            border-color: hsl(130, 60%, 45%) !important;
+        }
+
+        .rarity-rare {
+            background: hsl(210, 90%, 60%);
+            color: white;
+        }
+
+        .rarity-rare-border {
+            border-color: hsl(210, 90%, 60%) !important;
+        }
+
+        .rarity-epic {
+            background: hsl(275, 80%, 60%);
+            color: white;
+        }
+
+        .rarity-epic-border {
+            border-color: hsl(275, 80%, 60%) !important;
+        }
+
+        .rarity-legendary {
+            background: hsl(45, 100%, 55%);
+            color: hsl(30, 20%, 10%);
+        }
+
+        .rarity-legendary-border {
+            border-color: hsl(45, 100%, 55%) !important;
+        }
+
+        .rarity-cosmic {
+            background: linear-gradient(135deg, hsl(45, 100%, 55%), hsl(300, 80%, 60%), hsl(200, 90%, 60%));
+            color: white;
+        }
+
+        .rarity-cosmic-border {
+            border-color: hsl(300, 80%, 60%) !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // ゲームデータ
+        const ELEMENTS = {
+            fire: { name: '炎', emoji: '🔥', color: '#EF4444' },
+            water: { name: '水', emoji: '💧', color: '#3B82F6' },
+            wind: { name: '風', emoji: '💨', color: '#22C55E' },
+            light: { name: '光', emoji: '✨', color: '#FBBF24' },
+            dark: { name: '闇', emoji: '🌙', color: '#6B21A8' },
+            divine: { name: '神', emoji: '⭐', color: '#F472B6' }
+        };
+
+        const HAIR_ROOTS = [
+            { id: 1, name: 'ふわふわ毛根', rarity: 'common', element: 'wind', power: 10, speed: 15, grip: 8, emoji: '🌱', color: '#8B4513' },
+            { id: 2, name: 'ちぢれ毛根', rarity: 'common', element: 'wind', power: 12, speed: 10, grip: 15, emoji: '🌀', color: '#654321' },
+            { id: 3, name: 'まっすぐ毛根', rarity: 'common', element: 'light', power: 11, speed: 12, grip: 11, emoji: '📍', color: '#3D2314' },
+            { id: 4, name: 'ほそほそ毛根', rarity: 'common', element: 'wind', power: 8, speed: 18, grip: 10, emoji: '🪡', color: '#4A3728' },
+            { id: 5, name: 'ぷちぷち毛根', rarity: 'common', element: 'fire', power: 9, speed: 14, grip: 12, emoji: '💠', color: '#5C4033' },
+            { id: 6, name: 'もじゃもじゃ毛根', rarity: 'common', element: 'wind', power: 13, speed: 8, grip: 14, emoji: '🌿', color: '#6B4423' },
+            { id: 7, name: 'さらさら毛根', rarity: 'common', element: 'light', power: 10, speed: 16, grip: 9, emoji: '✨', color: '#7C5A3C' },
+            { id: 8, name: 'ごわごわ毛根', rarity: 'common', element: 'dark', power: 15, speed: 7, grip: 13, emoji: '🪨', color: '#5D4E37' },
+            { id: 9, name: 'うねうね毛根', rarity: 'common', element: 'water', power: 11, speed: 11, grip: 13, emoji: '🌊', color: '#4E3B2D' },
+            { id: 10, name: 'ぴんぴん毛根', rarity: 'common', element: 'light', power: 12, speed: 13, grip: 10, emoji: '⚡', color: '#5F4B3C' },
+            { id: 11, name: '銀の毛根', rarity: 'uncommon', element: 'light', power: 18, speed: 20, grip: 17, emoji: '🪙', color: '#C0C0C0' },
+            { id: 12, name: 'ツイスト毛根', rarity: 'uncommon', element: 'wind', power: 20, speed: 16, grip: 22, emoji: '🧬', color: '#8B6914' },
+            { id: 13, name: 'アンカー毛根', rarity: 'uncommon', element: 'water', power: 22, speed: 12, grip: 25, emoji: '⚓', color: '#4A5568' },
+            { id: 14, name: 'スプリング毛根', rarity: 'uncommon', element: 'wind', power: 15, speed: 28, grip: 15, emoji: '🎯', color: '#718096' },
+            { id: 15, name: 'フレイム毛根', rarity: 'uncommon', element: 'fire', power: 25, speed: 18, grip: 14, emoji: '🔥', color: '#EF4444' },
+            { id: 16, name: 'フロスト毛根', rarity: 'uncommon', element: 'water', power: 16, speed: 22, grip: 20, emoji: '❄️', color: '#60A5FA' },
+            { id: 17, name: 'サンダー毛根', rarity: 'uncommon', element: 'light', power: 24, speed: 24, grip: 10, emoji: '⚡', color: '#FBBF24' },
+            { id: 18, name: 'バイン毛根', rarity: 'uncommon', element: 'wind', power: 14, speed: 15, grip: 30, emoji: '🌿', color: '#10B981' },
+            { id: 19, name: '金の毛根', rarity: 'rare', element: 'light', power: 30, speed: 28, grip: 28, emoji: '🥇', color: '#FFD700' },
+            { id: 20, name: 'ドラゴン毛根', rarity: 'rare', element: 'fire', power: 38, speed: 25, grip: 25, emoji: '🐉', color: '#DC2626' },
+            { id: 21, name: 'クリスタル毛根', rarity: 'rare', element: 'water', power: 28, speed: 32, grip: 30, emoji: '💎', color: '#06B6D4' },
+            { id: 22, name: 'シャドウ毛根', rarity: 'rare', element: 'dark', power: 32, speed: 35, grip: 22, emoji: '🌑', color: '#1F2937' },
+            { id: 23, name: 'レインボー毛根', rarity: 'rare', element: 'light', power: 28, speed: 28, grip: 35, emoji: '🌈', color: '#EC4899' },
+            { id: 24, name: 'メタル毛根', rarity: 'rare', element: 'dark', power: 40, speed: 18, grip: 32, emoji: '🔩', color: '#6B7280' },
+            { id: 25, name: '鳳凰毛根', rarity: 'epic', element: 'fire', power: 48, speed: 45, grip: 42, emoji: '🦅', color: '#F97316' },
+            { id: 26, name: '深海毛根', rarity: 'epic', element: 'water', power: 42, speed: 38, grip: 55, emoji: '🐙', color: '#1E3A8A' },
+            { id: 27, name: 'ネビュラ毛根', rarity: 'epic', element: 'divine', power: 50, speed: 48, grip: 38, emoji: '🌌', color: '#7C3AED' },
+            { id: 28, name: 'タイムリープ毛根', rarity: 'epic', element: 'light', power: 45, speed: 55, grip: 40, emoji: '⏰', color: '#0EA5E9' },
+            { id: 29, name: '神の毛根', rarity: 'legendary', element: 'divine', power: 70, speed: 65, grip: 68, emoji: '👑', color: '#FDE047' },
+            { id: 30, name: 'ブラックホール毛根', rarity: 'legendary', element: 'dark', power: 75, speed: 60, grip: 75, emoji: '🕳️', color: '#18181B' },
+            { id: 31, name: 'ゼウスの毛根', rarity: 'cosmic', element: 'divine', power: 100, speed: 95, grip: 90, emoji: '⚡', color: '#FFD700' },
+            { id: 32, name: 'ねばねば毛根', rarity: 'common', element: 'water', power: 9, speed: 10, grip: 18, emoji: '🍯', color: '#D97706' },
+            { id: 33, name: 'とげとげ毛根', rarity: 'common', element: 'wind', power: 16, speed: 9, grip: 10, emoji: '🌵', color: '#16A34A' },
+            { id: 34, name: 'ふにゃふにゃ毛根', rarity: 'common', element: 'water', power: 8, speed: 17, grip: 11, emoji: '🪼', color: '#A78BFA' },
+            { id: 35, name: 'ぽよぽよ毛根', rarity: 'common', element: 'water', power: 10, speed: 12, grip: 14, emoji: '🫧', color: '#38BDF8' },
+            { id: 36, name: 'きらきら毛根', rarity: 'common', element: 'light', power: 11, speed: 14, grip: 10, emoji: '💫', color: '#FCD34D' },
+            { id: 37, name: 'マグマ毛根', rarity: 'uncommon', element: 'fire', power: 28, speed: 14, grip: 16, emoji: '🌋', color: '#DC2626' },
+            { id: 38, name: 'ウィンド毛根', rarity: 'uncommon', element: 'wind', power: 16, speed: 30, grip: 12, emoji: '🌬️', color: '#67E8F9' },
+            { id: 39, name: 'グラビティ毛根', rarity: 'uncommon', element: 'dark', power: 24, speed: 15, grip: 20, emoji: '🔮', color: '#8B5CF6' },
+            { id: 40, name: 'ポイズン毛根', rarity: 'uncommon', element: 'dark', power: 22, speed: 20, grip: 18, emoji: '☠️', color: '#84CC16' },
+            { id: 41, name: 'ソニック毛根', rarity: 'uncommon', element: 'wind', power: 18, speed: 32, grip: 10, emoji: '💨', color: '#6366F1' },
+            { id: 42, name: 'オーロラ毛根', rarity: 'rare', element: 'light', power: 32, speed: 30, grip: 28, emoji: '🌌', color: '#34D399' },
+            { id: 43, name: 'ルナ毛根', rarity: 'rare', element: 'dark', power: 28, speed: 35, grip: 30, emoji: '🌙', color: '#E2E8F0' },
+            { id: 44, name: 'ソーラー毛根', rarity: 'rare', element: 'light', power: 40, speed: 28, grip: 25, emoji: '☀️', color: '#FBBF24' },
+            { id: 45, name: 'スピリット毛根', rarity: 'rare', element: 'divine', power: 30, speed: 32, grip: 32, emoji: '👻', color: '#A78BFA' },
+            { id: 46, name: 'テラ毛根', rarity: 'rare', element: 'dark', power: 38, speed: 22, grip: 35, emoji: '🏔️', color: '#92400E' },
+            { id: 47, name: 'ケルベロス毛根', rarity: 'epic', element: 'fire', power: 52, speed: 42, grip: 45, emoji: '🐕', color: '#7C2D12' },
+            { id: 48, name: 'ヴァルキリー毛根', rarity: 'epic', element: 'light', power: 48, speed: 50, grip: 42, emoji: '⚔️', color: '#F472B6' },
+            { id: 49, name: 'リヴァイアサン毛根', rarity: 'epic', element: 'water', power: 45, speed: 40, grip: 55, emoji: '🐋', color: '#0369A1' },
+            { id: 50, name: 'オーディン毛根', rarity: 'legendary', element: 'divine', power: 72, speed: 68, grip: 65, emoji: '🦅', color: '#1E40AF' },
+            { id: 51, name: 'アマテラス毛根', rarity: 'legendary', element: 'light', power: 68, speed: 70, grip: 70, emoji: '🌸', color: '#F43F5E' },
+        ];
+
+        const RARITY_RATES = {
+            common: { rate: 0.499, color: 'hsl(0, 0%, 50%)' },
+            uncommon: { rate: 0.30, color: 'hsl(130, 60%, 45%)' },
+            rare: { rate: 0.14, color: 'hsl(210, 90%, 60%)' },
+            epic: { rate: 0.05, color: 'hsl(275, 80%, 60%)' },
+            legendary: { rate: 0.01, color: 'hsl(45, 100%, 55%)' },
+            cosmic: { rate: 0.001, color: 'hsl(300, 80%, 60%)' }
+        };
+
+        const RARITY_NAMES = {
+            common: 'ノーマル',
+            uncommon: 'ヘア',
+            rare: 'スーパーヘア',
+            epic: 'ウルトラヘア',
+            legendary: 'レジェンドヘア',
+            cosmic: 'コズミックヘア'
+        };
+
+        // ゲーム状態
+        let gameState = {
+            coins: 100,
+            collection: [],
+            selectedHairRoot: null,
+            playerName: '毛根マスター',
+            playerTitle: '駆け出し育毛士'
+        };
+
+        // ローカルストレージから読み込み
+        function loadGameState() {
+            const saved = localStorage.getItem('hairBattleGame');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                gameState = { ...gameState, ...parsed };
+                // 選択された毛根が存在しない場合は最初の毛根を選択
+                if (!gameState.selectedHairRoot && gameState.collection.length > 0) {
+                    gameState.selectedHairRoot = gameState.collection[0];
+                }
+            }
+        }
+
+        // ローカルストレージに保存
+        function saveGameState() {
+            localStorage.setItem('hairBattleGame', JSON.stringify(gameState));
+        }
+
+        // レアリティに基づくガチャ
+        function pullGacha(count = 1) {
+            const results = [];
+            for (let i = 0; i < count; i++) {
+                const rand = Math.random();
+                let cumulativeRate = 0;
+                let selectedRarity = 'common';
+                
+                for (const [rarity, data] of Object.entries(RARITY_RATES)) {
+                    cumulativeRate += data.rate;
+                    if (rand < cumulativeRate) {
+                        selectedRarity = rarity;
+                        break;
+                    }
+                }
+                
+                const hairsOfRarity = HAIR_ROOTS.filter(h => h.rarity === selectedRarity);
+                const randomHair = hairsOfRarity[Math.floor(Math.random() * hairsOfRarity.length)];
+                
+                results.push({
+                    ...randomHair,
+                    level: 1,
+                    exp: 0,
+                    uniqueId: Date.now() + i
+                });
+            }
+            return results;
+        }
+
+        // 画面表示
+        let currentScreen = 'home';
+
+        function showScreen(screenName) {
+            currentScreen = screenName;
+            render();
+        }
+
+        // ホーム画面
+        function renderHomeScreen() {
+            const selected = gameState.selectedHairRoot || gameState.collection[0];
+            const rarityClass = selected ? `rarity-${selected.rarity}` : 'rarity-common';
+            
+            return `
+                <div class="screen active">
+                    <div class="header">
+                        <div class="header-title" onclick="showScreen('home')">
+                            <h1>毛根伝説</h1>
+                            <p>${gameState.playerName} / ${gameState.playerTitle}</p>
+                        </div>
+                        <div class="coin-display">
+                            <span>🪙</span>
+                            <span>${gameState.coins}</span>
+                        </div>
+                    </div>
+                    
+                    ${selected ? `
+                    <div class="selected-card">
+                        <h2>選択中の毛根</h2>
+                        <div class="selected-content">
+                            <div class="hair-icon ${rarityClass}">${selected.emoji}</div>
+                            <div class="hair-info">
+                                <p>${selected.name}</p>
+                                <p>Lv.${selected.level} ${RARITY_NAMES[selected.rarity]}</p>
+                                <div class="stats">
+                                    <span class="stat-badge">${ELEMENTS[selected.element].emoji}${ELEMENTS[selected.element].name}</span>
+                                    <span class="stat-badge">💪${selected.power}</span>
+                                    <span class="stat-badge">🏃${selected.speed}</span>
+                                    <span class="stat-badge">🔗${selected.grip}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="menu-grid">
+                        <button class="menu-button large gradient-primary-rose" onclick="showScreen('gacha')">
+                            <span class="icon-bg">🎰</span>
+                            <span class="icon">🎰</span>
+                            <h3>脱毛ガチャ</h3>
+                            <p>新しい毛根を召喚</p>
+                        </button>
+                        
+                        <button class="menu-button gradient-secondary-amber" onclick="showScreen('collection')">
+                            <span class="icon-bg">📚</span>
+                            <span class="icon">📚</span>
+                            <h3>コレクション</h3>
+                            <p>毛根を管理</p>
+                        </button>
+                        
+                        <button class="menu-button gradient-accent-emerald" onclick="alert('トレーニングは開発中です')">
+                            <span class="icon-bg">💪</span>
+                            <span class="icon">💪</span>
+                            <h3>トレーニング</h3>
+                            <p>育成して強化</p>
+                        </button>
+                        
+                        <button class="menu-button gradient-purple-fuchsia" onclick="alert('バトルは開発中です')">
+                            <span class="icon-bg">⚔️</span>
+                            <span class="icon">⚔️</span>
+                            <h3>バトル</h3>
+                            <p>1対1の対決</p>
+                        </button>
+                        
+                        <button class="menu-button gradient-blue-indigo" onclick="alert('バトルロワイヤルは開発中です')">
+                            <span class="icon-bg">👥</span>
+                            <span class="icon">👥</span>
+                            <h3>バトルロワイヤル</h3>
+                            <p>最後の生き残り</p>
+                        </button>
+                        
+                        <button class="menu-button gradient-orange-red" onclick="alert('チームロワイヤルは開発中です')">
+                            <span class="icon-bg">👨‍👩‍👦</span>
+                            <span class="icon">👨‍👩‍👦</span>
+                            <h3>チームロワイヤル</h3>
+                            <p>3対3のチーム戦</p>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ガチャ画面
+        let gachaState = 'idle'; // idle, pulling, results
+        let gachaResults = [];
+
+        function renderGachaScreen() {
+            if (gachaState === 'pulling') {
+                return `
+                    <div class="screen active">
+                        <div class="loading">
+                            <div class="loading-spinner">
+                                <span>🎰</span>
+                            </div>
+                            <h3>毛根召喚中...</h3>
+                            <div class="loading-bar">
+                                <div class="loading-bar-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (gachaState === 'results') {
+                const rarityCounts = {};
+                gachaResults.forEach(hair => {
+                    rarityCounts[hair.rarity] = (rarityCounts[hair.rarity] || 0) + 1;
+                });
+                
+                return `
+                    <div class="screen active">
+                        <div class="result-container">
+                            <h2>✨ 召喚結果 ✨</h2>
+                            
+                            <div class="result-grid">
+                                ${gachaResults.map((hair, idx) => `
+                                    <div class="result-card rarity-${hair.rarity}-border" style="animation-delay: ${idx * 0.1}s">
+                                        <div class="emoji-box rarity-${hair.rarity}">${hair.emoji}</div>
+                                        <div class="name">${hair.name}</div>
+                                        <div class="rarity">${RARITY_NAMES[hair.rarity]}</div>
+                                        <div style="font-size: 10px; margin-top: 2px;">${ELEMENTS[hair.element].emoji}${ELEMENTS[hair.element].name}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <div class="summary">
+                                <h3>レアリティ内訳</h3>
+                                <div class="summary-stats">
+                                    ${Object.entries(RARITY_RATES).map(([rarity, data]) => `
+                                        <div>
+                                            <div class="dot rarity-${rarity}"></div>
+                                            <p>${rarityCounts[rarity] || 0}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            
+                            <div class="result-buttons">
+                                <button class="btn" onclick="gachaState = 'idle'; render();">もう一度</button>
+                                <button class="btn btn-primary" onclick="showScreen('collection')">コレクションを見る</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // ピックアップ毛根（レジェンダリーとコズミックのみ）
+            const pickupHairs = HAIR_ROOTS.filter(h => h.rarity === 'legendary' || h.rarity === 'cosmic');
+            
+            return `
+                <div class="screen active">
+                    <div class="gacha-header">
+                        <button onclick="showScreen('home')">←</button>
+                        <h1>脱毛ガチャ</h1>
+                        <div class="coin-display">
+                            <span>🪙</span>
+                            <span>${gameState.coins}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="gacha-content">
+                        <div class="pickup-section">
+                            <h3>
+                                <span>★</span>
+                                <span>ピックアップ</span>
+                            </h3>
+                            <div class="pickup-grid">
+                                ${pickupHairs.map(hair => `
+                                    <div class="pickup-card rarity-${hair.rarity}-border">
+                                        <div class="emoji">${hair.emoji}</div>
+                                        <div class="name">${hair.name}</div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="rates-info">
+                            <h3>排出率</h3>
+                            <div class="rates-grid">
+                                ${Object.entries(RARITY_RATES).map(([rarity, data]) => `
+                                    <div class="rate-item">
+                                        <div class="dot rarity-${rarity}"></div>
+                                        <p>${RARITY_NAMES[rarity]}</p>
+                                        <p>${(data.rate * 100).toFixed(1)}%</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="pull-buttons">
+                            <button class="pull-button gradient-secondary-amber" 
+                                    onclick="handlePull(1)" 
+                                    ${gameState.coins < 10 ? 'disabled' : ''}>
+                                <div>
+                                    <p>単発</p>
+                                    <p>🪙 10</p>
+                                </div>
+                            </button>
+                            <button class="pull-button gradient-primary-rose" 
+                                    onclick="handlePull(10)"
+                                    ${gameState.coins < 100 ? 'disabled' : ''}>
+                                <div>
+                                    <p>10連</p>
+                                    <p>🪙 100</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handlePull(count) {
+            const cost = count * 10;
+            if (gameState.coins < cost) {
+                alert('コインが足りません！');
+                return;
+            }
+            
+            gameState.coins -= cost;
+            gachaState = 'pulling';
+            render();
+            
+            setTimeout(() => {
+                gachaResults = pullGacha(count);
+                gameState.collection.push(...gachaResults);
+                
+                if (!gameState.selectedHairRoot) {
+                    gameState.selectedHairRoot = gachaResults[0];
+                }
+                
+                saveGameState();
+                gachaState = 'results';
+                render();
+            }, 1500);
+        }
+
+        // コレクション画面
+        function renderCollectionScreen() {
+            const totalHairs = HAIR_ROOTS.length;
+            const uniqueCollection = new Set(gameState.collection.map(h => h.id));
+            const collectedCount = uniqueCollection.size;
+            const progress = (collectedCount / totalHairs * 100).toFixed(1);
+            
+            // レアリティ別カウント
+            const rarityProgress = {};
+            Object.keys(RARITY_RATES).forEach(rarity => {
+                const totalOfRarity = HAIR_ROOTS.filter(h => h.rarity === rarity).length;
+                const collectedOfRarity = [...uniqueCollection].filter(id => {
+                    const hair = HAIR_ROOTS.find(h => h.id === id);
+                    return hair && hair.rarity === rarity;
+                }).length;
+                rarityProgress[rarity] = `${collectedOfRarity}/${totalOfRarity}`;
+            });
+            
+            // ユニークコレクションを表示用に変換
+            const displayCollection = Array.from(uniqueCollection).map(id => {
+                const original = HAIR_ROOTS.find(h => h.id === id);
+                const owned = gameState.collection.filter(h => h.id === id);
+                const bestLevel = Math.max(...owned.map(h => h.level));
+                return { ...original, level: bestLevel, count: owned.length };
+            });
+            
+            return `
+                <div class="screen active">
+                    <div class="collection-header">
+                        <button onclick="showScreen('home')">←</button>
+                        <h1>コレクション</h1>
+                        <div class="coin-display">
+                            <span>🪙</span>
+                            <span>${gameState.coins}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="collection-progress">
+                        <div class="progress-header">
+                            <span>収集進捗</span>
+                            <span>${collectedCount} / ${totalHairs}</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                        <div class="rarity-progress">
+                            ${Object.entries(RARITY_RATES).map(([rarity]) => `
+                                <div class="rarity-item">
+                                    <div class="dot rarity-${rarity}"></div>
+                                    <p>${rarityProgress[rarity]}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="collection-grid">
+                        ${displayCollection.length === 0 ? `
+                            <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: hsl(30, 10%, 60%);">
+                                <p style="font-size: 48px; margin-bottom: 16px;">📦</p>
+                                <p>まだ毛根を持っていません</p>
+                                <p style="font-size: 14px; margin-top: 8px;">ガチャで毛根を召喚しましょう！</p>
+                            </div>
+                        ` : displayCollection.map(hair => {
+                            const isSelected = gameState.selectedHairRoot && gameState.selectedHairRoot.id === hair.id;
+                            return `
+                                <div class="collection-card rarity-${hair.rarity}-border ${isSelected ? 'selected' : ''}" 
+                                     onclick="selectHair(${hair.id})">
+                                    <div class="emoji">${hair.emoji}</div>
+                                    <div class="name">${hair.name}</div>
+                                    <div class="level">Lv.${hair.level} x${hair.count}</div>
+                                    <div class="stats-mini">${ELEMENTS[hair.element].emoji} 💪${hair.power} 🏃${hair.speed} 🔗${hair.grip}</div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectHair(hairId) {
+            const hair = gameState.collection.find(h => h.id === hairId);
+            if (hair) {
+                gameState.selectedHairRoot = hair;
+                saveGameState();
+                render();
+            }
+        }
+
+        // メインレンダリング
+        function render() {
+            const app = document.getElementById('app');
+            let html = '';
+            
+            switch (currentScreen) {
+                case 'home':
+                    html = renderHomeScreen();
+                    break;
+                case 'gacha':
+                    html = renderGachaScreen();
+                    break;
+                case 'collection':
+                    html = renderCollectionScreen();
+                    break;
+                default:
+                    html = renderHomeScreen();
+            }
+            
+            app.innerHTML = html;
+        }
+
+        // 初期化
+        loadGameState();
+        render();
+    </script>
+</body>
+</html>
