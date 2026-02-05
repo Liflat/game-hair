@@ -12,28 +12,28 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v3
         with:
-          version: 8
+          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: 'pnpm-lock.yaml'
+          cache-dependency-path: 'docs/pnpm-lock.yaml'
 
       - name: Install dependencies
-        run: pnpm install
+        run: cd docs && pnpm install
 
       - name: Build
-        run: pnpm build
+        run: cd docs && pnpm build
 
       - name: Copy build output to docs folder
         run: |
           rm -rf docs/index.html docs/_next docs/public docs/styles
-          cp -r out/* docs/
-          rm -rf out
+          cp -r docs/out/* docs/
+          rm -rf docs/out
 
       - name: Push to GitHub
         run: |
