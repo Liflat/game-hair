@@ -68,7 +68,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
     
     // Calculate boss HP safely
     const bossStats = calculateStats(bossWithRaidSkills)
-    const bossMaxHp = Math.max(1, Math.floor((1000 + (bossStats?.power ?? 0) + (bossStats?.grip ?? 0)) * 1.5))
+    const bossMaxHp = 3000
     
     const bossPlayer: BattlePlayer = {
       id: 999,
