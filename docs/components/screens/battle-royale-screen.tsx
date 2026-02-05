@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, getRankColor, getNpcStrengthMultiplier, getElementMatchup, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, getRankColor, getNpcStrengthMultiplier, getElementCombatModifiers, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Trophy } from "lucide-react"
@@ -302,7 +302,8 @@ setPlayerRank(placement)
       // Helper function to get element damage modifier
       const getElementDamageMod = (attackerHairRoot: HairRoot, defenderHairRoot: HairRoot): number => {
         if (!attackerHairRoot.element || !defenderHairRoot.element) return 1.0
-        return getElementMatchup(attackerHairRoot.element, defenderHairRoot.element)
+        const mods = getElementCombatModifiers(attackerHairRoot.element, defenderHairRoot.element)
+        return mods.attackMod
       }
 
       // Process skill based on type and id
@@ -348,8 +349,10 @@ setPlayerRank(placement)
         case "team_heal": {
           // In solo mode, only heal self
           // Apply skill bonus from training level
+          const healSkillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.hairRoot.level || 1, exp: 0, count: 1 })
           const baseHealPercent = selectedSkill.id === "olympus-blessing" ? 1.0 : 0.5
-          const healAmount = Math.floor(player.maxHp * baseHealPercent)
+          const healPercent = baseHealPercent * healSkillBonus
+          const healAmount = Math.floor(player.maxHp * healPercent)
           player.hp = Math.min(player.maxHp, player.hp + healAmount)
           setBattleLog((prev) => [...prev, `${selectedSkill.name}でHP${healAmount}回復!`])
           break
@@ -385,6 +388,7 @@ setPlayerRank(placement)
         case "defense": {
           // Defense skills - stronger based on skill ID
           // Apply skill bonus from training level
+          const skillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.hairRoot.level || 1, exp: 0, count: 1 })
           let baseDefenseValue = 20 // Normal defense default
           let duration = 1
           let skillName = selectedSkill.name
@@ -435,7 +439,7 @@ setPlayerRank(placement)
           }
           
           // Apply skill bonus (cap at 100%)
-          const finalDefenseValue = Math.min(100, baseDefenseValue)
+          const finalDefenseValue = Math.min(100, Math.floor(baseDefenseValue * skillBonus))
           
           player.statusEffects.push({
             type: "buff",
@@ -451,7 +455,7 @@ setPlayerRank(placement)
         case "special": {
           // Process special skills based on their id
           // Apply skill bonus from training level
-          const specialSkillBonus = 1
+          const specialSkillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.hairRoot.level || 1, exp: 0, count: 1 })
           switch (selectedSkill.id) {
             case "bounce-back":
             case "helix-heal": {
