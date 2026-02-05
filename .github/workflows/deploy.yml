@@ -29,9 +29,15 @@ jobs:
       - name: Build
         run: cd docs && pnpm build
 
-      - name: Deploy
+      - name: Clean up old files
+        run: |
+          cd docs
+          rm -rf index.html app/ components/ hooks/ lib/ public/ styles/ *.config.* package*.json tsconfig.json next-env.d.ts components.json *.lock.yaml .gitignore
+
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs/out
           cname: shichiri1130.github.io
+          force_orphan: true
