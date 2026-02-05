@@ -124,6 +124,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const trainHairRoot = useCallback((id: number, expGain: number) => {
     setState((prev) => {
+      let updatedSelected: CollectedHairRoot | null = prev.selectedHairRoot
       const updated = prev.collection.map((h) => {
         if (h.id !== id) return h
         
@@ -140,9 +141,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
           newExp = 0
         }
         
-        return { ...h, exp: newExp, level: newLevel }
+        const updatedHair = { ...h, exp: newExp, level: newLevel }
+        if (prev.selectedHairRoot?.id === id) {
+          updatedSelected = updatedHair
+        }
+        return updatedHair
       })
-      return { ...prev, collection: updated }
+      return { ...prev, collection: updated, selectedHairRoot: updatedSelected }
     })
   }, [])
 

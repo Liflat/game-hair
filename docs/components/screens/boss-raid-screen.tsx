@@ -139,6 +139,39 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
 
       const newLog: string[] = []
 
+      const applyAttack = (
+        attacker: BattlePlayer,
+        target: BattlePlayer,
+        baseDamage: number,
+        label: string
+      ) => {
+        const attackerStats = calculateStats(attacker.hairRoot as CollectedHairRoot)
+        const attackerPower = (attackerStats?.power ?? 0) + (attacker.buffedStats.power || 0)
+        const elementMod = getElementDamageMod(attacker.hairRoot, target.hairRoot)
+        const finalDamage = Math.floor(baseDamage * (1 + attackerPower / 100) * elementMod)
+
+        const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+        const damageAfterDefense = defenseEffect?.value
+          ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+          : finalDamage
+
+        target.hp = Math.max(0, target.hp - damageAfterDefense)
+
+        const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
+        const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
+        newLog.push(`${attacker.name}${label}${target.name}に${damageAfterDefense}ダメージ!${elementNote}${defenseNote}`)
+
+        if (target.hp <= 0) {
+          target.isEliminated = true
+          if (target.id === 999) {
+            newLog.push("ヘアグランドを倒した！")
+            defeatBossRaid()
+          } else {
+            newLog.push(`${target.name}が脱落!`)
+          }
+        }
+      }
+
       // Process skill based on type
       if (selectedSkill.id === "normal-attack") {
         // Normal attack - always 15 damage
@@ -314,6 +347,98 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           target.hp = Math.min(target.maxHp, target.hp + healAmount)
           newLog.push(`${player.name}の${selectedSkill.name}で${target.name}を${healAmount}回復した！`)
         }
+      }
+
+      // Allies act together after the player's action (heal priority, then skills)
+      if (!boss.isEliminated) {
+        const allies = aliveTeamPlayers.filter(p => p.id !== player.id)
+        const getLowestHpAlly = (targets: BattlePlayer[]) => {
+          if (targets.length === 0) return null
+          return targets.reduce((lowest, current) => {
+            const lowestRatio = lowest.hp / lowest.maxHp
+            const currentRatio = current.hp / current.maxHp
+            return currentRatio < lowestRatio ? current : lowest
+          }, targets[0])
+        }
+
+        const healer = allies.find(a => a.hairRoot.skills.some(s => s.type === "team_heal")) || allies[0]
+        const needsHealing = aliveTeamPlayers.some(p => p.hp / p.maxHp < 0.5)
+
+        allies.forEach((ally) => {
+          if (boss.isEliminated || ally.isEliminated) return
+
+          const availableSkills = ally.hairRoot.skills.filter(s => (ally.cooldowns[s.id] || 0) <= 0)
+          const normalDefense: Skill = { id: "normal-defense", name: "通常防御", damage: 0, cooldown: 0, type: "defense", description: "軽減: 20%" }
+          const skillPool = [...availableSkills, normalDefense]
+          const defensiveSkills = skillPool.filter(s => s.type === "defense")
+          const offensiveSkills = skillPool.filter(s => s.type !== "defense" && s.type !== "team_heal")
+
+          const isHealer = healer && ally.id === healer.id
+          const healTarget = isHealer && needsHealing ? getLowestHpAlly(aliveTeamPlayers) : null
+          const healSkill = isHealer ? availableSkills.find(s => s.type === "team_heal") : undefined
+
+          let chosenSkill: Skill = { id: "normal-attack", name: "通常攻撃", damage: 15, cooldown: 0, type: "attack", description: "威力: 15" }
+          let chosenTarget: BattlePlayer | null = null
+
+          if (healSkill && healTarget && healTarget.hp / healTarget.maxHp < 0.5) {
+            chosenSkill = healSkill
+            chosenTarget = healTarget
+          } else if (defensiveSkills.length > 0 && ally.hp / ally.maxHp < 0.5) {
+            chosenSkill = defensiveSkills[0]
+          } else if (defensiveSkills.length > 0 && Math.random() < 0.25) {
+            chosenSkill = defensiveSkills[Math.floor(Math.random() * defensiveSkills.length)]
+          } else if (offensiveSkills.length > 0) {
+            const preferredOrder: Skill["type"][] = ["attack", "aoe", "special"]
+            for (const pref of preferredOrder) {
+              const match = offensiveSkills.find(s => s.type === pref)
+              if (match) {
+                chosenSkill = match
+                break
+              }
+            }
+          }
+
+          if (chosenSkill.type === "team_heal" && chosenTarget) {
+            const skillBonus = calculateSkillBonus(ally.hairRoot as CollectedHairRoot)
+            const baseHeal = chosenSkill.damage || 50
+            const healAmount = Math.floor(baseHeal * skillBonus)
+            chosenTarget.hp = Math.min(chosenTarget.maxHp, chosenTarget.hp + healAmount)
+            newLog.push(`${ally.name}の${chosenSkill.name}で${chosenTarget.name}を${healAmount}回復した！`)
+          } else if (chosenSkill.type === "defense") {
+            const skillBonus = calculateSkillBonus(ally.hairRoot as CollectedHairRoot)
+            let defenseValue = 25
+
+            if (chosenSkill.id === "normal-defense") {
+              defenseValue = 20
+            } else if (chosenSkill.id === "demon-king-shell") {
+              defenseValue = 90
+            }
+
+            const finalDefenseValue = Math.min(100, Math.floor(defenseValue * skillBonus))
+            ally.statusEffects.push({
+              type: "buff",
+              name: "防御強化",
+              duration: 1,
+              value: finalDefenseValue
+            })
+            newLog.push(`${ally.name}の${chosenSkill.name}で${finalDefenseValue}%ダメージ軽減!`)
+          } else if (chosenSkill.type === "attack" || chosenSkill.type === "aoe" || chosenSkill.type === "special") {
+            const baseDamage = chosenSkill.damage || 0
+            const label = chosenSkill.id === "normal-attack"
+              ? "の通常攻撃が"
+              : `の${chosenSkill.name}が`
+            if (!boss.isEliminated) {
+              applyAttack(ally, boss, baseDamage, label)
+            }
+          }
+
+          if (chosenSkill.cooldown > 0) {
+            ally.cooldowns = {
+              ...ally.cooldowns,
+              [chosenSkill.id]: chosenSkill.cooldown
+            }
+          }
+        })
       }
 
       // Update cooldowns for this skill
@@ -525,7 +650,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
               <div className="grid grid-cols-4 gap-2 text-xs">
                 <div className="p-2 bg-muted rounded">
                   <p className="text-muted-foreground">HP</p>
-                  <p className="font-bold">5000</p>
+                  <p className="font-bold">3000</p>
                 </div>
                 <div className="p-2 bg-muted rounded">
                   <p className="text-muted-foreground">力</p>
@@ -809,12 +934,32 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`rounded-lg p-6 text-center text-white ${
+            className={`relative overflow-hidden rounded-lg p-6 text-center text-white ${
               boss_player && boss_player.hp <= 0
                 ? "bg-gradient-to-br from-green-500 to-emerald-600"
                 : "bg-gradient-to-br from-red-500 to-rose-600"
             }`}
           >
+            {boss_player && boss_player.hp > 0 && (
+              <>
+                <motion.div
+                  aria-hidden="true"
+                  initial={{ opacity: 0.4 }}
+                  animate={{ opacity: [0.35, 0.65, 0.35], scale: [1, 1.08, 1] }}
+                  transition={{ duration: 1.8, repeat: Number.POSITIVE_INFINITY }}
+                  className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.35),rgba(0,0,0,0.85))]"
+                />
+                <motion.div
+                  aria-hidden="true"
+                  initial={{ y: 0, rotate: -3 }}
+                  animate={{ y: [0, -8, 0], rotate: [-3, 3, -3] }}
+                  transition={{ duration: 1.2, repeat: Number.POSITIVE_INFINITY }}
+                  className="absolute top-4 right-6 text-3xl"
+                >
+                  ☠️
+                </motion.div>
+              </>
+            )}
             <div className="text-5xl mb-4">{boss_player && boss_player.hp <= 0 ? "🎉" : "☠️"}</div>
             <h2 className="text-2xl font-bold mb-4">
               {boss_player && boss_player.hp <= 0 ? "勝利！" : "敗北..."}
@@ -832,7 +977,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             )}
             {boss_player && boss_player.hp > 0 && (
               <div className="bg-black/20 rounded-lg p-4 mb-4">
-                <p className="text-lg">すべての毛根が絶滅した...</p>
+                <p className="text-2xl font-bold mb-2">毛根が死滅した</p>
+                <p className="text-sm">魔王ヘアグランドに敗北した...</p>
               </div>
             )}
             <Button
