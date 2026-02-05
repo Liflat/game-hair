@@ -1,14 +1,781 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>サンプルドキュメント</title>
+    <title>毛根バトル - ゲーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 800px;
+            background: #0f3460;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .game-header {
+            background: linear-gradient(135deg, #e94560 0%, #c41e3a 100%);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 3px solid #a01830;
+        }
+
+        .game-header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .game-header p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .game-content {
+            padding: 30px;
+            min-height: 400px;
+            position: relative;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* スプラッシュスクリーン */
+        .splash-screen {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+
+        .splash-screen .emoji {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 1s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .splash-screen h2 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        /* ホームスクリーン */
+        .home-screen {
+            text-align: center;
+        }
+
+        .home-screen h2 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #e94560;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #e94560 0%, #c41e3a 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(233, 69, 96, 0.4);
+        }
+
+        .btn-secondary {
+            background: #16213e;
+            color: #e94560;
+            border: 2px solid #e94560;
+        }
+
+        .btn-secondary:hover {
+            background: #1a2b4a;
+            transform: translateY(-2px);
+        }
+
+        .player-info {
+            background: #1a3a52;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .player-info div {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .player-info label {
+            font-weight: bold;
+            color: #e94560;
+        }
+
+        /* バトルロワイアルスクリーン */
+        .battle-royale-screen {
+            text-align: center;
+        }
+
+        .battle-royale-screen h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #e94560;
+        }
+
+        .battle-log {
+            background: #1a3a52;
+            padding: 15px;
+            border-radius: 8px;
+            height: 200px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 13px;
+            border: 1px solid #16213e;
+        }
+
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #e94560;
+            padding-left: 10px;
+        }
+
+        .player-status {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-box {
+            background: #1a3a52;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #16213e;
+        }
+
+        .status-box h3 {
+            color: #e94560;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .hp-bar {
+            width: 100%;
+            height: 20px;
+            background: #0f2438;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+            width: 100%;
+            transition: width 0.3s;
+        }
+
+        .collection-screen {
+            text-align: center;
+        }
+
+        .collection-screen h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #e94560;
+        }
+
+        .hair-root-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .hair-root-card {
+            background: #1a3a52;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .hair-root-card:hover {
+            transform: scale(1.05);
+            border-color: #e94560;
+        }
+
+        .hair-root-card .emoji {
+            font-size: 32px;
+            margin-bottom: 5px;
+        }
+
+        .hair-root-card .name {
+            font-size: 12px;
+            font-weight: bold;
+            color: #e94560;
+        }
+
+        .hair-root-card .rarity {
+            font-size: 10px;
+            color: #aaa;
+            margin-top: 3px;
+        }
+
+        /* アニメーション */
+        .bounce-in {
+            animation: bounceIn 0.6s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .shake {
+            animation: shake 0.4s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .game-footer {
+            padding: 15px;
+            background: #16213e;
+            text-align: center;
+            border-top: 1px solid #0f3460;
+            font-size: 12px;
+            color: #888;
+        }
+    </style>
 </head>
 
 <body>
-    Hello, GitHub pages!
+    <div class="game-container">
+        <div class="game-header">
+            <h1>🧬 毛根バトル</h1>
+            <p>毛根を育成して、ランクを上げよう！</p>
+        </div>
+
+        <div class="game-content">
+            <!-- スプラッシュスクリーン -->
+            <div class="screen splash-screen active" id="splash">
+                <div class="emoji">🧬</div>
+                <h2>毛根バトル</h2>
+                <p>毛根育成ゲーム</p>
+                <button class="btn btn-primary" style="margin-top: 20px;" onclick="gameManager.navigate('home')">ゲーム開始</button>
+            </div>
+
+            <!-- ホームスクリーン -->
+            <div class="screen home-screen" id="home">
+                <h2>メニュー</h2>
+                <div class="player-info">
+                    <div>
+                        <label>プレイヤー:</label>
+                        <span id="playerName">毛根マスター</span>
+                    </div>
+                    <div>
+                        <label>コイン:</label>
+                        <span id="playerCoins">100</span>
+                    </div>
+                    <div>
+                        <label>ランク:</label>
+                        <span id="playerRank">ブロンズ</span>
+                    </div>
+                </div>
+                <div class="button-grid">
+                    <button class="btn btn-primary" onclick="gameManager.navigate('gacha')">💎 ガチャ</button>
+                    <button class="btn btn-primary" onclick="gameManager.navigate('collection')">📚 コレクション</button>
+                    <button class="btn btn-primary" onclick="gameManager.navigate('training')">🏋️ トレーニング</button>
+                    <button class="btn btn-primary" onclick="gameManager.navigate('battle')">⚔️ 1v1バトル</button>
+                    <button class="btn btn-primary" onclick="gameManager.navigate('battle-royale')">👑 バトロワ</button>
+                    <button class="btn btn-primary" onclick="gameManager.navigate('ranking')">🏆 ランキング</button>
+                </div>
+            </div>
+
+            <!-- ガチャスクリーン -->
+            <div class="screen" id="gacha">
+                <h2>ガチャ</h2>
+                <div class="player-info">
+                    <div>
+                        <label>コイン:</label>
+                        <span id="gachaCoin">100</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="gameManager.drawGacha()">🎰 ガチャを引く (10コイン)</button>
+                <div id="gachaResult" style="margin-top: 20px;"></div>
+                <button class="btn btn-secondary" onclick="gameManager.navigate('home')" style="margin-top: 20px; width: 100%;">戻る</button>
+            </div>
+
+            <!-- コレクションスクリーン -->
+            <div class="screen collection-screen" id="collection">
+                <h2>コレクション</h2>
+                <div id="collectionList" class="hair-root-grid"></div>
+                <button class="btn btn-secondary" onclick="gameManager.navigate('home')" style="width: 100%;">戻る</button>
+            </div>
+
+            <!-- バトロワスクリーン -->
+            <div class="screen battle-royale-screen" id="battle-royale">
+                <h2>バトルロワイアル</h2>
+                <div class="player-status">
+                    <div class="status-box">
+                        <h3>あなた</h3>
+                        <div id="selfInfo"></div>
+                        <div class="hp-bar">
+                            <div class="hp-fill" id="selfHp"></div>
+                        </div>
+                    </div>
+                    <div class="status-box">
+                        <h3>対戦相手</h3>
+                        <div id="enemyInfo"></div>
+                        <div class="hp-bar">
+                            <div class="hp-fill" id="enemyHp"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="battle-log" id="battleLog"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="btn btn-primary" onclick="gameManager.executeBattleAction('attack')">🗡️ 攻撃</button>
+                    <button class="btn btn-primary" onclick="gameManager.executeBattleAction('defend')">🛡️ 防御</button>
+                </div>
+                <button class="btn btn-secondary" onclick="gameManager.navigate('home')" style="margin-top: 15px; width: 100%;">戻る</button>
+            </div>
+
+            <!-- ランキングスクリーン -->
+            <div class="screen" id="ranking">
+                <h2>ランキング</h2>
+                <div id="rankingList" style="text-align: left; margin-bottom: 20px;"></div>
+                <button class="btn btn-secondary" onclick="gameManager.navigate('home')" style="width: 100%;">戻る</button>
+            </div>
+
+            <!-- トレーニングスクリーン -->
+            <div class="screen" id="training">
+                <h2>トレーニング</h2>
+                <div id="trainingInfo"></div>
+                <button class="btn btn-primary" onclick="gameManager.train()">🏋️ トレーニング実行 (1コイン)</button>
+                <button class="btn btn-secondary" onclick="gameManager.navigate('home')" style="margin-top: 15px; width: 100%;">戻る</button>
+            </div>
+
+            <!-- 1v1バトルスクリーン -->
+            <div class="screen" id="battle">
+                <h2>1v1バトル</h2>
+                <div class="player-status">
+                    <div class="status-box">
+                        <h3>プレイヤー</h3>
+                        <div id="p1Info"></div>
+                        <div class="hp-bar">
+                            <div class="hp-fill" id="p1Hp"></div>
+                        </div>
+                    </div>
+                    <div class="status-box">
+                        <h3>CPU対戦相手</h3>
+                        <div id="p2Info"></div>
+                        <div class="hp-bar">
+                            <div class="hp-fill" id="p2Hp"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="battle-log" id="battleLog1v1"></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="btn btn-primary" onclick="gameManager.execute1v1Action('attack')">🗡️ 攻撃</button>
+                    <button class="btn btn-primary" onclick="gameManager.execute1v1Action('defend')">🛡️ 防御</button>
+                </div>
+                <button class="btn btn-secondary" onclick="gameManager.navigate('home')" style="margin-top: 15px; width: 100%;">戻る</button>
+            </div>
+        </div>
+
+        <div class="game-footer">
+            <p>毛根バトル © 2026 | すべての毛根は尊い</p>
+        </div>
+    </div>
+
+    <script>
+        // ゲーム状態管理
+        const gameState = {
+            coins: 100,
+            collection: [],
+            selectedHairRoot: null,
+            playerName: "毛根マスター",
+            playerRank: "ブロンズ",
+            battleRankPoints: 0,
+            hairRoots: [
+                { id: 1, name: "ふわふわ毛根", emoji: "🌱", rarity: "common", power: 10, speed: 15, grip: 8 },
+                { id: 2, name: "ちぢれ毛根", emoji: "🌀", rarity: "common", power: 12, speed: 10, grip: 15 },
+                { id: 3, name: "まっすぐ毛根", emoji: "📍", rarity: "common", power: 11, speed: 12, grip: 11 },
+                { id: 11, name: "銀の毛根", emoji: "🪙", rarity: "uncommon", power: 18, speed: 20, grip: 17 },
+                { id: 15, name: "フレイム毛根", emoji: "🔥", rarity: "uncommon", power: 25, speed: 18, grip: 14 },
+                { id: 19, name: "金の毛根", emoji: "🥇", rarity: "rare", power: 30, speed: 28, grip: 28 },
+            ]
+        };
+
+        // ゲーム管理クラス
+        class GameManager {
+            constructor() {
+                this.currentScreen = 'splash';
+                this.battleState = {
+                    playerHp: 100,
+                    maxHp: 100,
+                    enemyHp: 100,
+                    enemyMaxHp: 100,
+                    playerDefend: false,
+                    enemyDefend: false,
+                    log: []
+                };
+            }
+
+            navigate(screenName) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById(screenName).classList.add('active');
+                this.currentScreen = screenName;
+
+                // 画面ごとの初期化処理
+                if (screenName === 'collection') {
+                    this.initCollection();
+                } else if (screenName === 'gacha') {
+                    this.updateGachaDisplay();
+                } else if (screenName === 'battle-royale') {
+                    this.initBattleRoyale();
+                } else if (screenName === 'home') {
+                    this.updatePlayerDisplay();
+                } else if (screenName === 'ranking') {
+                    this.updateRanking();
+                } else if (screenName === 'training') {
+                    this.updateTrainingDisplay();
+                } else if (screenName === 'battle') {
+                    this.init1v1Battle();
+                }
+            }
+
+            updatePlayerDisplay() {
+                document.getElementById('playerName').textContent = gameState.playerName;
+                document.getElementById('playerCoins').textContent = gameState.coins;
+                document.getElementById('playerRank').textContent = gameState.playerRank;
+            }
+
+            drawGacha() {
+                if (gameState.coins < 10) {
+                    alert('コインが足りません');
+                    return;
+                }
+                gameState.coins -= 10;
+                const result = gameState.hairRoots[Math.floor(Math.random() * gameState.hairRoots.length)];
+                
+                if (!gameState.collection.find(h => h.id === result.id)) {
+                    gameState.collection.push({ ...result, level: 1 });
+                }
+
+                const resultDiv = document.getElementById('gachaResult');
+                resultDiv.innerHTML = `
+                    <div style="text-align: center; padding: 20px; background: #1a3a52; border-radius: 8px; animation: bounce-in 0.6s;">
+                        <div style="font-size: 60px; margin-bottom: 10px;">${result.emoji}</div>
+                        <div style="font-size: 18px; margin-bottom: 5px;">${result.name}</div>
+                        <div style="font-size: 12px; color: #aaa;">${result.rarity}</div>
+                    </div>
+                `;
+                this.updateGachaDisplay();
+            }
+
+            updateGachaDisplay() {
+                document.getElementById('gachaCoin').textContent = gameState.coins;
+            }
+
+            initCollection() {
+                const list = document.getElementById('collectionList');
+                if (gameState.collection.length === 0) {
+                    list.innerHTML = '<p style="grid-column: 1/-1; color: #aaa;">毛根がまだありません。ガチャを引きましょう！</p>';
+                    return;
+                }
+                list.innerHTML = gameState.collection.map(h => `
+                    <div class="hair-root-card">
+                        <div class="emoji">${h.emoji}</div>
+                        <div class="name">${h.name}</div>
+                        <div class="rarity">Lv. ${h.level}</div>
+                    </div>
+                `).join('');
+            }
+
+            initBattleRoyale() {
+                this.battleState = {
+                    playerHp: 100,
+                    maxHp: 100,
+                    enemyHp: 100,
+                    enemyMaxHp: 100,
+                    playerDefend: false,
+                    enemyDefend: false,
+                    log: []
+                };
+                this.updateBattleDisplay();
+                this.addBattleLog('バトルロワイアル開始！');
+            }
+
+            init1v1Battle() {
+                this.battleState = {
+                    playerHp: 100,
+                    maxHp: 100,
+                    enemyHp: 100,
+                    enemyMaxHp: 100,
+                    playerDefend: false,
+                    enemyDefend: false,
+                    log: []
+                };
+                this.updateBattle1v1Display();
+                this.addBattle1v1Log('1v1バトル開始！');
+            }
+
+            executeBattleAction(action) {
+                if (action === 'attack') {
+                    const damage = Math.floor(Math.random() * 20) + 10;
+                    const finalDamage = this.battleState.enemyDefend ? Math.floor(damage * 0.5) : damage;
+                    this.battleState.enemyHp = Math.max(0, this.battleState.enemyHp - finalDamage);
+                    this.addBattleLog(`あなたは${finalDamage}ダメージを与えた！`);
+                } else if (action === 'defend') {
+                    this.battleState.playerDefend = true;
+                    this.addBattleLog('防御態勢を取った！');
+                }
+
+                // 敵のターン
+                setTimeout(() => {
+                    const enemyAction = Math.random() > 0.5 ? 'attack' : 'defend';
+                    if (enemyAction === 'attack') {
+                        const damage = Math.floor(Math.random() * 20) + 10;
+                        const finalDamage = this.battleState.playerDefend ? Math.floor(damage * 0.5) : damage;
+                        this.battleState.playerHp = Math.max(0, this.battleState.playerHp - finalDamage);
+                        this.addBattleLog(`敵は${finalDamage}ダメージを与えた！`);
+                    } else {
+                        this.battleState.enemyDefend = true;
+                        this.addBattleLog('敵が防御態勢を取った！');
+                    }
+                    this.battleState.playerDefend = false;
+                    this.battleState.enemyDefend = false;
+                    this.updateBattleDisplay();
+
+                    if (this.battleState.playerHp <= 0 || this.battleState.enemyHp <= 0) {
+                        this.endBattle();
+                    }
+                }, 1000);
+            }
+
+            execute1v1Action(action) {
+                if (action === 'attack') {
+                    const damage = Math.floor(Math.random() * 20) + 10;
+                    const finalDamage = this.battleState.enemyDefend ? Math.floor(damage * 0.5) : damage;
+                    this.battleState.enemyHp = Math.max(0, this.battleState.enemyHp - finalDamage);
+                    this.addBattle1v1Log(`あなたは${finalDamage}ダメージを与えた！`);
+                } else if (action === 'defend') {
+                    this.battleState.playerDefend = true;
+                    this.addBattle1v1Log('防御態勢を取った！');
+                }
+
+                setTimeout(() => {
+                    const enemyAction = Math.random() > 0.5 ? 'attack' : 'defend';
+                    if (enemyAction === 'attack') {
+                        const damage = Math.floor(Math.random() * 20) + 10;
+                        const finalDamage = this.battleState.playerDefend ? Math.floor(damage * 0.5) : damage;
+                        this.battleState.playerHp = Math.max(0, this.battleState.playerHp - finalDamage);
+                        this.addBattle1v1Log(`敵は${finalDamage}ダメージを与えた！`);
+                    } else {
+                        this.battleState.enemyDefend = true;
+                        this.addBattle1v1Log('敵が防御態勢を取った！');
+                    }
+                    this.battleState.playerDefend = false;
+                    this.battleState.enemyDefend = false;
+                    this.updateBattle1v1Display();
+
+                    if (this.battleState.playerHp <= 0 || this.battleState.enemyHp <= 0) {
+                        this.end1v1Battle();
+                    }
+                }, 1000);
+            }
+
+            addBattleLog(message) {
+                this.battleState.log.push(message);
+                this.updateBattleDisplay();
+            }
+
+            addBattle1v1Log(message) {
+                this.battleState.log.push(message);
+                this.updateBattle1v1Display();
+            }
+
+            updateBattleDisplay() {
+                const selfHpPercent = (this.battleState.playerHp / this.battleState.maxHp) * 100;
+                const enemyHpPercent = (this.battleState.enemyHp / this.battleState.enemyMaxHp) * 100;
+
+                document.getElementById('selfHp').style.width = selfHpPercent + '%';
+                document.getElementById('enemyHp').style.width = enemyHpPercent + '%';
+                document.getElementById('selfInfo').innerHTML = `HP: ${this.battleState.playerHp}/${this.battleState.maxHp}`;
+                document.getElementById('enemyInfo').innerHTML = `HP: ${this.battleState.enemyHp}/${this.battleState.enemyMaxHp}`;
+
+                const log = document.getElementById('battleLog');
+                log.innerHTML = this.battleState.log.map(msg => `<div class="log-entry">${msg}</div>`).join('');
+                log.scrollTop = log.scrollHeight;
+            }
+
+            updateBattle1v1Display() {
+                const selfHpPercent = (this.battleState.playerHp / this.battleState.maxHp) * 100;
+                const enemyHpPercent = (this.battleState.enemyHp / this.battleState.enemyMaxHp) * 100;
+
+                document.getElementById('p1Hp').style.width = selfHpPercent + '%';
+                document.getElementById('p2Hp').style.width = enemyHpPercent + '%';
+                document.getElementById('p1Info').innerHTML = `HP: ${this.battleState.playerHp}/${this.battleState.maxHp}`;
+                document.getElementById('p2Info').innerHTML = `HP: ${this.battleState.enemyHp}/${this.battleState.enemyMaxHp}`;
+
+                const log = document.getElementById('battleLog1v1');
+                log.innerHTML = this.battleState.log.map(msg => `<div class="log-entry">${msg}</div>`).join('');
+                log.scrollTop = log.scrollHeight;
+            }
+
+            endBattle() {
+                const winner = this.battleState.playerHp > 0 ? 'あなた' : '敵';
+                setTimeout(() => {
+                    alert(`${winner}が勝利しました！`);
+                    gameState.battleRankPoints += winner === 'あなた' ? 10 : -5;
+                    this.navigate('home');
+                }, 500);
+            }
+
+            end1v1Battle() {
+                const winner = this.battleState.playerHp > 0 ? 'あなた' : 'CPUプレイヤー';
+                setTimeout(() => {
+                    alert(`${winner}が勝利しました！`);
+                    if (winner === 'あなた') {
+                        gameState.coins += 20;
+                        gameState.battleRankPoints += 10;
+                    } else {
+                        gameState.battleRankPoints = Math.max(0, gameState.battleRankPoints - 5);
+                    }
+                    this.navigate('home');
+                }, 500);
+            }
+
+            updateRanking() {
+                const ranking = [
+                    { rank: 1, name: '毛根王', points: 5000 },
+                    { rank: 2, name: 'あなた', points: gameState.battleRankPoints },
+                    { rank: 3, name: '毛根マスター', points: 1200 },
+                    { rank: 4, name: '育毛士', points: 800 },
+                    { rank: 5, name: '毛根愛好家', points: 500 }
+                ].sort((a, b) => b.points - a.points);
+
+                const list = document.getElementById('rankingList');
+                list.innerHTML = ranking.map((r, i) => `
+                    <div style="display: flex; justify-content: space-between; padding: 10px; background: #1a3a52; border-radius: 8px; margin-bottom: 8px;">
+                        <span>${i + 1}位: ${r.name}</span>
+                        <span>${r.points}pt</span>
+                    </div>
+                `).join('');
+            }
+
+            updateTrainingDisplay() {
+                const selected = gameState.collection[0];
+                if (!selected) {
+                    document.getElementById('trainingInfo').innerHTML = '<p style="color: #aaa;">毛根を選んでからトレーニングしましょう</p>';
+                    return;
+                }
+                document.getElementById('trainingInfo').innerHTML = `
+                    <div style="background: #1a3a52; padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 40px; margin-bottom: 10px;">${selected.emoji}</div>
+                        <div>${selected.name}</div>
+                        <div style="color: #aaa; font-size: 12px; margin-top: 5px;">Level ${selected.level}</div>
+                    </div>
+                `;
+            }
+
+            train() {
+                if (gameState.coins < 1) {
+                    alert('コインが足りません');
+                    return;
+                }
+                gameState.coins -= 1;
+                if (gameState.collection.length > 0) {
+                    gameState.collection[0].level += 1;
+                    alert('トレーニング完了！');
+                    this.updateTrainingDisplay();
+                    this.updatePlayerDisplay();
+                }
+            }
+        }
+
+        // ゲーム管理インスタンス作成
+        const gameManager = new GameManager();
+    </script>
 </body>
 
 </html>
