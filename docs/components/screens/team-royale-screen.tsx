@@ -1,0 +1,1110 @@
+"use client"
+
+import { useState, useCallback, useEffect, useRef } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { useGame } from "@/lib/game-context"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, getRankColor, getNpcStrengthMultiplier, getElementCombatModifiers, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
+import type { Screen } from "@/lib/screens"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft, Swords, Shield, Zap, Crown, Users, Trophy } from "lucide-react"
+
+interface TeamRoyaleScreenProps {
+  onNavigate: (screen: Screen) => void
+}
+
+type BattlePhase = "waiting" | "select" | "action" | "result" | "finished"
+
+interface BattlePlayer {
+  id: number
+  name: string
+  hairRoot: HairRoot
+  hp: number
+  maxHp: number
+  prevHp: number
+  isNpc: boolean
+  isEliminated: boolean
+  cooldowns: Record<string, number>
+  statusEffects: { type: "stun" | "buff" | "debuff" | "dot"; name: string; duration: number; value?: number }[]
+  buffedStats: { power: number; speed: number; grip: number }
+  teamId: number
+}
+
+interface Team {
+  id: number
+  name: string
+  color: string
+  members: BattlePlayer[]
+  isEliminated: boolean
+}
+
+interface TeamBattlePlayer extends BattlePlayer {}
+
+const TEAM_NAMES = ["炎チーム", "水チーム", "風チーム", "雷チーム"]
+const TEAM_COLORS = ["#EF4444", "#3B82F6", "#22C55E", "#F59E0B"]
+const NPC_NAMES = [
+  "ハゲ田", "毛無し郎", "抜け毛王", "薄毛侍", "ツルピカ丸",
+  "毛根仙人", "フサフサ姫", "剛毛騎士", "軟毛僧侶", "縮毛魔王",
+  "直毛勇者", "白髪賢者"
+]
+
+function generateNpcPlayer(index: number, teamId: number, strengthMultiplier: number, rankTier: string): BattlePlayer {
+  const rarityPool: HairRoot[] = []
+  HAIR_ROOTS.forEach((hr) => {
+    if (rankTier === "legend" || rankTier === "master") {
+      if (hr.rarity === "epic" || hr.rarity === "legendary") rarityPool.push(hr, hr, hr)
+      else if (hr.rarity === "rare") rarityPool.push(hr, hr)
+      else rarityPool.push(hr)
+    } else if (rankTier === "diamond" || rankTier === "platinum") {
+      if (hr.rarity === "rare" || hr.rarity === "epic") rarityPool.push(hr, hr, hr)
+      else if (hr.rarity === "uncommon") rarityPool.push(hr, hr)
+      else rarityPool.push(hr)
+    } else if (rankTier === "gold" || rankTier === "silver") {
+      if (hr.rarity === "uncommon" || hr.rarity === "rare") rarityPool.push(hr, hr)
+      else rarityPool.push(hr)
+    } else {
+      if (hr.rarity === "common" || hr.rarity === "uncommon") rarityPool.push(hr, hr, hr)
+      else rarityPool.push(hr)
+    }
+  })
+  
+  const baseHairRoot = rarityPool[Math.floor(Math.random() * rarityPool.length)]
+  const scaledHairRoot: HairRoot = {
+    ...baseHairRoot,
+    power: Math.floor(baseHairRoot.power * strengthMultiplier),
+    speed: Math.floor(baseHairRoot.speed * strengthMultiplier),
+    grip: Math.floor(baseHairRoot.grip * strengthMultiplier),
+  }
+  
+  const stats = calculateStats({ ...scaledHairRoot, level: Math.floor(Math.random() * 5) + 1, exp: 0, count: 1 })
+  const maxHp = Math.floor((100 + stats.power + stats.grip) * strengthMultiplier)
+
+  return {
+    id: index + 100,
+    name: NPC_NAMES[index % NPC_NAMES.length],
+    hairRoot: scaledHairRoot,
+    hp: maxHp,
+    maxHp,
+    prevHp: maxHp,
+    isNpc: true,
+    isEliminated: false,
+    cooldowns: {},
+    statusEffects: [],
+    buffedStats: { power: 0, speed: 0, grip: 0 },
+    teamId,
+  }
+}
+
+export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
+  const { selectedHairRoot, addCoins, getTeamRoyaleRank, updateTeamRoyaleRank, playerName } = useGame()
+  const [phase, setPhase] = useState<BattlePhase>("waiting")
+  const [teams, setTeams] = useState<Team[]>([])
+  const [round, setRound] = useState(1)
+  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null)
+  const [selectedTarget, setSelectedTarget] = useState<number | null>(null)
+  const [selectedTargets, setSelectedTargets] = useState<number[]>([])
+  const [battleLog, setBattleLog] = useState<string[]>([])
+  const [winningTeam, setWinningTeam] = useState<Team | null>(null)
+  const [playerTeamRank, setPlayerTeamRank] = useState<number>(0)
+  const [rankChange, setRankChange] = useState<number | null>(null)
+  const logRef = useRef<HTMLDivElement>(null)
+  
+  const currentRank = getTeamRoyaleRank()
+  const strengthMultiplier = getNpcStrengthMultiplier(currentRank)
+
+  useEffect(() => {
+    if (logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight
+    }
+  }, [battleLog])
+
+  const player = teams.flatMap(t => t.members).find((p) => !p.isNpc)
+  const playerTeam = teams.find(t => t.members.some(m => !m.isNpc))
+
+  const startBattle = useCallback(() => {
+    if (!selectedHairRoot) return
+
+    const stats = calculateStats(selectedHairRoot)
+    const maxHp = 100 + stats.power + stats.grip
+
+    // Create player
+    const playerChar: BattlePlayer = {
+      id: 0,
+      name: playerName,
+      hairRoot: selectedHairRoot,
+      hp: maxHp,
+      maxHp,
+      prevHp: maxHp,
+      isNpc: false,
+      isEliminated: false,
+      cooldowns: {},
+      statusEffects: [],
+      buffedStats: { power: 0, speed: 0, grip: 0 },
+      teamId: 0,
+    }
+
+    // Create 4 teams with 3 members each (player + 2 allies in team 0, 3 NPCs in other teams)
+    const newTeams: Team[] = TEAM_NAMES.map((name, i) => ({
+      id: i,
+      name,
+      color: TEAM_COLORS[i],
+      members: [],
+      isEliminated: false,
+    }))
+
+    // Add player to team 0
+    newTeams[0].members.push(playerChar)
+    
+    // Add 2 allies to player's team
+    for (let j = 0; j < 2; j++) {
+      newTeams[0].members.push(generateNpcPlayer(j, 0, strengthMultiplier, currentRank.tier))
+    }
+
+    // Add 3 NPCs to each other team
+    let npcIndex = 2
+    for (let i = 1; i < 4; i++) {
+      for (let j = 0; j < 3; j++) {
+        newTeams[i].members.push(generateNpcPlayer(npcIndex++, i, strengthMultiplier, currentRank.tier))
+      }
+    }
+
+    setTeams(newTeams)
+    setPhase("select")
+    setRound(1)
+    setBattleLog(["チームバトルロワイヤル開始! 4チーム12人で最強チームを決める!"])
+  }, [selectedHairRoot, strengthMultiplier, currentRank.tier, playerName])
+
+  const executePlayerAction = useCallback(() => {
+    if (!selectedSkill || !player || selectedTarget === null) return
+
+    setTeams((prev) => {
+      const newTeams = prev.map(t => ({
+        ...t,
+        members: t.members.map(p => ({ ...p, prevHp: p.hp }))
+      }))
+
+      const allPlayers = newTeams.flatMap(t => t.members)
+      const currentPlayer = allPlayers.find(p => !p.isNpc)
+      const target = allPlayers.find(p => p.id === selectedTarget)
+
+      if (!currentPlayer || currentPlayer.isEliminated) return prev
+      if (!target || target.isEliminated) return prev
+
+      // Helper function for element damage modifier
+      const getElementDamageMod = (attackerHairRoot: HairRoot, defenderHairRoot: HairRoot): number => {
+        if (!attackerHairRoot.element || !defenderHairRoot.element) return 1.0
+        const mods = getElementCombatModifiers(attackerHairRoot.element, defenderHairRoot.element)
+        return mods.attackMod
+      }
+
+      // Execute skill
+      if (selectedSkill.type === "attack") {
+        const stats = calculateStats(currentPlayer.hairRoot as any)
+        const totalPower = stats.power + currentPlayer.buffedStats.power
+        const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
+        let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
+        
+        const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+        if (defBuff) {
+          damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
+        }
+
+        target.hp = Math.max(0, target.hp - damage)
+        const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
+        setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${target.name}に${damage}ダメージ!${elementNote}`])
+
+        if (target.hp <= 0) {
+          target.isEliminated = true
+          setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
+        }
+      } else if (selectedSkill.type === "dot") {
+        // DOT attack
+        const stats = calculateStats(currentPlayer.hairRoot as any)
+        const totalPower = stats.power + currentPlayer.buffedStats.power
+        const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
+        let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
+        
+        const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+        if (defBuff) {
+          damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
+        }
+
+        target.hp = Math.max(0, target.hp - damage)
+        const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
+        setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${target.name}に${damage}ダメージ!${elementNote}`])
+        
+        // Apply DOT effect
+        if (selectedSkill.dotEffect) {
+          target.statusEffects.push({
+            type: "dot",
+            name: selectedSkill.dotEffect.name,
+            duration: selectedSkill.dotEffect.duration,
+            value: selectedSkill.dotEffect.damage
+          })
+          setBattleLog((logs) => [...logs, `${target.name}に${selectedSkill.dotEffect?.name}を付与! (${selectedSkill.dotEffect?.duration}ターン)`])
+        }
+
+        if (target.hp <= 0) {
+          target.isEliminated = true
+          setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
+        }
+      } else if (selectedSkill.type === "defense") {
+        // Apply skill bonus from training level
+        const defenseSkillBonus = calculateSkillBonus({ ...currentPlayer.hairRoot, level: currentPlayer.hairRoot.level || 1, exp: 0, count: 1 })
+        let baseDefenseValue = 20
+        let duration = 1
+        
+        // Common tier (20-25%)
+        if (selectedSkill.id === "normal-defense") {
+          baseDefenseValue = 20
+          duration = 1
+        } else if (["fluffy-shield", "spiral-defense", "rigid-stance", "slip-away", "mini-barrier", "bushy-cover", "glossy-reflect", "stone-wall", "flow-dodge", "gum-shield", "spike-armor", "jelly-absorb", "elastic-guard", "shine-barrier"].includes(selectedSkill.id)) {
+          baseDefenseValue = 25
+          duration = 2
+        }
+        // Uncommon tier (30-35%)
+        else if (["mirror-coat", "immovable", "coil-dodge", "heat-aura", "freeze-guard", "magma-armor", "wind-barrier", "zero-gravity", "speed-blur"].includes(selectedSkill.id)) {
+          baseDefenseValue = 35
+          duration = 2
+        }
+        // Rare tier (40-45%)
+        else if (["treasure-guard", "scale-armor", "prism-barrier", "dark-veil", "iron-fortress", "northern-veil", "stone-skin", "ethereal-form", "deep-dive"].includes(selectedSkill.id)) {
+          baseDefenseValue = 45
+          duration = 2
+        }
+        // Epic tier (50-60%)
+        else if (selectedSkill.id === "depth-guard") {
+          baseDefenseValue = 50
+          duration = 2
+        } else if (selectedSkill.id === "cosmic-shield") {
+          baseDefenseValue = 60
+          duration = 2
+        }
+        // Legendary tier (100%)
+        else if (selectedSkill.id === "event-horizon") {
+          baseDefenseValue = 100
+          duration = 1
+        }
+        
+        // Apply skill bonus (cap at 100%)
+        const finalDefenseValue = Math.min(100, Math.floor(baseDefenseValue * defenseSkillBonus))
+        
+        currentPlayer.statusEffects.push({
+          type: "buff",
+          name: "防御強化",
+          duration,
+          value: finalDefenseValue
+        })
+        setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${finalDefenseValue}%ダメージ軽減!`])
+      } else if (selectedSkill.type === "aoe") {
+        // AOE attack - hit multiple targets
+        const targets = selectedTargets
+          .map(id => allPlayers.find(p => p.id === id))
+          .filter((t): t is BattlePlayer => t !== undefined && !t.isEliminated)
+        
+        const stats = calculateStats(currentPlayer.hairRoot as any)
+        const totalPower = stats.power + currentPlayer.buffedStats.power
+        
+        targets.forEach(t => {
+          let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
+          const defBuff = t.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+          if (defBuff) damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
+          
+          t.hp = Math.max(0, t.hp - damage)
+          setBattleLog((logs) => [...logs, `${selectedSkill.name}が${t.name}に${damage}ダメージ!`])
+          
+          if (t.hp <= 0) {
+            t.isEliminated = true
+            setBattleLog((logs) => [...logs, `${t.name}が脱落!`])
+          }
+        })
+      } else if (selectedSkill.type === "team_heal") {
+        // Team heal - heal all alive teammates in team mode
+        // Apply skill bonus from training level
+        const teamHealBonus = calculateSkillBonus({ ...currentPlayer.hairRoot, level: currentPlayer.hairRoot.level || 1, exp: 0, count: 1 })
+        const playerTeam = newTeams.find(t => t.members.some(m => !m.isNpc))
+        const aliveTeammates = playerTeam?.members.filter(m => !m.isEliminated) || []
+        const baseHealPercent = selectedSkill.id === "olympus-blessing" ? 1.0 : 0.5
+        const healPercent = baseHealPercent * teamHealBonus
+        
+        aliveTeammates.forEach(teammate => {
+          const healAmount = Math.floor(teammate.maxHp * healPercent)
+          teammate.hp = Math.min(teammate.maxHp, teammate.hp + healAmount)
+          setBattleLog((logs) => [...logs, `${teammate.name}のHP${healAmount}回復!`])
+        })
+        setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! チーム全員回復!`])
+      } else if (selectedSkill.type === "special") {
+        // Apply skill bonus from training level for special skills
+        const specialSkillBonus = calculateSkillBonus({ ...currentPlayer.hairRoot, level: currentPlayer.hairRoot.level || 1, exp: 0, count: 1 })
+        
+        // Heal skills
+        if (selectedSkill.id === "rebirth") {
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.7 * specialSkillBonus)
+          currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! HP${healAmount}回復!`])
+        } else if (selectedSkill.id === "holy-blessing") {
+          const buffValue = Math.floor(50 * specialSkillBonus)
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.4 * specialSkillBonus)
+          currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
+          currentPlayer.buffedStats.power += buffValue
+          currentPlayer.buffedStats.speed += buffValue
+          currentPlayer.buffedStats.grip += buffValue
+          currentPlayer.statusEffects.push({ type: "buff", name: "神の祝福", duration: 4, value: buffValue })
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! 全ステ+${buffValue}, HP${healAmount}回復!`])
+        } else if (selectedSkill.id === "toxic-cloud") {
+          // Poison all enemies - bonus increases poison damage
+          const enemyPlayers = allPlayers.filter(p => p.teamId !== currentPlayer.teamId && !p.isEliminated)
+          const poisonDamage = Math.floor(10 * specialSkillBonus)
+          enemyPlayers.forEach(enemy => {
+            enemy.statusEffects.push({ type: "dot", name: "毒", duration: 3, value: poisonDamage })
+          })
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}の毒霧! 敵全員が毒状態に! (3ターン)`])
+        } else if (selectedSkill.id === "moon-blessing") {
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.4 * specialSkillBonus)
+          currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}は月の加護でHP${healAmount}回復!`])
+        } else if (selectedSkill.id === "sunlight-heal") {
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.5 * specialSkillBonus)
+          const buffValue = Math.floor(25 * specialSkillBonus)
+          currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
+          currentPlayer.buffedStats.power += buffValue
+          currentPlayer.statusEffects.push({ type: "buff", name: "太陽の力", duration: 3, value: buffValue })
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}に日光の力! HP${healAmount}回復+攻撃力UP!`])
+        } else if (selectedSkill.id === "hellfire-breath") {
+          const enemyPlayers = allPlayers.filter(p => p.teamId !== currentPlayer.teamId && !p.isEliminated)
+          const burnDamage = Math.floor(30 * specialSkillBonus)
+          const burnDot = Math.floor(15 * specialSkillBonus)
+          enemyPlayers.forEach(enemy => {
+            enemy.hp = Math.max(0, enemy.hp - burnDamage)
+            enemy.statusEffects.push({ type: "dot", name: "炎上", duration: 2, value: burnDot })
+            if (enemy.hp <= 0) {
+              enemy.isEliminated = true
+              setBattleLog((logs) => [...logs, `${enemy.name}が脱落!`])
+            }
+          })
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}の地獄の炎! 敵全員に${burnDamage}ダメージ+炎上!`])
+        } else if (selectedSkill.id === "einherjar") {
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.6 * specialSkillBonus)
+          const buffValue = Math.floor(50 * specialSkillBonus)
+          currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
+          currentPlayer.statusEffects.push({ type: "buff", name: "勇者の魂", duration: 2, value: buffValue })
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}に勇者の魂! HP${healAmount}回復+防御強化!`])
+        } else if (selectedSkill.id === "all-father") {
+          currentPlayer.statusEffects.push({ type: "buff", name: "オールファーザー", duration: 1, value: 100 })
+          const counterValue = Math.floor(80 * specialSkillBonus)
+          currentPlayer.statusEffects.push({ type: "buff", name: "反撃準備", duration: 1, value: counterValue })
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}が全知の力発動! 完全回避+反撃準備!`])
+        }
+      }
+
+      if (selectedSkill.cooldown > 0) {
+        currentPlayer.cooldowns[selectedSkill.id] = selectedSkill.cooldown
+      }
+
+      // Check team elimination
+      newTeams.forEach(team => {
+        if (team.members.every(m => m.isEliminated)) {
+          team.isEliminated = true
+        }
+      })
+
+      return newTeams
+    })
+
+    setSelectedSkill(null)
+    setSelectedTarget(null)
+    setSelectedTargets([])
+    setPhase("action")
+  }, [selectedSkill, selectedTarget, selectedTargets, player])
+
+  // NPC actions and round processing
+  useEffect(() => {
+    if (phase !== "action") return
+
+    const timeout = setTimeout(() => {
+      setTeams((prev) => {
+        const newTeams = prev.map(t => ({
+          ...t,
+          members: t.members.map(p => ({ ...p }))
+        }))
+
+        const allPlayers = newTeams.flatMap(t => t.members)
+        const alivePlayers = allPlayers.filter(p => !p.isEliminated)
+        const aliveTeams = newTeams.filter(t => !t.isEliminated)
+
+        // NPC actions
+        const npcs = alivePlayers.filter(p => p.isNpc)
+        for (const npc of npcs) {
+          const enemyPlayers = alivePlayers.filter(p => p.teamId !== npc.teamId && !p.isEliminated)
+          if (enemyPlayers.length === 0) continue
+
+          const availableSkills = npc.hairRoot.skills.filter(s => !npc.cooldowns[s.id] || npc.cooldowns[s.id] <= 0)
+          if (availableSkills.length === 0) continue
+
+          const skill = availableSkills[Math.floor(Math.random() * availableSkills.length)]
+          const target = enemyPlayers[Math.floor(Math.random() * enemyPlayers.length)]
+
+          if (skill.type === "attack") {
+            const stats = calculateStats(npc.hairRoot as any)
+            const totalPower = stats.power + npc.buffedStats.power
+            let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
+            
+            const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+            if (defBuff) {
+              damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
+            }
+
+            target.hp = Math.max(0, target.hp - damage)
+            setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! ${target.name}に${damage}ダメージ!`])
+
+            if (target.hp <= 0) {
+              target.isEliminated = true
+              setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
+            }
+          } else if (skill.type === "dot") {
+            // NPC DOT attack
+            const stats = calculateStats(npc.hairRoot as any)
+            const totalPower = stats.power + npc.buffedStats.power
+            let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
+            
+            const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+            if (defBuff) damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
+
+            target.hp = Math.max(0, target.hp - damage)
+            setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! ${target.name}に${damage}ダメージ!`])
+            
+            if (skill.dotEffect) {
+              target.statusEffects.push({
+                type: "debuff",
+                name: skill.dotEffect.name,
+                duration: skill.dotEffect.duration,
+                value: skill.dotEffect.damage
+              })
+              setBattleLog((logs) => [...logs, `${target.name}に${skill.dotEffect?.name}を付与!`])
+            }
+
+            if (target.hp <= 0) {
+              target.isEliminated = true
+              setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
+            }
+          } else if (skill.type === "aoe") {
+            // NPC AOE attack - hit random enemies
+            const maxTargets = skill.maxTargets || 2
+            const targets = enemyPlayers.slice(0, Math.min(maxTargets, enemyPlayers.length))
+            const stats = calculateStats(npc.hairRoot as any)
+            const totalPower = stats.power + npc.buffedStats.power
+            
+            targets.forEach(t => {
+              let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
+              const defBuff = t.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+              if (defBuff) damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
+              
+              t.hp = Math.max(0, t.hp - damage)
+              setBattleLog((logs) => [...logs, `${skill.name}が${t.name}に${damage}ダメージ!`])
+              
+              if (t.hp <= 0) {
+                t.isEliminated = true
+                setBattleLog((logs) => [...logs, `${t.name}が脱落!`])
+              }
+            })
+          } else if (skill.type === "team_heal") {
+            // NPC team heal - heal all alive teammates
+            const npcTeam = newTeams.find(t => t.members.includes(npc))
+            const aliveTeammates = npcTeam?.members.filter(m => !m.isEliminated) || []
+            const healPercent = skill.id === "olympus-blessing" ? 1.0 : 0.5
+            
+            aliveTeammates.forEach(teammate => {
+              const healAmount = Math.floor(teammate.maxHp * healPercent)
+              teammate.hp = Math.min(teammate.maxHp, teammate.hp + healAmount)
+            })
+            setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! チーム全員回復!`])
+          } else if (skill.type === "defense") {
+            npc.statusEffects.push({ type: "buff", name: "防御強化", duration: 2, value: 30 })
+            setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}!`])
+          } else if (skill.type === "special") {
+            // NPC special skills
+            if (skill.id === "toxic-cloud") {
+              enemyPlayers.forEach(e => {
+                e.statusEffects.push({ type: "debuff", name: "毒", duration: 3, value: 10 })
+              })
+              setBattleLog((logs) => [...logs, `${npc.name}の毒霧!`])
+            } else if (skill.id === "moon-blessing") {
+              const healAmount = Math.floor(npc.maxHp * 0.4)
+              npc.hp = Math.min(npc.maxHp, npc.hp + healAmount)
+              setBattleLog((logs) => [...logs, `${npc.name}は月の加護でHP回復!`])
+            } else if (skill.id === "sunlight-heal") {
+              const healAmount = Math.floor(npc.maxHp * 0.5)
+              npc.hp = Math.min(npc.maxHp, npc.hp + healAmount)
+              npc.buffedStats.power += 25
+              npc.statusEffects.push({ type: "buff", name: "太陽の力", duration: 3, value: 25 })
+              setBattleLog((logs) => [...logs, `${npc.name}に日光の力!`])
+            } else if (skill.id === "hellfire-breath") {
+              const burnDamage = 30
+              enemyPlayers.forEach(e => {
+                e.hp = Math.max(0, e.hp - burnDamage)
+                e.statusEffects.push({ type: "dot", name: "炎上", duration: 2, value: 15 })
+                if (e.hp <= 0) {
+                  e.isEliminated = true
+                  setBattleLog((logs) => [...logs, `${e.name}が脱落!`])
+                }
+              })
+              setBattleLog((logs) => [...logs, `${npc.name}の地獄の炎!`])
+            } else if (skill.id === "einherjar") {
+              const healAmount = Math.floor(npc.maxHp * 0.6)
+              npc.hp = Math.min(npc.maxHp, npc.hp + healAmount)
+              npc.statusEffects.push({ type: "buff", name: "勇者の魂", duration: 2, value: 50 })
+              setBattleLog((logs) => [...logs, `${npc.name}に勇者の魂!`])
+            } else if (skill.id === "all-father") {
+              npc.statusEffects.push({ type: "buff", name: "オールファーザー", duration: 1, value: 100 })
+              npc.statusEffects.push({ type: "buff", name: "反撃準備", duration: 1, value: 80 })
+              setBattleLog((logs) => [...logs, `${npc.name}が全知の力発動!`])
+            } else if (skill.id === "rebirth") {
+              const healAmount = Math.floor(npc.maxHp * 0.7)
+              npc.hp = Math.min(npc.maxHp, npc.hp + healAmount)
+              setBattleLog((logs) => [...logs, `${npc.name}の不死鳥再生!`])
+            } else if (skill.id === "rainbow-aura") {
+              npc.buffedStats.power += 20
+              npc.buffedStats.speed += 20
+              npc.buffedStats.grip += 20
+              npc.statusEffects.push({ type: "buff", name: "虹のオーラ", duration: 3, value: 20 })
+              setBattleLog((logs) => [...logs, `${npc.name}に虹のオーラ!`])
+            }
+          }
+
+          if (skill.cooldown > 0) {
+            npc.cooldowns[skill.id] = skill.cooldown
+          }
+        }
+
+        // Process status effects at end of turn
+        allPlayers.forEach(p => {
+          if (p.isEliminated) return
+          
+          // Apply DoT damage
+          const dotEffects = p.statusEffects.filter(e => e.type === "dot")
+          dotEffects.forEach(dot => {
+            if (dot.value && dot.value > 0) {
+              p.hp = Math.max(0, p.hp - dot.value)
+              setBattleLog((logs) => [...logs, `${p.name}が${dot.name}で${dot.value}ダメージ!`])
+              if (p.hp <= 0) {
+                p.isEliminated = true
+                setBattleLog((logs) => [...logs, `${p.name}が脱落!`])
+              }
+            }
+          })
+          
+          // Reduce duration of all status effects
+          p.statusEffects = p.statusEffects.map(e => ({ ...e, duration: e.duration - 1 }))
+          
+          // Remove expired effects and log
+          const expiredEffects = p.statusEffects.filter(e => e.duration <= 0)
+          expiredEffects.forEach(e => {
+            if (e.type === "buff") {
+              setBattleLog((logs) => [...logs, `${p.name}の${e.name}効果が切れた!`])
+            } else if (e.type === "debuff") {
+              setBattleLog((logs) => [...logs, `${p.name}の${e.name}が解除された!`])
+            } else if (e.type === "dot") {
+              setBattleLog((logs) => [...logs, `${p.name}の${e.name}が治った!`])
+            }
+          })
+          p.statusEffects = p.statusEffects.filter(e => e.duration > 0)
+          
+          // Update cooldowns
+          Object.keys(p.cooldowns).forEach(key => {
+            if (p.cooldowns[key] > 0) p.cooldowns[key]--
+          })
+        })
+
+        // Check team elimination
+        newTeams.forEach(team => {
+          if (team.members.every(m => m.isEliminated) && !team.isEliminated) {
+            team.isEliminated = true
+            setBattleLog((logs) => [...logs, `${team.name}が全滅!`])
+          }
+        })
+
+        const remainingTeams = newTeams.filter(t => !t.isEliminated)
+        const playerTeam = newTeams.find(t => t.members.some(m => !m.isNpc))
+        const playerChar = allPlayers.find(p => !p.isNpc)
+
+        if (remainingTeams.length === 1) {
+          setWinningTeam(remainingTeams[0])
+          const isPlayerTeamWinner = remainingTeams[0].members.some(m => !m.isNpc)
+          if (isPlayerTeamWinner) {
+            setPlayerTeamRank(1)
+            addCoins(300)
+            const change = updateTeamRoyaleRank(1)
+            setRankChange(change)
+          } else {
+            // Calculate player team's placement
+            const eliminatedTeamsCount = newTeams.filter(t => t.isEliminated && t.id !== playerTeam?.id).length
+            const placement = 4 - eliminatedTeamsCount + (playerTeam?.isEliminated ? 1 : 0)
+            setPlayerTeamRank(placement)
+            const coinRewards: Record<number, number> = { 1: 300, 2: 150, 3: 80, 4: 30 }
+            addCoins(coinRewards[placement] || 30)
+            const change = updateTeamRoyaleRank(placement)
+            setRankChange(change)
+          }
+          setPhase("finished")
+          return newTeams
+        }
+
+        // Check if player's team is eliminated
+        if (playerTeam?.isEliminated && playerChar?.isEliminated) {
+          const eliminatedTeamsCount = newTeams.filter(t => t.isEliminated).length
+          const placement = 5 - eliminatedTeamsCount
+          setPlayerTeamRank(placement)
+          const coinRewards: Record<number, number> = { 1: 300, 2: 150, 3: 80, 4: 30 }
+          addCoins(coinRewards[placement] || 30)
+          const change = updateTeamRoyaleRank(placement)
+          setRankChange(change)
+          setPhase("result")
+          return newTeams
+        }
+
+        return newTeams
+      })
+
+      setRound((r) => r + 1)
+      setPhase("select")
+    }, 1500)
+
+    return () => clearTimeout(timeout)
+  }, [phase, addCoins, updateTeamRoyaleRank])
+
+  const getEnemyPlayers = () => {
+    return teams.flatMap(t => t.members).filter(p => p.teamId !== player?.teamId && !p.isEliminated)
+  }
+
+  if (!selectedHairRoot) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <header className="flex items-center justify-between p-4 border-b border-border bg-card">
+          <Button variant="ghost" size="icon" onClick={() => onNavigate("home")}>
+            <ArrowLeft className="w-6 h-6" />
+          </Button>
+          <h1 className="text-xl font-bold text-foreground">チームバトルロワイヤル</h1>
+          <div />
+        </header>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="text-center">
+            <p className="text-muted-foreground mb-4">毛根を選択してください</p>
+            <Button onClick={() => onNavigate("collection")}>コレクションへ</Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="flex items-center justify-between p-4 border-b border-border bg-card">
+        <Button variant="ghost" size="icon" onClick={() => onNavigate("home")}>
+          <ArrowLeft className="w-6 h-6" />
+        </Button>
+        <div className="text-center">
+          <h1 className="text-xl font-bold text-foreground">チームバトルロワイヤル</h1>
+          <div className="flex items-center justify-center gap-1 mt-1">
+            <Trophy className="w-4 h-4" style={{ color: getRankColor(currentRank.tier) }} />
+            <span className="text-sm font-medium" style={{ color: getRankColor(currentRank.tier) }}>
+              {currentRank.name}
+            </span>
+          </div>
+        </div>
+        <div className="text-sm">
+          {phase !== "waiting" && phase !== "finished" && (
+            <span className="bg-primary text-primary-foreground px-2 py-1 rounded">R{round}</span>
+          )}
+        </div>
+      </header>
+
+      <div className="flex-1 overflow-hidden">
+        <AnimatePresence mode="wait">
+          {phase === "waiting" && (
+            <motion.div
+              key="waiting"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="h-full flex flex-col items-center justify-center p-4"
+            >
+              <div className="text-center mb-8">
+                <Users className="w-16 h-16 mx-auto mb-4 text-primary" />
+                <h2 className="text-2xl font-bold text-foreground mb-2">4チーム対抗戦</h2>
+                <p className="text-muted-foreground">3人1チームで戦うバトルロワイヤル</p>
+              </div>
+
+              <div className="bg-card rounded-xl p-4 mb-6 border border-border w-full max-w-sm">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-14 h-14 rounded-full flex items-center justify-center text-2xl"
+                    style={{ backgroundColor: `${RARITY_COLORS[selectedHairRoot.rarity]}20` }}
+                  >
+                    {selectedHairRoot.emoji}
+                  </div>
+                  <div>
+                    <p className="font-bold text-foreground">{selectedHairRoot.name}</p>
+                    <p className="text-sm text-muted-foreground">Lv.{selectedHairRoot.level}</p>
+                  </div>
+                </div>
+              </div>
+
+              <Button onClick={startBattle} size="lg" className="w-full max-w-sm bg-primary">
+                チーム戦開始
+              </Button>
+            </motion.div>
+          )}
+
+          {(phase === "select" || phase === "action") && (
+            <motion.div
+              key="battle"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="h-full flex flex-col p-4"
+            >
+              {/* Teams Display */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {teams.map((team) => (
+                  <div
+                    key={team.id}
+                    className={`bg-card rounded-lg p-2 border-2 ${team.isEliminated ? "opacity-50" : ""}`}
+                    style={{ borderColor: team.color }}
+                  >
+                    <p className="text-xs font-bold mb-1" style={{ color: team.color }}>{team.name}</p>
+                    <div className="space-y-1">
+                      {team.members.map((member) => (
+                        <div
+                          key={member.id}
+                          className={`flex items-center gap-1 text-xs ${member.isEliminated ? "line-through opacity-50" : ""}`}
+                        >
+                          <span>{member.hairRoot.emoji}</span>
+                          {member.hairRoot.element && (
+                            <span 
+                              className="w-4 h-4 rounded-full text-[8px] flex items-center justify-center text-white font-bold"
+                              style={{ backgroundColor: ELEMENT_COLORS[member.hairRoot.element] }}
+                            >
+                              {ELEMENT_NAMES[member.hairRoot.element][0]}
+                            </span>
+                          )}
+                          <span className={`truncate ${!member.isNpc ? "text-primary font-bold" : "text-foreground"}`}>
+                            {member.name}
+                          </span>
+                          <span className="ml-auto text-muted-foreground">{member.hp}/{member.maxHp}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Battle Log */}
+              <div
+                ref={logRef}
+                className="bg-card rounded-lg p-3 mb-4 max-h-32 overflow-y-auto border border-border"
+              >
+                <div className="space-y-1">
+                  {battleLog.map((log, i) => (
+                    <p
+                      key={i}
+                      className={`text-xs ${
+                        log.includes("脱落") || log.includes("全滅") ? "text-destructive font-medium" :
+                        log.includes("回復") ? "text-accent font-medium" :
+                        log.includes(playerName) ? "text-primary" :
+                        "text-muted-foreground"
+                      }`}
+                    >
+                      <span className="text-muted-foreground/50 mr-1">[{i + 1}]</span>
+                      {log}
+                    </p>
+                  ))}
+                </div>
+              </div>
+
+              {/* Player Actions */}
+              {phase === "select" && player && !player.isEliminated && (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-foreground">アクション選択:</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Normal Attack */}
+                    <Button
+                      variant={selectedSkill?.id === "normal-attack" ? "default" : "outline"}
+                      className={`h-auto py-2 px-3 text-left ${selectedSkill?.id === "normal-attack" ? "" : "bg-transparent"}`}
+                      onClick={() => setSelectedSkill({
+                        id: "normal-attack",
+                        name: "通常攻撃",
+                        description: "基本的な攻撃",
+                        damage: 15,
+                        cooldown: 0,
+                        type: "attack"
+                      })}
+                    >
+                      <div className="w-full">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Swords className="w-3 h-3" />
+                          <span className="text-xs font-medium">通常攻撃</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">威力: 15</span>
+                      </div>
+                    </Button>
+                    
+                    {/* Normal Defense */}
+                    <Button
+                      variant={selectedSkill?.id === "normal-defense" ? "default" : "outline"}
+                      className={`h-auto py-2 px-3 text-left ${selectedSkill?.id === "normal-defense" ? "" : "bg-transparent"}`}
+                      onClick={() => setSelectedSkill({
+                        id: "normal-defense",
+                        name: "通常防御",
+                        description: "基本的な防御",
+                        damage: 0,
+                        cooldown: 0,
+                        type: "defense"
+                      })}
+                    >
+                      <div className="w-full">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Shield className="w-3 h-3" />
+                          <span className="text-xs font-medium">通常防御</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">軽減: 20%</span>
+                      </div>
+                    </Button>
+                    
+                    {/* Skills */}
+                    {player.hairRoot.skills.map((skill) => {
+                      const isOnCooldown = player.cooldowns[skill.id] && player.cooldowns[skill.id] > 0
+                      return (
+                        <Button
+                          key={skill.id}
+                          variant={selectedSkill?.id === skill.id ? "default" : "outline"}
+                          className={`h-auto py-2 px-3 text-left ${selectedSkill?.id === skill.id ? "" : "bg-transparent"}`}
+                          disabled={isOnCooldown}
+                          onClick={() => setSelectedSkill(skill)}
+                        >
+                          <div className="w-full">
+                            <div className="flex items-center gap-1 mb-1">
+                              {(skill.type === "attack" || skill.type === "aoe" || skill.type === "dot") && <Swords className="w-3 h-3" />}
+                              {skill.type === "defense" && <Shield className="w-3 h-3" />}
+                              {(skill.type === "special" || skill.type === "team_heal") && <Zap className="w-3 h-3" />}
+                              <span className="text-xs font-medium">{skill.name}</span>
+                            </div>
+                            {isOnCooldown ? (
+                              <span className="text-xs text-destructive">CT: {player.cooldowns[skill.id]}</span>
+                            ) : (
+                              <span className="text-[10px] text-muted-foreground">
+                                {skill.type === "attack" && `威力: ${skill.damage}`}
+                                {skill.type === "aoe" && `範囲${skill.maxTargets}体`}
+                                {skill.type === "dot" && `${skill.damage}+${skill.dotEffect?.name}`}
+                                {skill.type === "defense" && "防御"}
+                                {skill.type === "team_heal" && "味方回復"}
+                                {skill.type === "special" && "特殊"}
+                              </span>
+                            )}
+                          </div>
+                        </Button>
+                      )
+                    })}
+                  </div>
+
+                  {/* Skill Detail Box */}
+                  {selectedSkill && (
+                    <div className="bg-muted/50 rounded-lg p-3 mb-3 text-left">
+                      <div className="flex items-center gap-2 mb-1">
+                        {selectedSkill.type === "attack" || selectedSkill.type === "aoe" || selectedSkill.type === "dot" ? <Swords className="w-4 h-4 text-destructive" /> : 
+                         selectedSkill.type === "defense" ? <Shield className="w-4 h-4 text-primary" /> : 
+                         <Zap className="w-4 h-4 text-accent" />}
+                        <span className="font-bold text-sm text-foreground">{selectedSkill.name}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">{selectedSkill.description}</p>
+                      <div className="flex flex-wrap gap-2 text-[10px]">
+                        {selectedSkill.damage > 0 && (
+                          <span className="bg-destructive/20 text-destructive px-2 py-0.5 rounded">威力: {selectedSkill.damage}</span>
+                        )}
+                        {selectedSkill.cooldown > 0 && (
+                          <span className="bg-muted text-muted-foreground px-2 py-0.5 rounded">CT: {selectedSkill.cooldown}ターン</span>
+                        )}
+                        {selectedSkill.type === "aoe" && (
+                          <span className="bg-primary/20 text-primary px-2 py-0.5 rounded">範囲: 最大{selectedSkill.maxTargets || 3}体</span>
+                        )}
+                        {selectedSkill.type === "dot" && selectedSkill.dotEffect && (
+                          <span className="bg-accent/20 text-accent px-2 py-0.5 rounded">{selectedSkill.dotEffect.name}: {selectedSkill.dotEffect.damage}/ターン x{selectedSkill.dotEffect.duration}</span>
+                        )}
+                        {selectedSkill.type === "defense" && (
+                          <span className="bg-primary/20 text-primary px-2 py-0.5 rounded">ダメージ軽減</span>
+                        )}
+                        {selectedSkill.type === "team_heal" && (
+                          <span className="bg-accent/20 text-accent px-2 py-0.5 rounded">味方全体回復</span>
+                        )}
+                        {selectedSkill.type === "special" && (
+                          <span className="bg-accent/20 text-accent px-2 py-0.5 rounded">特殊効果</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedSkill && (selectedSkill.type === "attack" || selectedSkill.type === "dot") && (
+                    <>
+                      <p className="text-sm font-medium text-foreground">ターゲット選択:</p>
+                      <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+                        {getEnemyPlayers().map((enemy) => (
+                          <Button
+                            key={enemy.id}
+                            variant={selectedTarget === enemy.id ? "default" : "outline"}
+                            className={`h-auto py-2 ${selectedTarget === enemy.id ? "" : "bg-transparent"}`}
+                            onClick={() => setSelectedTarget(enemy.id)}
+                          >
+                            <div className="text-center w-full">
+                              <div className="text-lg">{enemy.hairRoot.emoji}</div>
+                              <p className="text-xs truncate">{enemy.name}</p>
+                              <p className="text-xs text-muted-foreground">{enemy.hp}HP</p>
+                            </div>
+                          </Button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {selectedSkill && selectedSkill.type === "aoe" && (
+                    <>
+                      <p className="text-sm font-medium text-foreground">ターゲット選択 (最大{selectedSkill.maxTargets}体):</p>
+                      <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+                        {getEnemyPlayers().map((enemy) => (
+                          <Button
+                            key={enemy.id}
+                            variant={selectedTargets.includes(enemy.id) ? "default" : "outline"}
+                            className={`h-auto py-2 ${selectedTargets.includes(enemy.id) ? "" : "bg-transparent"}`}
+                            onClick={() => {
+                              setSelectedTargets(prev => {
+                                if (prev.includes(enemy.id)) {
+                                  return prev.filter(id => id !== enemy.id)
+                                }
+                                if (prev.length >= (selectedSkill.maxTargets || 2)) {
+                                  return [...prev.slice(1), enemy.id]
+                                }
+                                return [...prev, enemy.id]
+                              })
+                            }}
+                          >
+                            <div className="text-center w-full">
+                              <div className="text-lg">{enemy.hairRoot.emoji}</div>
+                              <p className="text-xs truncate">{enemy.name}</p>
+                              <p className="text-xs text-muted-foreground">{enemy.hp}HP</p>
+                            </div>
+                          </Button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  <Button
+                    onClick={executePlayerAction}
+                    disabled={
+                      !selectedSkill || 
+                      ((selectedSkill.type === "attack" || selectedSkill.type === "dot") && selectedTarget === null) ||
+                      (selectedSkill.type === "aoe" && selectedTargets.length === 0)
+                    }
+                    className="w-full bg-primary"
+                  >
+                    実行
+                  </Button>
+                </div>
+              )}
+
+              {phase === "action" && (
+                <div className="flex-1 flex items-center justify-center">
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                    className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full"
+                  />
+                </div>
+              )}
+            </motion.div>
+          )}
+
+          {phase === "result" && (
+            <motion.div
+              key="result"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex-1 flex flex-col items-center justify-center p-4"
+            >
+              <div className="text-center">
+                <h2 className="text-3xl font-bold text-destructive mb-4">チーム敗退...</h2>
+                <p className="text-xl text-foreground mb-2">第{playerTeamRank}位</p>
+                <p className="text-secondary mb-2">
+                  +{{ 1: 300, 2: 150, 3: 80, 4: 30 }[playerTeamRank] || 30}コイン獲得!
+                </p>
+                {rankChange !== null && (
+                  <div className="mb-4">
+                    <span className="text-lg font-bold" style={{ color: getRankColor(currentRank.tier) }}>
+                      {currentRank.name}
+                    </span>
+                    <span className={`ml-2 font-medium ${rankChange >= 0 ? "text-green-500" : "text-red-500"}`}>
+                      {rankChange >= 0 ? "+" : ""}{rankChange} RP
+                    </span>
+                  </div>
+                )}
+                <Button onClick={() => onNavigate("home")} className="mt-6 bg-primary">
+                  ホームに戻る
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {phase === "finished" && winningTeam && (
+            <motion.div
+              key="finished"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex-1 flex flex-col items-center justify-center p-4"
+            >
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 0.5, repeat: Number.POSITIVE_INFINITY }}
+              >
+                <Crown className="w-20 h-20 mb-4" style={{ color: winningTeam.color }} />
+              </motion.div>
+              <h2 className="text-3xl font-bold text-foreground mb-2">
+                {winningTeam.members.some(m => !m.isNpc) ? "優勝!" : `${winningTeam.name}の勝利!`}
+              </h2>
+              
+              {winningTeam.members.some(m => !m.isNpc) ? (
+                <>
+                  <p className="text-xl text-secondary mt-4">+300コイン獲得!</p>
+                  {rankChange !== null && (
+                    <div className="mt-2">
+                      <span className="text-lg font-bold" style={{ color: getRankColor(currentRank.tier) }}>
+                        {currentRank.name}
+                      </span>
+                      <span className="ml-2 font-medium text-green-500">+{rankChange} RP</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="mt-4">
+                  <p className="text-muted-foreground">あなたのチーム順位: 第{playerTeamRank}位</p>
+                  <p className="text-secondary mt-1">
+                    +{{ 1: 300, 2: 150, 3: 80, 4: 30 }[playerTeamRank] || 30}コイン獲得!
+                  </p>
+                  {rankChange !== null && (
+                    <div className="mt-2">
+                      <span className="text-lg font-bold" style={{ color: getRankColor(currentRank.tier) }}>
+                        {currentRank.name}
+                      </span>
+                      <span className={`ml-2 font-medium ${rankChange >= 0 ? "text-green-500" : "text-red-500"}`}>
+                        {rankChange >= 0 ? "+" : ""}{rankChange} RP
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <Button onClick={() => onNavigate("home")} className="mt-8 bg-primary">
+                ホームに戻る
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}

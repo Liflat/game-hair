@@ -1,0 +1,12 @@
+export type Screen = 
+  | "splash"
+  | "home"
+  | "gacha"
+  | "collection"
+  | "ranking"
+  | "training"
+  | "matchmaking"
+  | "battle"
+  | "battle-royale"
+  | "team-royale"
+  | "profile"
