@@ -946,14 +946,14 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                   initial={{ opacity: 0.4 }}
                   animate={{ opacity: [0.35, 0.65, 0.35], scale: [1, 1.08, 1] }}
                   transition={{ duration: 1.8, repeat: Number.POSITIVE_INFINITY }}
-                  className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.35),rgba(0,0,0,0.85))]"
+                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.35),rgba(0,0,0,0.85))]"
                 />
                 <motion.div
                   aria-hidden="true"
                   initial={{ y: 0, rotate: -3 }}
                   animate={{ y: [0, -8, 0], rotate: [-3, 3, -3] }}
                   transition={{ duration: 1.2, repeat: Number.POSITIVE_INFINITY }}
-                  className="absolute top-4 right-6 text-3xl"
+                  className="pointer-events-none absolute top-4 right-6 text-3xl"
                 >
                   ☠️
                 </motion.div>
