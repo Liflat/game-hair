@@ -57,6 +57,19 @@ export function getElementMatchup(attacker: Element, defender: Element): number 
   return 1.0
 }
 
+export function getElementCombatModifiers(attackerElement: Element, defenderElement: Element): { attackMod: number; defenseMod: number } {
+  // Get attack modifier (advantage when attacking)
+  const attackMod = getElementMatchup(attackerElement, defenderElement)
+  
+  // Get defense modifier (advantage when defending)
+  const defenseMod = getElementMatchup(defenderElement, attackerElement)
+  
+  return {
+    attackMod,
+    defenseMod,
+  }
+}
+
 export interface Skill {
   id: string
   name: string
@@ -470,4 +483,10 @@ export function calculateStats(hairRoot: CollectedHairRoot): { power: number; sp
     speed: Math.floor(hairRoot.speed * levelBonus),
     grip: Math.floor(hairRoot.grip * levelBonus),
   }
+}
+
+export function calculateSkillBonus(hairRoot: CollectedHairRoot): number {
+  // Skill effectiveness increases with level
+  // Returns a multiplier (1.0 at level 1, increases 15% per level)
+  return 1 + (hairRoot.level - 1) * 0.15
 }
