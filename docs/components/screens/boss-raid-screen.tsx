@@ -468,7 +468,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         }
         setPhase("finished")
         setIsExecuting(false)
-        return prev
+        return newPlayers
       }
 
       const skills = boss.hairRoot.skills
