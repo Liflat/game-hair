@@ -367,6 +367,8 @@ export interface CollectedHairRoot extends HairRoot {
   level: number
   exp: number
   count: number
+  evolutionBonus?: number
+  skillBonus?: number
 }
 
 export interface GameState {
@@ -470,4 +472,12 @@ export function calculateStats(hairRoot: CollectedHairRoot): { power: number; sp
     speed: Math.floor(hairRoot.speed * levelBonus),
     grip: Math.floor(hairRoot.grip * levelBonus),
   }
+}
+
+export function calculateSkillBonus(hairRoot: CollectedHairRoot): number {
+  return 1 + (hairRoot.level - 1) * 0.1
+}
+
+export function getElementCombatModifiers(attacker: Element, defender: Element): { attackMod: number } {
+  return { attackMod: getElementMatchup(attacker, defender) }
 }

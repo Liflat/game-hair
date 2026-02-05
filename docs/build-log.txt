@@ -1,0 +1,25 @@
+
+> my-project@0.1.0 build
+> next build && node scripts/copy-build.js
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   笆ｲ Next.js 16.0.7 (Turbopack)
+
+   Creating an optimized production build ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ 笨・Compiled successfully in 6.1s
+   Running TypeScript ...
+Failed to compile.
+
+./components/screens/team-royale-screen.tsx:881:27
+Type error: Type 'boolean | 0' is not assignable to type 'boolean | undefined'.
+  Type '0' is not assignable to type 'boolean | undefined'.
+
+  879 |                           variant={selectedSkill?.id === skill.id ? "default" : "outline"}
+  880 |                           className={`h-auto py-2 px-3 text-left ${selectedSkill?.id === skill.id ? "" : "bg-transparent"}`}
+> 881 |                           disabled={isOnCooldown}
+      |                           ^
+  882 |                           onClick={() => setSelectedSkill(skill)}
+  883 |                         >
+  884 |                           <div className="w-full">
+Next.js build worker exited with code: 1 and signal: null
