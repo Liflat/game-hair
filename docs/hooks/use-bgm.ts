@@ -46,17 +46,22 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
   const currentBGMPath = BGM_MAP[screen]
   const resolvedBGMPath = currentBGMPath || "/bgm/home.mp3"
 
+  console.log("[BGM] Hook called - Screen:", screen, "Path:", resolvedBGMPath, "Enabled:", enabled, "Volume:", volume)
+
   // Initialize audio element
   useEffect(() => {
+    console.log("[BGM] Initializing audio element for screen:", screen, "enabled:", enabled)
     if (!audioRef.current) {
       const audio = new Audio()
       audio.loop = true
       audio.volume = volume
       audioRef.current = audio
+      console.log("[BGM] Audio element created with volume:", volume)
     } else {
       audioRef.current.volume = volume
+      console.log("[BGM] Audio volume updated to:", volume)
     }
-  }, [volume])
+  }, [volume, screen, enabled])
 
   // Unlock autoplay after first user interaction
   useEffect(() => {
@@ -65,16 +70,19 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
     const handleUnlock = () => {
       if (!audioRef.current) return
 
+      console.log("[BGM] Unlocking autoplay with:", resolvedBGMPath)
       audioRef.current.src = resolvedBGMPath
       audioRef.current
         .play()
         .then(() => {
+          console.log("[BGM] Autoplay unlocked successfully")
           setIsPlaying(true)
           setIsUnlocked(true)
           window.removeEventListener("pointerdown", handleUnlock)
           window.removeEventListener("keydown", handleUnlock)
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error("[BGM] Failed to unlock autoplay:", error)
           setIsPlaying(false)
         })
     }
@@ -90,7 +98,12 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
 
   // Change BGM when screen changes
   useEffect(() => {
-    if (!enabled || !audioRef.current || !isUnlocked) return
+    if (!enabled || !audioRef.current || !isUnlocked) {
+      console.log("[BGM] Skipping BGM change - enabled:", enabled, "hasAudio:", !!audioRef.current, "isUnlocked:", isUnlocked)
+      return
+    }
+
+    console.log("[BGM] Changing BGM to:", resolvedBGMPath)
 
     // Stop current BGM
     audioRef.current.pause()
@@ -101,10 +114,11 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
     audioRef.current
       .play()
       .then(() => {
+        console.log("[BGM] BGM playing successfully:", resolvedBGMPath)
         setIsPlaying(true)
       })
       .catch((error) => {
-        console.error("Failed to play BGM:", error)
+        console.error("[BGM] Failed to play BGM:", error, "Path:", resolvedBGMPath)
         setIsPlaying(false)
       })
 
