@@ -664,7 +664,6 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                   <p className="font-bold">{boss.grip}</p>
                 </div>
               </div>
-              <p className="text-yellow-500 text-xs mt-3">⚠️ コズミックレアは使用できません</p>
             </motion.div>
 
             <motion.div
