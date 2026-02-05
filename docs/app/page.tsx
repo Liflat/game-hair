@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react"
 import { AnimatePresence } from "framer-motion"
 import { GameProvider } from "@/lib/game-context"
+import { useBGM } from "@/hooks/use-bgm"
 import type { Screen } from "@/lib/screens"
 import type { HairRoot } from "@/lib/game-data"
 import { SplashScreen } from "@/components/screens/splash-screen"
@@ -20,6 +21,9 @@ import { ProfileScreen } from "@/components/screens/profile-screen"
 function GameApp() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("splash")
   const [battleOpponent, setBattleOpponent] = useState<{ name: string; hairRoot: HairRoot } | null>(null)
+
+  // BGMを再生
+  useBGM(currentScreen, { enabled: true, volume: 0.3 })
 
   const handleNavigate = useCallback((screen: Screen) => {
     setCurrentScreen(screen)
