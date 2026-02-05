@@ -18,6 +18,7 @@ interface BattlePlayer {
   id: number
   name: string
   hairRoot: HairRoot
+  level: number
   hp: number
   maxHp: number
   prevHp: number
@@ -75,13 +76,15 @@ function generateNpcPlayer(index: number, teamId: number, strengthMultiplier: nu
     grip: Math.floor(baseHairRoot.grip * strengthMultiplier),
   }
   
-  const stats = calculateStats({ ...scaledHairRoot, level: Math.floor(Math.random() * 5) + 1, exp: 0, count: 1 })
+  const npcLevel = Math.floor(Math.random() * 5) + 1
+  const stats = calculateStats({ ...scaledHairRoot, level: npcLevel, exp: 0, count: 1 })
   const maxHp = Math.floor((100 + stats.power + stats.grip) * strengthMultiplier)
 
   return {
     id: index + 100,
     name: NPC_NAMES[index % NPC_NAMES.length],
     hairRoot: scaledHairRoot,
+    level: npcLevel,
     hp: maxHp,
     maxHp,
     prevHp: maxHp,
@@ -120,6 +123,24 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
   const player = teams.flatMap(t => t.members).find((p) => !p.isNpc)
   const playerTeam = teams.find(t => t.members.some(m => !m.isNpc))
 
+  const getBattleStats = useCallback((battlePlayer: BattlePlayer) => {
+    return calculateStats({
+      ...battlePlayer.hairRoot,
+      level: battlePlayer.level,
+      exp: 0,
+      count: 1,
+    })
+  }, [])
+
+  const getSkillBonus = useCallback((battlePlayer: BattlePlayer) => {
+    return calculateSkillBonus({
+      ...battlePlayer.hairRoot,
+      level: battlePlayer.level,
+      exp: 0,
+      count: 1,
+    })
+  }, [])
+
   const startBattle = useCallback(() => {
     if (!selectedHairRoot) return
 
@@ -131,6 +152,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
       id: 0,
       name: playerName,
       hairRoot: selectedHairRoot,
+      level: selectedHairRoot.level || 1,
       hp: maxHp,
       maxHp,
       prevHp: maxHp,
@@ -174,7 +196,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
   }, [selectedHairRoot, strengthMultiplier, currentRank.tier, playerName])
 
   const executePlayerAction = useCallback(() => {
-    if (!selectedSkill || !player || selectedTarget === null) return
+    if (!selectedSkill || !player) return
+    if ((selectedSkill.type === "attack" || selectedSkill.type === "dot") && selectedTarget === null) return
+    if (selectedSkill.type === "aoe" && selectedTargets.length === 0) return
 
     setTeams((prev) => {
       const newTeams = prev.map(t => ({
@@ -198,7 +222,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
 
       // Execute skill
       if (selectedSkill.type === "attack") {
-        const stats = calculateStats(currentPlayer.hairRoot as any)
+        const stats = getBattleStats(currentPlayer)
         const totalPower = stats.power + currentPlayer.buffedStats.power
         const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
         let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
@@ -218,7 +242,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         }
       } else if (selectedSkill.type === "dot") {
         // DOT attack
-        const stats = calculateStats(currentPlayer.hairRoot as any)
+        const stats = getBattleStats(currentPlayer)
         const totalPower = stats.power + currentPlayer.buffedStats.power
         const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
         let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
@@ -249,7 +273,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         }
       } else if (selectedSkill.type === "defense") {
         // Apply skill bonus from training level
-        const defenseSkillBonus = calculateSkillBonus({ ...currentPlayer.hairRoot, level: currentPlayer.hairRoot.level || 1, exp: 0, count: 1 })
+        const defenseSkillBonus = getSkillBonus(currentPlayer)
         let baseDefenseValue = 20
         let duration = 1
         
@@ -301,7 +325,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           .map(id => allPlayers.find(p => p.id === id))
           .filter((t): t is BattlePlayer => t !== undefined && !t.isEliminated)
         
-        const stats = calculateStats(currentPlayer.hairRoot as any)
+        const stats = getBattleStats(currentPlayer)
         const totalPower = stats.power + currentPlayer.buffedStats.power
         
         targets.forEach(t => {
@@ -320,7 +344,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
       } else if (selectedSkill.type === "team_heal") {
         // Team heal - heal all alive teammates in team mode
         // Apply skill bonus from training level
-        const teamHealBonus = calculateSkillBonus({ ...currentPlayer.hairRoot, level: currentPlayer.hairRoot.level || 1, exp: 0, count: 1 })
+        const teamHealBonus = getSkillBonus(currentPlayer)
         const playerTeam = newTeams.find(t => t.members.some(m => !m.isNpc))
         const aliveTeammates = playerTeam?.members.filter(m => !m.isEliminated) || []
         const baseHealPercent = selectedSkill.id === "olympus-blessing" ? 1.0 : 0.5
@@ -334,7 +358,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! チーム全員回復!`])
       } else if (selectedSkill.type === "special") {
         // Apply skill bonus from training level for special skills
-        const specialSkillBonus = calculateSkillBonus({ ...currentPlayer.hairRoot, level: currentPlayer.hairRoot.level || 1, exp: 0, count: 1 })
+        const specialSkillBonus = getSkillBonus(currentPlayer)
         
         // Heal skills
         if (selectedSkill.id === "rebirth") {
@@ -414,7 +438,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
     setSelectedTarget(null)
     setSelectedTargets([])
     setPhase("action")
-  }, [selectedSkill, selectedTarget, selectedTargets, player])
+  }, [selectedSkill, selectedTarget, selectedTargets, player, getBattleStats, getSkillBonus])
 
   // NPC actions and round processing
   useEffect(() => {
@@ -444,7 +468,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           const target = enemyPlayers[Math.floor(Math.random() * enemyPlayers.length)]
 
           if (skill.type === "attack") {
-            const stats = calculateStats(npc.hairRoot as any)
+            const stats = getBattleStats(npc)
             const totalPower = stats.power + npc.buffedStats.power
             let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
             
@@ -462,7 +486,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             }
           } else if (skill.type === "dot") {
             // NPC DOT attack
-            const stats = calculateStats(npc.hairRoot as any)
+            const stats = getBattleStats(npc)
             const totalPower = stats.power + npc.buffedStats.power
             let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
             
@@ -490,7 +514,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             // NPC AOE attack - hit random enemies
             const maxTargets = skill.maxTargets || 2
             const targets = enemyPlayers.slice(0, Math.min(maxTargets, enemyPlayers.length))
-            const stats = calculateStats(npc.hairRoot as any)
+            const stats = getBattleStats(npc)
             const totalPower = stats.power + npc.buffedStats.power
             
             targets.forEach(t => {
@@ -669,7 +693,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
     }, 1500)
 
     return () => clearTimeout(timeout)
-  }, [phase, addCoins, updateTeamRoyaleRank])
+  }, [phase, addCoins, updateTeamRoyaleRank, getBattleStats])
 
   const getEnemyPlayers = () => {
     return teams.flatMap(t => t.members).filter(p => p.teamId !== player?.teamId && !p.isEliminated)
