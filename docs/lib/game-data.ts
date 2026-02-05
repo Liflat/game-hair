@@ -92,7 +92,7 @@ export interface HairRoot {
   grip: number
   emoji: string
   color: string
-  skills: [Skill, Skill]
+  skills: Skill[]
   evolvesTo?: number
 }
 
@@ -254,6 +254,13 @@ export const HAIR_ROOTS: HairRoot[] = [
     { id: "thousand-meteor", name: "サウザンドメテオ", description: "1000の隕石で敵全体を襲う", damage: 150, cooldown: 5, type: "aoe", maxTargets: 99 },
     { id: "end-world", name: "エンドワールド", description: "世界の終わりで敵一体を消滅させる", damage: 9999, cooldown: 7, type: "special" }
   ]},
+  { id: 53, name: "超次元毛根魔王ヘアグランド", rarity: "cosmic", element: "divine", description: "全次元を支配する究極の魔王。超次元の力で全てを従える", power: 100, speed: 100, grip: 100, emoji: "👑", color: "#FF1493", skills: [
+    { id: "normal-attack", name: "通常攻撃", description: "基本的な攻撃", damage: 50, cooldown: 1, type: "attack" },
+    { id: "normal-defense", name: "通常防御", description: "基本的な防御態勢", damage: 0, cooldown: 1, type: "defense" },
+    { id: "ancient-chaos", name: "エンシェントカオス", description: "古代の混沌を解放する必殺攻撃", damage: 150, cooldown: 4, type: "attack" },
+    { id: "demon-king-shell", name: "魔王の外郭", description: "魔王の堅牢な外殻で身を守る", damage: 0, cooldown: 3, type: "defense" },
+    { id: "absolute-zero", name: "アブソリュートゼロ", description: "全次元領域に絶対零度を撃ち込み全体にダメージとデバフ", damage: 100, cooldown: 5, type: "aoe", maxTargets: 8 }
+  ]},
 
   // Additional Common (5)
   { id: 33, name: "ねばねば毛根", rarity: "common", element: "water", description: "粘着質で離さない毛根", power: 9, speed: 10, grip: 18, emoji: "🍯", color: "#D97706", evolvesTo: 11, skills: [
@@ -395,6 +402,9 @@ export interface GameState {
   teamRoyaleRankPoints: number
   playerName: string
   playerTitle: string
+  bgmEnabled: boolean
+  bgmVolume: number
+  brightness: number
 }
 
 export const INITIAL_GAME_STATE: GameState = {
@@ -406,6 +416,9 @@ export const INITIAL_GAME_STATE: GameState = {
   teamRoyaleRankPoints: 0,
   playerName: "毛根マスター",
   playerTitle: "駆け出し育毛士",
+  bgmEnabled: true,
+  bgmVolume: 0.3,
+  brightness: 1,
 }
 
 export const LEVEL_UP_EXP = [0, 100, 250, 500, 800, 1200, 1700, 2300, 3000, 4000]
@@ -489,6 +502,26 @@ export function calculateStats(hairRoot: CollectedHairRoot): { power: number; sp
   }
 }
 
+// Boss Raid System
+export interface BossRaidState {
+  isActive: boolean
+  bossId: number
+  playerTeamHealth: number[]
+  bossHealth: number
+  currentTurn: number
+  log: string[]
+  rewards: { coins: number; exp: number; hairRoot?: HairRoot }
+}
+
+export const BOSS_HAIR_GRAND: HairRoot = HAIR_ROOTS.find(h => h.id === 53)!
+
+export const BOSS_RAID_CONFIG = {
+  defeatReward: {
+    coins: 1000,
+    exp: 500,
+    hairRoot: BOSS_HAIR_GRAND,
+  },
+}
 export function calculateSkillBonus(hairRoot: CollectedHairRoot): number {
   // Skill effectiveness increases with level
   // Returns a multiplier (1.0 at level 1, increases 15% per level)

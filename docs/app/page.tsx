@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react"
 import { AnimatePresence } from "framer-motion"
-import { GameProvider } from "@/lib/game-context"
+import { GameProvider, useGame } from "@/lib/game-context"
 import { useBGM } from "@/hooks/use-bgm"
 import type { Screen } from "@/lib/screens"
 import type { HairRoot } from "@/lib/game-data"
@@ -16,14 +16,16 @@ import { MatchmakingScreen } from "@/components/screens/matchmaking-screen"
 import { BattleScreen } from "@/components/screens/battle-screen"
 import { BattleRoyaleScreen } from "@/components/screens/battle-royale-screen"
 import { TeamRoyaleScreen } from "@/components/screens/team-royale-screen"
+import { BossRaidScreen } from "@/components/screens/boss-raid-screen"
 import { ProfileScreen } from "@/components/screens/profile-screen"
 
 function GameApp() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("splash")
   const [battleOpponent, setBattleOpponent] = useState<{ name: string; hairRoot: HairRoot } | null>(null)
+  const { bgmEnabled, bgmVolume, brightness } = useGame()
 
   // BGMを再生
-  useBGM(currentScreen, { enabled: true, volume: 0.3 })
+  useBGM(currentScreen, { enabled: bgmEnabled, volume: bgmVolume })
 
   const handleNavigate = useCallback((screen: Screen) => {
     setCurrentScreen(screen)
@@ -35,7 +37,7 @@ function GameApp() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ filter: `brightness(${brightness})` }}>
       <AnimatePresence mode="wait">
         {currentScreen === "splash" && (
           <SplashScreen key="splash" onComplete={() => handleNavigate("home")} />
@@ -74,6 +76,9 @@ function GameApp() {
         )}
         {currentScreen === "team-royale" && (
           <TeamRoyaleScreen key="team-royale" onNavigate={handleNavigate} />
+        )}
+        {currentScreen === "boss-raid" && (
+          <BossRaidScreen key="boss-raid" onNavigate={handleNavigate} />
         )}
         {currentScreen === "profile" && (
           <ProfileScreen key="profile" onNavigate={handleNavigate} />

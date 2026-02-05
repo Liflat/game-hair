@@ -7,7 +7,9 @@ import { getRankColor } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, User, Trophy, Swords, Crown, Users, Check, Edit2 } from "lucide-react"
+import { Slider } from "@/components/ui/slider"
+import { Switch } from "@/components/ui/switch"
+import { ArrowLeft, User, Trophy, Swords, Crown, Users, Check, Edit2, Volume2, Sun } from "lucide-react"
 
 interface ProfileScreenProps {
   onNavigate: (screen: Screen) => void
@@ -32,6 +34,12 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
     updateProfile, 
     collection, 
     coins,
+    bgmEnabled,
+    bgmVolume,
+    brightness,
+    setBgmEnabled,
+    setBgmVolume,
+    setBrightness,
     getBattleRank,
     getRoyaleRank,
     getTeamRoyaleRank
@@ -125,6 +133,57 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
             <div className="bg-muted rounded-xl p-4 text-center">
               <p className="text-2xl font-bold text-secondary">{coins}</p>
               <p className="text-xs text-muted-foreground">所持コイン</p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Settings */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-card rounded-2xl p-6 border border-border"
+        >
+          <h3 className="text-lg font-bold text-foreground mb-4">設定</h3>
+
+          <div className="space-y-5">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Volume2 className="w-5 h-5 text-primary" />
+                <span className="text-sm font-medium text-foreground">BGM</span>
+              </div>
+              <Switch checked={bgmEnabled} onCheckedChange={setBgmEnabled} />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">音量</span>
+                <span className="text-foreground">{Math.round(bgmVolume * 100)}%</span>
+              </div>
+              <Slider
+                value={[bgmVolume]}
+                min={0}
+                max={1}
+                step={0.05}
+                onValueChange={(value) => setBgmVolume(value[0])}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground flex items-center gap-2">
+                  <Sun className="w-4 h-4" />
+                  明るさ
+                </span>
+                <span className="text-foreground">{Math.round(brightness * 100)}%</span>
+              </div>
+              <Slider
+                value={[brightness]}
+                min={0.6}
+                max={1.4}
+                step={0.05}
+                onValueChange={(value) => setBrightness(value[0])}
+              />
             </div>
           </div>
         </motion.div>

@@ -12,6 +12,8 @@ import {
   EVOLUTION_COST,
   getRankFromPoints,
   calculatePointsChange,
+  BOSS_HAIR_GRAND,
+  BOSS_RAID_CONFIG,
 } from "./game-data"
 
 interface GameContextType extends GameState {
@@ -30,6 +32,10 @@ interface GameContextType extends GameState {
   updateRoyaleRank: (placement: number) => number
   updateTeamRoyaleRank: (teamPlacement: number) => number
   updateProfile: (name: string, title: string) => void
+  setBgmEnabled: (enabled: boolean) => void
+  setBgmVolume: (volume: number) => void
+  setBrightness: (brightness: number) => void
+  defeatBossRaid: () => void
 }
 
 const GameContext = createContext<GameContextType | null>(null)
@@ -214,6 +220,58 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  const setBgmEnabled = useCallback((enabled: boolean) => {
+    setState((prev) => ({
+      ...prev,
+      bgmEnabled: enabled,
+    }))
+  }, [])
+
+  const setBgmVolume = useCallback((volume: number) => {
+    const nextVolume = Math.max(0, Math.min(1, volume))
+    setState((prev) => ({
+      ...prev,
+      bgmVolume: nextVolume,
+    }))
+  }, [])
+
+  const setBrightness = useCallback((brightness: number) => {
+    const nextBrightness = Math.max(0.6, Math.min(1.4, brightness))
+    setState((prev) => ({
+      ...prev,
+      brightness: nextBrightness,
+    }))
+  }, [])
+
+  const defeatBossRaid = useCallback(() => {
+    setState((prev) => {
+      const existingCosmicHair = prev.collection.find((h) => h.id === BOSS_HAIR_GRAND.id)
+      let newCollection = [...prev.collection]
+      
+      if (existingCosmicHair) {
+        newCollection = newCollection.map((h) =>
+          h.id === BOSS_HAIR_GRAND.id
+            ? { ...h, count: h.count + 1 }
+            : h
+        )
+      } else {
+        const newHairRoot: CollectedHairRoot = {
+          ...BOSS_HAIR_GRAND,
+          level: 1,
+          exp: 0,
+          count: 1,
+        }
+        newCollection = [...newCollection, newHairRoot]
+      }
+
+      return {
+        ...prev,
+        coins: prev.coins + BOSS_RAID_CONFIG.defeatReward.coins,
+        collection: newCollection,
+      }
+    })
+  }, [])
+
   const evolveHairRoot = useCallback(
     (id: number): CollectedHairRoot | null => {
       const hairRoot = state.collection.find((h) => h.id === id)
@@ -302,6 +360,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         updateRoyaleRank,
         updateTeamRoyaleRank,
         updateProfile,
+        setBgmEnabled,
+        setBgmVolume,
+        setBrightness,
+        defeatBossRaid,
       }}
     >
       {children}
