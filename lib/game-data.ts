@@ -57,6 +57,9 @@ export function getElementMatchup(attacker: Element, defender: Element): number 
   return 1.0
 }
 
+// Alias for backward compatibility
+export const getElementCombatModifiers = getElementMatchup
+
 export interface Skill {
   id: string
   name: string
@@ -470,4 +473,9 @@ export function calculateStats(hairRoot: CollectedHairRoot): { power: number; sp
     speed: Math.floor(hairRoot.speed * levelBonus),
     grip: Math.floor(hairRoot.grip * levelBonus),
   }
+}
+
+export function calculateSkillBonus(hairRoot: CollectedHairRoot): number {
+  const levelBonus = 1 + (hairRoot.level - 1) * 0.15
+  return levelBonus
 }
