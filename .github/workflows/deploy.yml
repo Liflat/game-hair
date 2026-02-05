@@ -5,11 +5,23 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -29,31 +41,24 @@ jobs:
       - name: Build
         run: cd docs && pnpm build
 
-      - name: Copy build output to docs folder
+      - name: Add .nojekyll
         run: |
-          # Copy build output from out directory to root of docs
           if [ -d "docs/out" ]; then
-            # Remove old files but keep source files
-            rm -rf docs/index.html docs/_next
-            
-            # Copy everything from out to docs root
-            cp -r docs/out/* docs/
-            
-            # Cleanup outfolder
-            rm -rf docs/out
-          else
-            echo "Build output directory not found at docs/out"
-            ls -la docs/
-            exit 1
+            touch docs/out/.nojekyll
           fi
-          
-          # Ensure .nojekyll exists
-          touch docs/.nojekyll
 
-      - name: Push to GitHub
-        run: |
-          git config --global user.email "action@github.com"
-          git config --global user.name "GitHub Action"
-          git add docs/
-          git commit -m "Deploy Next.js app [skip ci]" || true
-          git push origin main
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
