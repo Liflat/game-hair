@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, getRankColor, getNpcStrengthMultiplier, getElementCombatModifiers, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, getRankColor, getNpcStrengthMultiplier, getElementMatchup, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Users, Trophy } from "lucide-react"
@@ -192,8 +192,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
       // Helper function for element damage modifier
       const getElementDamageMod = (attackerHairRoot: HairRoot, defenderHairRoot: HairRoot): number => {
         if (!attackerHairRoot.element || !defenderHairRoot.element) return 1.0
-        const mods = getElementCombatModifiers(attackerHairRoot.element, defenderHairRoot.element)
-        return mods.attackMod
+        return getElementMatchup(attackerHairRoot.element, defenderHairRoot.element)
       }
 
       // Execute skill
@@ -249,7 +248,6 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         }
       } else if (selectedSkill.type === "defense") {
         // Apply skill bonus from training level
-        const defenseSkillBonus = calculateSkillBonus({ ...currentPlayer.hairRoot, level: currentPlayer.hairRoot.level || 1, exp: 0, count: 1 })
         let baseDefenseValue = 20
         let duration = 1
         
@@ -286,7 +284,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         }
         
         // Apply skill bonus (cap at 100%)
-        const finalDefenseValue = Math.min(100, Math.floor(baseDefenseValue * defenseSkillBonus))
+        const finalDefenseValue = Math.min(100, baseDefenseValue)
         
         currentPlayer.statusEffects.push({
           type: "buff",
@@ -320,11 +318,10 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
       } else if (selectedSkill.type === "team_heal") {
         // Team heal - heal all alive teammates in team mode
         // Apply skill bonus from training level
-        const teamHealBonus = calculateSkillBonus({ ...currentPlayer.hairRoot, level: currentPlayer.hairRoot.level || 1, exp: 0, count: 1 })
         const playerTeam = newTeams.find(t => t.members.some(m => !m.isNpc))
         const aliveTeammates = playerTeam?.members.filter(m => !m.isEliminated) || []
         const baseHealPercent = selectedSkill.id === "olympus-blessing" ? 1.0 : 0.5
-        const healPercent = baseHealPercent * teamHealBonus
+        const healPercent = baseHealPercent
         
         aliveTeammates.forEach(teammate => {
           const healAmount = Math.floor(teammate.maxHp * healPercent)
@@ -334,7 +331,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! チーム全員回復!`])
       } else if (selectedSkill.type === "special") {
         // Apply skill bonus from training level for special skills
-        const specialSkillBonus = calculateSkillBonus({ ...currentPlayer.hairRoot, level: currentPlayer.hairRoot.level || 1, exp: 0, count: 1 })
+        const specialSkillBonus = 1
         
         // Heal skills
         if (selectedSkill.id === "rebirth") {
