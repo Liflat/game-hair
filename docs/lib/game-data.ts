@@ -255,11 +255,9 @@ export const HAIR_ROOTS: HairRoot[] = [
     { id: "end-world", name: "エンドワールド", description: "世界の終わりで敵一体を消滅させる", damage: 9999, cooldown: 7, type: "special" }
   ]},
   { id: 53, name: "超次元毛根魔王ヘアグランド", rarity: "cosmic", element: "divine", description: "全次元を支配する究極の魔王。超次元の力で全てを従える", power: 100, speed: 100, grip: 100, emoji: "👑", color: "#FF1493", skills: [
-    { id: "normal-attack", name: "通常攻撃", description: "基本的な攻撃", damage: 50, cooldown: 1, type: "attack" },
-    { id: "normal-defense", name: "通常防御", description: "基本的な防御態勢", damage: 0, cooldown: 1, type: "defense" },
-    { id: "ancient-chaos", name: "エンシェントカオス", description: "古代の混沌を解放する必殺攻撃", damage: 150, cooldown: 4, type: "attack" },
-    { id: "demon-king-shell", name: "魔王の外郭", description: "魔王の堅牢な外殻で身を守る", damage: 0, cooldown: 3, type: "defense" },
-    { id: "absolute-zero", name: "アブソリュートゼロ", description: "全次元領域に絶対零度を撃ち込み全体にダメージとデバフ", damage: 100, cooldown: 5, type: "aoe", maxTargets: 8 }
+    { id: "ancient-chaos", name: "エンシェントカオス", description: "古代の混沌を解放する必殺攻撃。威力150", damage: 150, cooldown: 4, type: "attack" },
+    { id: "demon-king-shell", name: "魔王の外郭", description: "魔王の堅牢な外殻で身を守る。防御率90%", damage: 0, cooldown: 3, type: "defense" },
+    { id: "absolute-zero", name: "アブソリュートゼロ", description: "全次元領域に絶対零度を撃ち込む。全体に威力100のダメージと全ステータス20%ダウン", damage: 100, cooldown: 5, type: "aoe", maxTargets: 99 }
   ]},
 
   // Additional Common (5)
@@ -514,6 +512,15 @@ export interface BossRaidState {
 }
 
 export const BOSS_HAIR_GRAND: HairRoot = HAIR_ROOTS.find(h => h.id === 53)!
+
+// ボス戦用の独立したスキルセット
+export const BOSS_RAID_SKILLS: Skill[] = [
+  { id: "normal-attack", name: "通常攻撃", description: "基本的な攻撃", damage: 50, cooldown: 1, type: "attack" },
+  { id: "normal-defense", name: "通常防御", description: "基本的な防御態勢", damage: 0, cooldown: 1, type: "defense" },
+  { id: "ancient-chaos-raid", name: "エンシェントカオス", description: "古代の混沌を解放する必殺攻撃", damage: 150, cooldown: 4, type: "attack" },
+  { id: "demon-king-shell-raid", name: "魔王の外郭", description: "魔王の堅牢な外殻で身を守る", damage: 0, cooldown: 3, type: "defense" },
+  { id: "absolute-zero-raid", name: "アブソリュートゼロ", description: "全次元領域に絶対零度を撃ち込み全体にダメージとデバフ", damage: 100, cooldown: 5, type: "aoe", maxTargets: 8 }
+]
 
 export const BOSS_RAID_CONFIG = {
   defeatReward: {
