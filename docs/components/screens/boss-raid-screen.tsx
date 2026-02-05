@@ -959,37 +959,39 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                 </motion.div>
               </>
             )}
-            <div className="text-5xl mb-4">{boss_player && boss_player.hp <= 0 ? "🎉" : "☠️"}</div>
-            <h2 className="text-2xl font-bold mb-4">
-              {boss_player && boss_player.hp <= 0 ? "勝利！" : "敗北..."}
-            </h2>
-            {boss_player && boss_player.hp <= 0 && (
-              <div className="bg-black/20 rounded-lg p-4 mb-4">
-                <p className="mb-2">ヘアグランドを倒した！</p>
-                <p className="text-xl font-bold mb-2">👑 コズミックレア</p>
-                <p className="text-lg">超次元毛根魔王ヘアグランド</p>
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm">+1000 コイン</p>
-                  <p className="text-sm">+500 経験値</p>
+            <div className="relative z-10">
+              <div className="text-5xl mb-4">{boss_player && boss_player.hp <= 0 ? "🎉" : "☠️"}</div>
+              <h2 className="text-2xl font-bold mb-4">
+                {boss_player && boss_player.hp <= 0 ? "勝利！" : "敗北..."}
+              </h2>
+              {boss_player && boss_player.hp <= 0 && (
+                <div className="bg-black/20 rounded-lg p-4 mb-4">
+                  <p className="mb-2">ヘアグランドを倒した！</p>
+                  <p className="text-xl font-bold mb-2">👑 コズミックレア</p>
+                  <p className="text-lg">超次元毛根魔王ヘアグランド</p>
+                  <div className="mt-4 space-y-2">
+                    <p className="text-sm">+1000 コイン</p>
+                    <p className="text-sm">+500 経験値</p>
+                  </div>
                 </div>
-              </div>
-            )}
-            {boss_player && boss_player.hp > 0 && (
-              <div className="bg-black/20 rounded-lg p-4 mb-4">
-                <p className="text-2xl font-bold mb-2">毛根が死滅した</p>
-                <p className="text-sm">魔王ヘアグランドに敗北した...</p>
-              </div>
-            )}
-            <Button
-              className={`w-full ${
-                boss_player && boss_player.hp <= 0
-                  ? "bg-white text-green-600 hover:bg-gray-100"
-                  : "bg-white text-red-600 hover:bg-gray-100"
-              }`}
-              onClick={() => onNavigate("home")}
-            >
-              ホームに戻る
-            </Button>
+              )}
+              {boss_player && boss_player.hp > 0 && (
+                <div className="bg-black/20 rounded-lg p-4 mb-4">
+                  <p className="text-2xl font-bold mb-2">毛根が死滅した</p>
+                  <p className="text-sm">魔王ヘアグランドに敗北した...</p>
+                </div>
+              )}
+              <Button
+                className={`w-full ${
+                  boss_player && boss_player.hp <= 0
+                    ? "bg-white text-green-600 hover:bg-gray-100"
+                    : "bg-white text-red-600 hover:bg-gray-100"
+                }`}
+                onClick={() => onNavigate("home")}
+              >
+                ホームに戻る
+              </Button>
+            </div>
           </motion.div>
         )}
       </div>
