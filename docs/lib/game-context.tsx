@@ -330,9 +330,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
           ]
         }
 
-        // Remove if count is 0
-        newCollection = newCollection.filter((h) => h.count > 0)
-
         return { ...prev, collection: newCollection }
       })
 
