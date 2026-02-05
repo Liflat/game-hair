@@ -435,7 +435,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           if (chosenSkill.cooldown > 0) {
             ally.cooldowns = {
               ...ally.cooldowns,
-              [chosenSkill.id]: chosenSkill.cooldown
+              [chosenSkill.id]: chosenSkill.cooldown + 1
             }
           }
         })
@@ -445,18 +445,9 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       if (selectedSkill.cooldown > 0) {
         player.cooldowns = {
           ...player.cooldowns,
-          [selectedSkill.id]: selectedSkill.cooldown
+          [selectedSkill.id]: selectedSkill.cooldown + 1
         }
       }
-
-      // Reduce all cooldowns
-      newPlayers.forEach(p => {
-        Object.keys(p.cooldowns).forEach(skillId => {
-          if (p.cooldowns[skillId] > 0) {
-            p.cooldowns[skillId]--
-          }
-        })
-      })
 
       setBattleLog(prev => [...prev, ...newLog])
       return newPlayers
@@ -496,7 +487,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       if (selectedBossSkill.cooldown > 0) {
         boss.cooldowns = {
           ...boss.cooldowns,
-          [selectedBossSkill.id]: selectedBossSkill.cooldown
+          [selectedBossSkill.id]: selectedBossSkill.cooldown + 1
         }
       }
 
@@ -596,7 +587,15 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         newLog.push(`${finalDefenseValue}%ダメージ軽減!`)
       }
 
-      // Reduce all cooldowns
+      const aliveAfterBoss = newPlayers.filter(p => p.id !== 999 && !p.isEliminated)
+      if (aliveAfterBoss.length === 0) {
+        setBattleLog(prev => [...prev, ...newLog, "毛根が死滅した..."])
+        setPhase("finished")
+        setIsExecuting(false)
+        return newPlayers
+      }
+
+      // Reduce all cooldowns once per round (after boss action)
       newPlayers.forEach(p => {
         Object.keys(p.cooldowns).forEach(skillId => {
           if (p.cooldowns[skillId] > 0) {

@@ -419,7 +419,7 @@ export const BOSS_HAIR_ROOT: HairRoot = {
   id: 53,
   name: "超次元毛根魔王ヘアグランド",
   rarity: "cosmic",
-  element: "divine",
+  element: "dark",
   description: "全次元を支配する究極の魔王。超次元の力で全てを従える",
   power: 100,
   speed: 100,
