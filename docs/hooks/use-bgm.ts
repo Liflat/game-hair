@@ -11,6 +11,8 @@ export type ScreenType =
   | "battle"
   | "battle-royale"
   | "team-royale"
+  | "boss-raid"
+  | "tutorial"
   | "profile"
 
 // BGMファイルのマッピング
@@ -23,9 +25,11 @@ const BGM_MAP: Record<ScreenType, string> = {
   training: "/bgm/training.mp3",
   matchmaking: "/bgm/matchmaking.mp3",
   battle: "/bgm/battle.mp3",
-  "battle-royale": "/bgm/battle-royale.mp3",
+  "battle-royale": "/bgm/battle.mp3",
   "team-royale": "/bgm/team-royale.mp3",
-  profile: "/bgm/profile.mp3",
+  "boss-raid": "/bgm/battle.mp3",
+  tutorial: "/bgm/home.mp3",
+  profile: "/bgm/home.mp3",
 }
 
 export interface UseBGMOptions {
@@ -40,6 +44,7 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
   const [isUnlocked, setIsUnlocked] = useState(false)
 
   const currentBGMPath = BGM_MAP[screen]
+  const resolvedBGMPath = currentBGMPath || "/bgm/home.mp3"
 
   // Initialize audio element
   useEffect(() => {
@@ -60,26 +65,28 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
     const handleUnlock = () => {
       if (!audioRef.current) return
 
-      audioRef.current.src = currentBGMPath
+      audioRef.current.src = resolvedBGMPath
       audioRef.current
         .play()
         .then(() => {
           setIsPlaying(true)
           setIsUnlocked(true)
+          window.removeEventListener("pointerdown", handleUnlock)
+          window.removeEventListener("keydown", handleUnlock)
         })
         .catch(() => {
           setIsPlaying(false)
         })
     }
 
-    window.addEventListener("pointerdown", handleUnlock, { once: true })
-    window.addEventListener("keydown", handleUnlock, { once: true })
+    window.addEventListener("pointerdown", handleUnlock)
+    window.addEventListener("keydown", handleUnlock)
 
     return () => {
       window.removeEventListener("pointerdown", handleUnlock)
       window.removeEventListener("keydown", handleUnlock)
     }
-  }, [currentBGMPath, enabled, isUnlocked])
+  }, [resolvedBGMPath, enabled, isUnlocked])
 
   // Change BGM when screen changes
   useEffect(() => {
@@ -90,7 +97,7 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
     audioRef.current.currentTime = 0
 
     // Start new BGM
-    audioRef.current.src = currentBGMPath
+    audioRef.current.src = resolvedBGMPath
     audioRef.current
       .play()
       .then(() => {
@@ -106,7 +113,7 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
         audioRef.current.pause()
       }
     }
-  }, [currentBGMPath, enabled, isUnlocked])
+  }, [resolvedBGMPath, enabled, isUnlocked])
 
   const toggleBGM = useCallback(() => {
     if (!audioRef.current) return
