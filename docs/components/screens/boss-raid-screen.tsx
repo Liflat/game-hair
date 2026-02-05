@@ -78,7 +78,9 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
     // Create team players
     const teamPlayers: BattlePlayer[] = selectedTeam.map((hair, idx) => {
       const stats = calculateStats(hair)
-      const maxHp = Math.floor((100 + stats.power + stats.grip) * 1.2)
+      const power = stats?.power ?? 0
+      const grip = stats?.grip ?? 0
+      const maxHp = Math.max(1, Math.floor((100 + power + grip) * 1.2))
       return {
         id: idx,
         name: hair.name,
@@ -126,7 +128,48 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       const newLog: string[] = []
 
       // Process skill based on type
-      if (selectedSkill.type === "attack") {
+      if (selectedSkill.id === "normal-attack") {
+        // Normal attack - always 15 damage
+        if (selectedTarget !== null) {
+          const target = newPlayers.find(p => p.id === selectedTarget)
+          if (target && !target.isEliminated) {
+            const baseDamage = 15
+            const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
+            const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+            
+            // Apply defense buff if exists
+            const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+            const damageAfterDefense = defenseEffect?.value 
+              ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+              : finalDamage
+
+            target.hp = Math.max(0, target.hp - damageAfterDefense)
+            
+            const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
+            const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
+            newLog.push(`${player.name}の通常攻撃が${target.name}に${damageAfterDefense}ダメージ!${elementNote}${defenseNote}`)
+            
+            if (target.hp <= 0) {
+              target.isEliminated = true
+              if (target.id === 999) {
+                newLog.push("ヘアグランドを倒した！")
+                defeatBossRaid()
+              } else {
+                newLog.push(`${target.name}が脱落!`)
+              }
+            }
+          }
+        }
+      } else if (selectedSkill.id === "normal-defense") {
+        // Normal defense - 20% damage reduction for 1 turn
+        player.statusEffects.push({
+          type: "buff",
+          name: "防御強化",
+          duration: 1,
+          value: 20
+        })
+        newLog.push(`${player.name}は通常防御で20%のダメージを軽減!`)
+      } else if (selectedSkill.type === "attack") {
         if (selectedTarget !== null) {
           const target = newPlayers.find(p => p.id === selectedTarget)
           if (target && !target.isEliminated) {
@@ -158,9 +201,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           }
         }
       } else if (selectedSkill.type === "aoe") {
-        const targets = aliveTeamPlayers.length > 0 
-          ? [boss, ...aliveTeamPlayers]
-          : [boss]
+        // Player AOE only targets the boss
+        const targets = [boss]
 
         targets.forEach(target => {
           const baseDamage = selectedSkill.damage || 0
@@ -262,6 +304,23 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         }
       }
 
+      // Update cooldowns for this skill
+      if (selectedSkill.cooldown > 0) {
+        player.cooldowns = {
+          ...player.cooldowns,
+          [selectedSkill.id]: selectedSkill.cooldown
+        }
+      }
+
+      // Reduce all cooldowns
+      newPlayers.forEach(p => {
+        Object.keys(p.cooldowns).forEach(skillId => {
+          if (p.cooldowns[skillId] > 0) {
+            p.cooldowns[skillId]--
+          }
+        })
+      })
+
       setBattleLog(prev => [...prev, ...newLog])
       return newPlayers
     })
@@ -285,16 +344,30 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       }
 
       const skills = boss.hairRoot.skills
-      const randomSkill = skills[Math.floor(Math.random() * skills.length)]
+      
+      // Choose skill - prefer available skills, fallback to normal attack
+      const availableSkills = skills.filter(s => (boss.cooldowns[s.id] || 0) <= 0)
+      const selectedBossSkill = availableSkills.length > 0 
+        ? availableSkills[Math.floor(Math.random() * availableSkills.length)]
+        : { id: "normal-attack", name: "通常攻撃", damage: 15, cooldown: 0, type: "attack" as const, description: "" }
+      
       const newLog: string[] = []
 
-      newLog.push(`ヘアグランドが「${randomSkill.name}」を使用した！`)
+      newLog.push(`ヘアグランドが「${selectedBossSkill.name}」を使用した！`)
 
-      if (randomSkill.type === "attack" && aliveTeam.length > 0) {
+      // Update cooldown for this skill
+      if (selectedBossSkill.cooldown > 0) {
+        boss.cooldowns = {
+          ...boss.cooldowns,
+          [selectedBossSkill.id]: selectedBossSkill.cooldown
+        }
+      }
+
+      if (selectedBossSkill.id === "normal-attack" && aliveTeam.length > 0) {
         const target = aliveTeam[Math.floor(Math.random() * aliveTeam.length)]
         const stats = calculateStats(boss.hairRoot as CollectedHairRoot)
         const buffedPower = stats.power + (boss.buffedStats.power || 0)
-        const baseDamage = randomSkill.damage || 0
+        const baseDamage = 15
         const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
         const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
         
@@ -312,11 +385,42 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           target.isEliminated = true
           newLog.push(`${target.name}が脱落!`)
         }
-      } else if (randomSkill.type === "aoe") {
+      } else if (selectedBossSkill.id === "normal-defense") {
+        // Normal defense - 20% damage reduction for 1 turn
+        boss.statusEffects.push({
+          type: "buff",
+          name: "防御強化",
+          duration: 1,
+          value: 20
+        })
+        newLog.push(`20%ダメージ軽減!`)
+      } else if (selectedBossSkill.type === "attack" && aliveTeam.length > 0) {
+        const target = aliveTeam[Math.floor(Math.random() * aliveTeam.length)]
+        const stats = calculateStats(boss.hairRoot as CollectedHairRoot)
+        const buffedPower = stats.power + (boss.buffedStats.power || 0)
+        const baseDamage = selectedBossSkill.damage || 0
+        const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
+        const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+        
+        const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+        const damageAfterDefense = defenseEffect?.value 
+          ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+          : finalDamage
+
+        target.hp = Math.max(0, target.hp - damageAfterDefense)
+        
+        const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
+        newLog.push(`${target.name}に${damageAfterDefense}ダメージ!${defenseNote}`)
+        
+        if (target.hp <= 0) {
+          target.isEliminated = true
+          newLog.push(`${target.name}が脱落!`)
+        }
+      } else if (selectedBossSkill.type === "aoe") {
         aliveTeam.forEach(target => {
           const stats = calculateStats(boss.hairRoot as CollectedHairRoot)
           const buffedPower = stats.power + (boss.buffedStats.power || 0)
-          const baseDamage = randomSkill.damage || 0
+          const baseDamage = selectedBossSkill.damage || 0
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
           const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
           
@@ -335,13 +439,13 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             newLog.push(`${target.name}が脱落!`)
           }
         })
-      } else if (randomSkill.type === "defense") {
+      } else if (selectedBossSkill.type === "defense") {
         const skillBonus = calculateSkillBonus(boss.hairRoot as CollectedHairRoot)
         let defenseValue = 20
 
-        if (randomSkill.id === "normal-defense") {
+        if (selectedBossSkill.id === "normal-defense") {
           defenseValue = 20
-        } else if (randomSkill.id === "demon-king-shell-raid") {
+        } else if (selectedBossSkill.id === "demon-king-shell-raid") {
           defenseValue = 90
         }
 
@@ -354,6 +458,15 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         })
         newLog.push(`${finalDefenseValue}%ダメージ軽減!`)
       }
+
+      // Reduce all cooldowns
+      newPlayers.forEach(p => {
+        Object.keys(p.cooldowns).forEach(skillId => {
+          if (p.cooldowns[skillId] > 0) {
+            p.cooldowns[skillId]--
+          }
+        })
+      })
 
       setBattleLog(prev => [...prev, ...newLog])
       setRound(prev => prev + 1)
@@ -374,6 +487,10 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
   const currentSkills = player ? player.hairRoot.skills : []
   const aliveTeam = team_players.filter(p => !p.isEliminated)
   const allAlivePlayers = boss_player && !boss_player.isEliminated ? [boss_player, ...aliveTeam] : aliveTeam
+  
+  // Normal attack and defense skills
+  const normalAttackCooldown = player?.cooldowns["normal-attack"] || 0
+  const normalDefenseCooldown = player?.cooldowns["normal-defense"] || 0
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -472,13 +589,13 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             >
               <div className="flex justify-between items-center mb-2">
                 <span className="font-bold">{boss_player.name}</span>
-                <span className="text-sm text-muted-foreground">HP: {Math.max(0, Math.floor(boss_player.hp))}/5000</span>
+                <span className="text-sm text-muted-foreground">HP: {Math.max(0, Math.floor(boss_player.hp ?? 5000))}/5000</span>
               </div>
               <div className="w-full h-6 bg-muted rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-red-500"
                   initial={{ width: "100%" }}
-                  animate={{ width: `${(Math.max(0, boss_player.hp) / 5000) * 100}%` }}
+                  animate={{ width: `${(Math.max(0, boss_player.hp ?? 5000) / 5000) * 100}%` }}
                   transition={{ duration: 0.3 }}
                 />
               </div>
@@ -501,13 +618,13 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                 >
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs font-medium truncate">{p.name}</span>
-                    <span className="text-xs text-muted-foreground">{Math.max(0, Math.floor(p.hp))}/{p.maxHp}</span>
+                    <span className="text-xs text-muted-foreground">{Math.max(0, Math.floor(p.hp ?? p.maxHp))}/{p.maxHp}</span>
                   </div>
                   <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-green-500"
                       initial={{ width: "100%" }}
-                      animate={{ width: `${(Math.max(0, p.hp) / p.maxHp) * 100}%` }}
+                      animate={{ width: `${(Math.max(0, p.hp ?? p.maxHp) / p.maxHp) * 100}%` }}
                       transition={{ duration: 0.3 }}
                     />
                   </div>
@@ -535,25 +652,90 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                   <p className="text-sm font-bold mb-2">{player.name}のターン</p>
                   <p className="text-xs text-muted-foreground mb-3">スキルを選択してください</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {currentSkills.map((skill) => (
-                      <button
-                        key={skill.id}
-                        onClick={() => setSelectedSkill(skill)}
-                        className={`p-2 rounded-lg text-left border text-xs transition-all ${
-                          selectedSkill?.id === skill.id
-                            ? "border-primary bg-primary/20"
-                            : "border-border bg-muted hover:bg-muted/80"
-                        }`}
-                      >
-                        <p className="font-medium">{skill.name}</p>
-                        <p className="text-muted-foreground text-xs">{skill.description}</p>
-                      </button>
-                    ))}
+                    {/* Normal Attack - always available */}
+                    <button
+                      onClick={() => setSelectedSkill({ id: "normal-attack", name: "通常攻撃", damage: 15, cooldown: 0, type: "attack", description: "威力: 15" })}
+                      className={`p-2 rounded-lg text-left border text-xs transition-all ${
+                        selectedSkill?.id === "normal-attack"
+                          ? "border-primary bg-primary/20"
+                          : "border-border bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      <p className="font-medium">通常攻撃</p>
+                      <p className="text-muted-foreground text-xs">威力: 15</p>
+                    </button>
+
+                    {/* Normal Defense - always available */}
+                    <button
+                      onClick={() => setSelectedSkill({ id: "normal-defense", name: "通常防御", damage: 0, cooldown: 0, type: "defense", description: "軽減: 20%" })}
+                      className={`p-2 rounded-lg text-left border text-xs transition-all ${
+                        selectedSkill?.id === "normal-defense"
+                          ? "border-primary bg-primary/20"
+                          : "border-border bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      <p className="font-medium">通常防御</p>
+                      <p className="text-muted-foreground text-xs">軽減: 20%</p>
+                    </button>
+                    {currentSkills.map((skill) => {
+                      const onCooldown = (player.cooldowns[skill.id] || 0) > 0
+                      return (
+                        <button
+                          key={skill.id}
+                          onClick={() => !onCooldown && setSelectedSkill(skill)}
+                          disabled={onCooldown}
+                          className={`p-2 rounded-lg text-left border text-xs transition-all ${
+                            onCooldown
+                              ? "border-border bg-muted/50 opacity-50 cursor-not-allowed"
+                              : selectedSkill?.id === skill.id
+                              ? "border-primary bg-primary/20"
+                              : "border-border bg-muted hover:bg-muted/80"
+                          }`}
+                        >
+                          <p className="font-medium">{skill.name}</p>
+                          <p className="text-muted-foreground text-xs">{skill.description}</p>
+                          {onCooldown && <p className="text-muted-foreground text-xs mt-1">CT: {player.cooldowns[skill.id]}</p>}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
-                {/* Target Selection */}
-                {selectedSkill && (
+                {/* Target Selection for Normal Attack */}
+                {selectedSkill?.id === "normal-attack" && (
+                  <div className="bg-card rounded-lg p-3 border border-primary">
+                    <p className="text-xs font-bold mb-2">対象を選択</p>
+                    <div className="space-y-2">
+                      {boss_player && !boss_player.isEliminated && (
+                        <Button
+                          className="w-full text-xs"
+                          variant={selectedTarget === 999 ? "default" : "outline"}
+                          onClick={() => {
+                            setSelectedTarget(999)
+                            setTimeout(() => executePlayerAction(), 0)
+                          }}
+                          disabled={isExecuting}
+                        >
+                          {boss_player.name}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Target Selection for Normal Defense */}
+                {selectedSkill?.id === "normal-defense" && (
+                  <Button
+                    className="w-full text-xs"
+                    onClick={() => executePlayerAction()}
+                    disabled={isExecuting}
+                  >
+                    防御 - {player.name}に使用
+                  </Button>
+                )}
+
+                {/* Target Selection for other skills */}
+                {selectedSkill && selectedSkill.id !== "normal-attack" && selectedSkill.id !== "normal-defense" && (
                   <div className="bg-card rounded-lg p-3 border border-primary">
                     <p className="text-xs font-bold mb-2">対象を選択</p>
                     <div className="space-y-2">
