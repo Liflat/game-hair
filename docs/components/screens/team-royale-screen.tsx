@@ -421,13 +421,12 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           const counterValue = Math.floor(80 * specialSkillBonus)
           currentPlayer.statusEffects.push({ type: "buff", name: "反撃準備", duration: 1, value: counterValue })
           setBattleLog((logs) => [...logs, `${currentPlayer.name}が全知の力発動! 完全回避+反撃準備!`])
-                } else if (selectedSkill.id === "end-world") {
-                  if (target && !target.isEliminated) {
-                    target.hp = 0
-                    target.isEliminated = true
-                    setBattleLog((logs) => [...logs, `${currentPlayer.name}のエンドワールド! ${target.name}は消滅した!`])
-                  }
-                }
+        } else if (selectedSkill.id === "end-world") {
+          if (target && !target.isEliminated) {
+            target.hp = 0
+            target.isEliminated = true
+            setBattleLog((logs) => [...logs, `${currentPlayer.name}のエンドワールド! ${target.name}は消滅した!`])
+          }
         }
       }
 

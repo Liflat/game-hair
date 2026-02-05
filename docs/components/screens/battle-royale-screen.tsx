@@ -765,16 +765,16 @@ setPlayerRank(placement)
                 player.statusEffects.push({ type: "buff", name: "オールファーザー", duration: 1, value: 100 })
                 player.statusEffects.push({ type: "buff", name: "反撃準備", duration: 1, value: 80 })
                 setBattleLog((prev) => [...prev, `${player.name}が全知の力を発動!`])
-                            } else if (skill.id === "end-world") {
-                              // NPC end world - instant kill random enemy
-                              const enemies = alive.filter((p) => p.id !== player.id && !p.isEliminated)
-                              if (enemies.length > 0) {
-                                const target = enemies[Math.floor(Math.random() * enemies.length)]
-                                target.hp = 0
-                                target.isEliminated = true
-                                setBattleLog((prev) => [...prev, `${player.name}のエンドワールド! ${target.name}は消滅した!`])
-                              }
-                            }
+              } else if (skill.id === "end-world") {
+                // NPC end world - instant kill random enemy
+                const enemies = alive.filter((p) => p.id !== player.id && !p.isEliminated)
+                if (enemies.length > 0) {
+                  const target = enemies[Math.floor(Math.random() * enemies.length)]
+                  target.hp = 0
+                  target.isEliminated = true
+                  setBattleLog((prev) => [...prev, `${player.name}のエンドワールド! ${target.name}は消滅した!`])
+                }
+              }
               }
               if (skill.cooldown > 0) {
                 player.cooldowns = {
