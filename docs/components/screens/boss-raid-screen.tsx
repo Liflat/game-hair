@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState } from "react"
+import { motion } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, calculateStats, calculateSkillBonus, ELEMENT_NAMES, getElementCombatModifiers, BOSS_RAID_SKILLS, type HairRoot, type Skill, type CollectedHairRoot } from "@/lib/game-data"
+import { HAIR_ROOTS, calculateStats, calculateSkillBonus, getElementCombatModifiers, BOSS_RAID_SKILLS, type HairRoot, type Skill, type CollectedHairRoot, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Shield, Zap } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 
 interface BossRaidScreenProps {
   onNavigate: (screen: Screen) => void
@@ -32,47 +32,32 @@ interface BattlePlayer {
   buffedStats: { power: number; speed: number; grip: number }
 }
 
-type BattlePhase = "preparation" | "selecting" | "action" | "result" | "finished"
+type BattlePhase = "preparation" | "selecting" | "action" | "finished"
 
 export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
-  const { collection, selectedHairRoot, defeatBossRaid } = useGame()
+  const { collection, defeatBossRaid } = useGame()
   const [phase, setPhase] = useState<BattlePhase>("preparation")
   const [selectedTeam, setSelectedTeam] = useState<CollectedHairRoot[]>([])
-  const [bossPlayer, setBossPlayer] = useState<BattlePlayer | null>(null)
-  const [teamPlayers, setTeamPlayers] = useState<BattlePlayer[]>([])
-  const [currentActorIndex, setCurrentActorIndex] = useState(0)
+  const [players, setPlayers] = useState<BattlePlayer[]>([])
+  const [round, setRound] = useState(1)
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null)
   const [selectedTarget, setSelectedTarget] = useState<number | null>(null)
-  const [round, setRound] = useState(1)
   const [battleLog, setBattleLog] = useState<string[]>([])
+  const [isExecuting, setIsExecuting] = useState(false)
 
   const boss = HAIR_ROOTS.find(h => h.id === 53)!
-  const selectableHairRoots = collection.filter(h => h.rarity !== "cosmic")
-  const canStartBattle = selectedTeam.length === 5 && selectedHairRoot && selectedTeam.some(h => h.id === selectedHairRoot.id)
+  const canStartBattle = selectedTeam.length === 5
 
   const handleTeamSelection = (hairRoot: CollectedHairRoot) => {
-    if (selectedHairRoot && hairRoot.id === selectedHairRoot.id && hairRoot.level === selectedHairRoot.level) {
-      // This is the main character - always selectable
-      if (selectedTeam.find(h => h.id === hairRoot.id && h.level === hairRoot.level)) {
-        setSelectedTeam(selectedTeam.filter(h => !(h.id === hairRoot.id && h.level === hairRoot.level)))
-      } else if (selectedTeam.length < 5) {
-        setSelectedTeam([...selectedTeam, hairRoot])
-      }
-    } else {
-      // Team member selection
-      if (selectedTeam.find(h => h.id === hairRoot.id && h.level === hairRoot.level)) {
-        setSelectedTeam(selectedTeam.filter(h => !(h.id === hairRoot.id && h.level === hairRoot.level)))
-      } else if (selectedTeam.length < 5) {
-        setSelectedTeam([...selectedTeam, hairRoot])
-      }
+    if (selectedTeam.find(h => h.id === hairRoot.id && h.level === hairRoot.level)) {
+      setSelectedTeam(selectedTeam.filter(h => !(h.id === hairRoot.id && h.level === hairRoot.level)))
+    } else if (selectedTeam.length < 5) {
+      setSelectedTeam([...selectedTeam, hairRoot])
     }
   }
 
   const initializeBattle = () => {
-    if (!selectedTeam.length) return
-
     // Create boss player with raid-specific skills
-    const maxHp = 5000
     const bossWithRaidSkills: HairRoot = {
       ...boss,
       skills: BOSS_RAID_SKILLS,
@@ -82,8 +67,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       id: 999,
       name: boss.name,
       hairRoot: bossWithRaidSkills,
-      hp: maxHp,
-      maxHp,
+      hp: 5000,
+      maxHp: 5000,
       isEliminated: false,
       cooldowns: {},
       statusEffects: [],
@@ -107,112 +92,288 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       }
     })
 
-    setBossPlayer(bossPlayer)
-    setTeamPlayers(teamPlayers)
+    setPlayers([bossPlayer, ...teamPlayers])
     setPhase("selecting")
     setBattleLog(["魔王ヘアグランドが降臨した！", "「全次元の力で、お前達を消し去ってやる...」"])
   }
 
-  const getSkillDamage = (caster: BattlePlayer, skill: Skill): number => {
-    const casterStats = calculateStats(caster.hairRoot as CollectedHairRoot)
-    const baseDamage = skill.damage
-    const skillBonus = calculateSkillBonus(caster.hairRoot as CollectedHairRoot)
-    const powerBonus = casterStats.power * 0.3
-    
-    return Math.floor((baseDamage + powerBonus) * skillBonus)
+  const getElementDamageMod = (attacker: HairRoot, defender: HairRoot): number => {
+    if (!attacker.element || !defender.element) return 1.0
+    const mods = getElementCombatModifiers(attacker.element, defender.element)
+    return mods.attackMod
   }
 
-  const executeSkill = (actor: BattlePlayer, skill: Skill, targets: BattlePlayer[]) => {
-    if (!bossPlayer) return
-
-    let damage = getSkillDamage(actor, skill)
-    const newLog: string[] = []
-
-    newLog.push(`${actor.name}が「${skill.name}」を使用した！`)
-
-    // Apply damage to targets
-    const allPlayers = [bossPlayer, ...teamPlayers]
+  const executePlayerAction = () => {
+    if (!selectedSkill || selectedTeam.length === 0 || isExecuting) return
     
-    if (skill.type === "aoe" && skill.maxTargets) {
-      // AOE skill
-      const validTargets = allPlayers.filter(p => !p.isEliminated && p.id !== actor.id).slice(0, skill.maxTargets)
-      validTargets.forEach(target => {
-        const actualDamage = Math.max(1, damage)
-        target.hp = Math.max(0, target.hp - actualDamage)
-        newLog.push(`${target.name}に ${actualDamage} ダメージ！`)
-      })
-    } else if (targets.length > 0) {
-      // Single target skill
-      targets.forEach(target => {
-        const actualDamage = Math.max(1, damage)
-        target.hp = Math.max(0, target.hp - actualDamage)
-        newLog.push(`${target.name}に ${actualDamage} ダメージ！`)
-      })
-    }
+    const playerIndex = players.findIndex(p => p.id !== 999 && !p.isEliminated)
+    if (playerIndex === -1) return
 
-    setBattleLog(prev => [...prev, ...newLog])
-    
-    // Check win condition
-    if (bossPlayer.hp <= 0) {
-      setBattleLog(prev => [...prev, "ヘアグランドを倒した！"])
-      defeatBossRaid()
-      setPhase("finished")
-      return
-    }
+    setIsExecuting(true)
+    setPhase("action")
 
-    // Boss turn
+    setPlayers((prev) => {
+      const newPlayers = [...prev]
+      const player = newPlayers[playerIndex]
+      const boss = newPlayers.find(p => p.id === 999)!
+      const aliveTeamPlayers = newPlayers.filter(p => p.id !== 999 && !p.isEliminated)
+
+      if (!player) return prev
+
+      const stats = calculateStats(player.hairRoot as CollectedHairRoot)
+      const buffedPower = stats.power + (player.buffedStats.power || 0)
+
+      const newLog: string[] = []
+
+      // Process skill based on type
+      if (selectedSkill.type === "attack") {
+        if (selectedTarget !== null) {
+          const target = newPlayers.find(p => p.id === selectedTarget)
+          if (target && !target.isEliminated) {
+            const baseDamage = selectedSkill.damage || 0
+            const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
+            const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+            
+            // Apply defense buff if exists
+            const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+            const damageAfterDefense = defenseEffect?.value 
+              ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+              : finalDamage
+
+            target.hp = Math.max(0, target.hp - damageAfterDefense)
+            
+            const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
+            const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
+            newLog.push(`${player.name}の${selectedSkill.name}が${target.name}に${damageAfterDefense}ダメージ!${elementNote}${defenseNote}`)
+            
+            if (target.hp <= 0) {
+              target.isEliminated = true
+              if (target.id === 999) {
+                newLog.push("ヘアグランドを倒した！")
+                defeatBossRaid()
+              } else {
+                newLog.push(`${target.name}が脱落!`)
+              }
+            }
+          }
+        }
+      } else if (selectedSkill.type === "aoe") {
+        const targets = aliveTeamPlayers.length > 0 
+          ? [boss, ...aliveTeamPlayers]
+          : [boss]
+
+        targets.forEach(target => {
+          const baseDamage = selectedSkill.damage || 0
+          const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
+          const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+          
+          const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+          const damageAfterDefense = defenseEffect?.value 
+            ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+            : finalDamage
+
+          target.hp = Math.max(0, target.hp - damageAfterDefense)
+          
+          const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
+          const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
+          newLog.push(`${selectedSkill.name}が${target.name}に${damageAfterDefense}ダメージ!${elementNote}${defenseNote}`)
+          
+          if (target.hp <= 0) {
+            target.isEliminated = true
+            if (target.id === 999) {
+              newLog.push("ヘアグランドを倒した！")
+              defeatBossRaid()
+            } else {
+              newLog.push(`${target.name}が脱落!`)
+            }
+          }
+        })
+      } else if (selectedSkill.type === "defense") {
+        // Defense skills
+        const skillBonus = calculateSkillBonus(player.hairRoot as CollectedHairRoot)
+        let defenseValue = 20
+
+        if (selectedSkill.id === "normal-defense") {
+          defenseValue = 20
+        } else if (selectedSkill.id === "demon-king-shell") {
+          defenseValue = 90
+        } else {
+          defenseValue = 25
+        }
+
+        const finalDefenseValue = Math.min(100, Math.floor(defenseValue * skillBonus))
+        player.statusEffects.push({
+          type: "buff",
+          name: "防御強化",
+          duration: 1,
+          value: finalDefenseValue
+        })
+        newLog.push(`${player.name}の${selectedSkill.name}で${finalDefenseValue}%ダメージ軽減!`)
+      } else if (selectedSkill.type === "special") {
+        // Special skills
+        if (selectedSkill.id === "absolute-zero") {
+          const skillBonus = calculateSkillBonus(player.hairRoot as CollectedHairRoot)
+          const targets = [boss, ...aliveTeamPlayers]
+          const baseDamage = selectedSkill.damage || 0
+          
+          targets.forEach(target => {
+            const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
+            const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+            
+            const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+            const damageAfterDefense = defenseEffect?.value 
+              ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+              : finalDamage
+
+            target.hp = Math.max(0, target.hp - damageAfterDefense)
+            
+            // Add debuff
+            target.statusEffects.push({
+              type: "debuff",
+              name: "全ステータスダウン",
+              duration: 2,
+              value: 20,
+              stat: "all"
+            })
+            
+            newLog.push(`${selectedSkill.name}が${target.name}に${damageAfterDefense}ダメージ! (全ステータス20%ダウン)`)
+            
+            if (target.hp <= 0) {
+              target.isEliminated = true
+              if (target.id === 999) {
+                newLog.push("ヘアグランドを倒した！")
+                defeatBossRaid()
+              } else {
+                newLog.push(`${target.name}が脱落!`)
+              }
+            }
+          })
+        }
+      } else if (selectedSkill.type === "team_heal") {
+        // Healing skills - target single teammate
+        const skillBonus = calculateSkillBonus(player.hairRoot as CollectedHairRoot)
+        const target = selectedTarget !== null ? newPlayers.find(p => p.id === selectedTarget) : player
+        
+        if (target && !target.isEliminated) {
+          const baseHeal = selectedSkill.damage || 50
+          const healAmount = Math.floor(baseHeal * skillBonus)
+          target.hp = Math.min(target.maxHp, target.hp + healAmount)
+          newLog.push(`${player.name}の${selectedSkill.name}で${target.name}を${healAmount}回復した！`)
+        }
+      }
+
+      setBattleLog(prev => [...prev, ...newLog])
+      return newPlayers
+    })
+
     setTimeout(() => executeBossTurn(), 1500)
   }
 
   const executeBossTurn = () => {
-    if (!bossPlayer || bossPlayer.isEliminated) return
+    setPlayers((prev) => {
+      const newPlayers = [...prev]
+      const boss = newPlayers.find(p => p.id === 999)!
+      const aliveTeam = newPlayers.filter(p => p.id !== 999 && !p.isEliminated)
 
-    const aliveTeam = teamPlayers.filter(p => !p.isEliminated)
-    if (aliveTeam.length === 0) {
-      setBattleLog(prev => [...prev, "すべての毛根が絶滅した..."])
-      setPhase("finished")
-      return
-    }
+      if (boss.isEliminated || aliveTeam.length === 0) {
+        if (aliveTeam.length === 0) {
+          setBattleLog(prev => [...prev, "すべての毛根が絶滅した..."])
+        }
+        setPhase("finished")
+        setIsExecuting(false)
+        return prev
+      }
 
-    const skills = bossPlayer.hairRoot.skills
-    const randomSkill = skills[Math.floor(Math.random() * skills.length)]
-    const targets = randomSkill.type === "aoe" ? aliveTeam : [aliveTeam[Math.floor(Math.random() * aliveTeam.length)]]
+      const skills = boss.hairRoot.skills
+      const randomSkill = skills[Math.floor(Math.random() * skills.length)]
+      const newLog: string[] = []
 
-    const damage = getSkillDamage(bossPlayer, randomSkill)
-    const newLog: string[] = []
+      newLog.push(`ヘアグランドが「${randomSkill.name}」を使用した！`)
 
-    newLog.push(`ヘアグランドが「${randomSkill.name}」を使用した！`)
+      if (randomSkill.type === "attack" && aliveTeam.length > 0) {
+        const target = aliveTeam[Math.floor(Math.random() * aliveTeam.length)]
+        const stats = calculateStats(boss.hairRoot as CollectedHairRoot)
+        const buffedPower = stats.power + (boss.buffedStats.power || 0)
+        const baseDamage = randomSkill.damage || 0
+        const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
+        const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+        
+        const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+        const damageAfterDefense = defenseEffect?.value 
+          ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+          : finalDamage
 
-    if (randomSkill.type === "aoe") {
-      aliveTeam.forEach(target => {
-        const actualDamage = Math.max(1, damage)
-        target.hp = Math.max(0, target.hp - actualDamage)
-        newLog.push(`${target.name}に ${actualDamage} ダメージ！`)
-      })
-    } else {
-      targets.forEach(target => {
-        const actualDamage = Math.max(1, damage)
-        target.hp = Math.max(0, target.hp - actualDamage)
-        newLog.push(`${target.name}に ${actualDamage} ダメージ！`)
-      })
-    }
+        target.hp = Math.max(0, target.hp - damageAfterDefense)
+        
+        const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
+        newLog.push(`${target.name}に${damageAfterDefense}ダメージ!${defenseNote}`)
+        
+        if (target.hp <= 0) {
+          target.isEliminated = true
+          newLog.push(`${target.name}が脱落!`)
+        }
+      } else if (randomSkill.type === "aoe") {
+        aliveTeam.forEach(target => {
+          const stats = calculateStats(boss.hairRoot as CollectedHairRoot)
+          const buffedPower = stats.power + (boss.buffedStats.power || 0)
+          const baseDamage = randomSkill.damage || 0
+          const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
+          const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+          
+          const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+          const damageAfterDefense = defenseEffect?.value 
+            ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+            : finalDamage
 
-    setBattleLog(prev => [...prev, ...newLog])
-    setRound(prev => prev + 1)
-    setPhase("selecting")
-    setSelectedSkill(null)
-    setSelectedTarget(null)
+          target.hp = Math.max(0, target.hp - damageAfterDefense)
+          
+          const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
+          newLog.push(`${target.name}に${damageAfterDefense}ダメージ!${defenseNote}`)
+          
+          if (target.hp <= 0) {
+            target.isEliminated = true
+            newLog.push(`${target.name}が脱落!`)
+          }
+        })
+      } else if (randomSkill.type === "defense") {
+        const skillBonus = calculateSkillBonus(boss.hairRoot as CollectedHairRoot)
+        let defenseValue = 20
+
+        if (randomSkill.id === "normal-defense") {
+          defenseValue = 20
+        } else if (randomSkill.id === "demon-king-shell-raid") {
+          defenseValue = 90
+        }
+
+        const finalDefenseValue = Math.min(100, Math.floor(defenseValue * skillBonus))
+        boss.statusEffects.push({
+          type: "buff",
+          name: "防御強化",
+          duration: 1,
+          value: finalDefenseValue
+        })
+        newLog.push(`${finalDefenseValue}%ダメージ軽減!`)
+      }
+
+      setBattleLog(prev => [...prev, ...newLog])
+      setRound(prev => prev + 1)
+      setPhase("selecting")
+      setSelectedSkill(null)
+      setSelectedTarget(null)
+      setIsExecuting(false)
+
+      return newPlayers
+    })
   }
 
   if (!boss) return null
 
-  const allAlivePlayers = [
-    ...(bossPlayer && !bossPlayer.isEliminated ? [bossPlayer] : []),
-    ...teamPlayers.filter(p => !p.isEliminated),
-  ]
-
-  const currentActor = phase === "selecting" ? teamPlayers[currentActorIndex] : null
-  const currentSkills = currentActor ? currentActor.hairRoot.skills : []
+  const boss_player = players.find(p => p.id === 999)
+  const team_players = players.filter(p => p.id !== 999)
+  const player = team_players.find(p => !p.isEliminated)
+  const currentSkills = player ? player.hairRoot.skills : []
+  const aliveTeam = team_players.filter(p => !p.isEliminated)
+  const allAlivePlayers = boss_player && !boss_player.isEliminated ? [boss_player, ...aliveTeam] : aliveTeam
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -264,9 +425,9 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
               className="bg-card rounded-lg p-4 border border-border"
             >
               <h3 className="font-bold mb-3">チーム選択 ({selectedTeam.length}/5)</h3>
-              <p className="text-xs text-muted-foreground mb-2">※ 自分の毛根 + 仲間4体を選択</p>
+              <p className="text-xs text-muted-foreground mb-2">※ 所有している毛根5体を選択</p>
               <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-                {selectableHairRoots.map((hair, idx) => (
+                {collection.map((hair, idx) => (
                   <button
                     key={`${hair.id}-${idx}`}
                     onClick={() => handleTeamSelection(hair)}
@@ -301,51 +462,52 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           </>
         )}
 
-        {(phase === "selecting" || phase === "action") && bossPlayer && (
+        {(phase === "selecting" || phase === "action") && boss_player && (
           <>
-            {/* Boss and Team Status */}
+            {/* Boss Status */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="bg-card rounded-lg p-3 border border-border"
             >
               <div className="flex justify-between items-center mb-2">
-                <span className="font-bold">{bossPlayer.name}</span>
-                <span className="text-sm text-muted-foreground">HP: {Math.max(0, bossPlayer.hp)}/5000</span>
+                <span className="font-bold">{boss_player.name}</span>
+                <span className="text-sm text-muted-foreground">HP: {Math.max(0, Math.floor(boss_player.hp))}/5000</span>
               </div>
               <div className="w-full h-6 bg-muted rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-red-500"
                   initial={{ width: "100%" }}
-                  animate={{ width: `${(Math.max(0, bossPlayer.hp) / 5000) * 100}%` }}
+                  animate={{ width: `${(Math.max(0, boss_player.hp) / 5000) * 100}%` }}
                   transition={{ duration: 0.3 }}
                 />
               </div>
             </motion.div>
 
+            {/* Team Status */}
             <div className="grid grid-cols-2 gap-2">
-              {teamPlayers.map((player) => (
+              {team_players.map((p) => (
                 <motion.div
-                  key={player.id}
+                  key={p.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className={`p-3 rounded-lg border ${
-                    player.isEliminated
-                      ? "border-border bg-muted/50"
-                      : currentActor?.id === player.id
+                    p.isEliminated
+                      ? "border-border bg-muted/50 opacity-50"
+                      : player?.id === p.id
                       ? "border-primary bg-primary/20"
                       : "border-border bg-card"
                   }`}
                 >
                   <div className="flex justify-between items-center mb-1">
-                    <span className="text-xs font-medium truncate">{player.name}</span>
-                    <span className="text-xs text-muted-foreground">{Math.max(0, player.hp)}/{player.maxHp}</span>
+                    <span className="text-xs font-medium truncate">{p.name}</span>
+                    <span className="text-xs text-muted-foreground">{Math.max(0, Math.floor(p.hp))}/{p.maxHp}</span>
                   </div>
                   <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
                     <motion.div
                       className="h-full bg-green-500"
                       initial={{ width: "100%" }}
-                      animate={{ width: `${(Math.max(0, player.hp) / player.maxHp) * 100}%` }}
+                      animate={{ width: `${(Math.max(0, p.hp) / p.maxHp) * 100}%` }}
                       transition={{ duration: 0.3 }}
                     />
                   </div>
@@ -367,10 +529,10 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             </motion.div>
 
             {/* Skill Selection */}
-            {phase === "selecting" && currentActor && (
+            {phase === "selecting" && player && !isExecuting && (
               <>
                 <div className="bg-card rounded-lg p-3 border border-border">
-                  <p className="text-sm font-bold mb-2">{currentActor.name}のターン</p>
+                  <p className="text-sm font-bold mb-2">{player.name}のターン</p>
                   <p className="text-xs text-muted-foreground mb-3">スキルを選択してください</p>
                   <div className="grid grid-cols-2 gap-2">
                     {currentSkills.map((skill) => (
@@ -384,7 +546,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                         }`}
                       >
                         <p className="font-medium">{skill.name}</p>
-                        <p className="text-muted-foreground">{skill.description}</p>
+                        <p className="text-muted-foreground text-xs">{skill.description}</p>
                       </button>
                     ))}
                   </div>
@@ -395,32 +557,64 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                   <div className="bg-card rounded-lg p-3 border border-primary">
                     <p className="text-xs font-bold mb-2">対象を選択</p>
                     <div className="space-y-2">
-                      {selectedSkill.type === "aoe" ? (
+                      {selectedSkill.type === "defense" ? (
                         <Button
                           className="w-full text-xs"
-                          onClick={() => {
-                            executeSkill(currentActor, selectedSkill, allAlivePlayers.filter(p => p.id !== currentActor.id))
-                            setCurrentActorIndex((prev) => (prev + 1) % teamPlayers.length)
-                          }}
+                          onClick={() => executePlayerAction()}
+                          disabled={isExecuting}
+                        >
+                          防御 - {player.name}に使用
+                        </Button>
+                      ) : selectedSkill.type === "team_heal" ? (
+                        // Heal skill - select teammate
+                        team_players
+                          .filter(p => !p.isEliminated)
+                          .map((p) => (
+                            <Button
+                              key={p.id}
+                              variant="outline"
+                              className="w-full text-xs"
+                              onClick={() => {
+                                setSelectedTarget(p.id)
+                                setTimeout(() => executePlayerAction(), 0)
+                              }}
+                              disabled={isExecuting}
+                            >
+                              {p.name}
+                            </Button>
+                          ))
+                      ) : selectedSkill.type === "special" ? (
+                        <Button
+                          className="w-full text-xs"
+                          onClick={() => executePlayerAction()}
+                          disabled={isExecuting}
+                        >
+                          全体スキル - {selectedSkill.name}
+                        </Button>
+                      ) : selectedSkill.type === "aoe" ? (
+                        <Button
+                          className="w-full text-xs"
+                          onClick={() => executePlayerAction()}
+                          disabled={isExecuting}
                         >
                           全敵に使用
                         </Button>
                       ) : (
-                        allAlivePlayers
-                          .filter(p => p.id !== currentActor.id)
-                          .map((player) => (
-                            <Button
-                              key={player.id}
-                              variant="outline"
-                              className="w-full text-xs"
-                              onClick={() => {
-                                executeSkill(currentActor, selectedSkill, [player])
-                                setCurrentActorIndex((prev) => (prev + 1) % teamPlayers.length)
-                              }}
-                            >
-                              {player.name}
-                            </Button>
-                          ))
+                        // Attack skill - only target boss
+                        boss_player && !boss_player.isEliminated && (
+                          <Button
+                            key={boss_player.id}
+                            variant="outline"
+                            className="w-full text-xs"
+                            onClick={() => {
+                              setSelectedTarget(boss_player.id)
+                              setTimeout(() => executePlayerAction(), 0)
+                            }}
+                            disabled={isExecuting}
+                          >
+                            {boss_player.name}
+                          </Button>
+                        )
                       )}
                     </div>
                   </div>
@@ -435,16 +629,16 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className={`rounded-lg p-6 text-center text-white ${
-              bossPlayer && bossPlayer.hp <= 0
+              boss_player && boss_player.hp <= 0
                 ? "bg-gradient-to-br from-green-500 to-emerald-600"
                 : "bg-gradient-to-br from-red-500 to-rose-600"
             }`}
           >
-            <div className="text-5xl mb-4">{bossPlayer && bossPlayer.hp <= 0 ? "🎉" : "☠️"}</div>
+            <div className="text-5xl mb-4">{boss_player && boss_player.hp <= 0 ? "🎉" : "☠️"}</div>
             <h2 className="text-2xl font-bold mb-4">
-              {bossPlayer && bossPlayer.hp <= 0 ? "勝利！" : "敗北..."}
+              {boss_player && boss_player.hp <= 0 ? "勝利！" : "敗北..."}
             </h2>
-            {bossPlayer && bossPlayer.hp <= 0 && (
+            {boss_player && boss_player.hp <= 0 && (
               <div className="bg-black/20 rounded-lg p-4 mb-4">
                 <p className="mb-2">ヘアグランドを倒した！</p>
                 <p className="text-xl font-bold mb-2">👑 コズミックレア</p>
@@ -455,14 +649,14 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                 </div>
               </div>
             )}
-            {bossPlayer && bossPlayer.hp > 0 && (
+            {boss_player && boss_player.hp > 0 && (
               <div className="bg-black/20 rounded-lg p-4 mb-4">
                 <p className="text-lg">すべての毛根が絶滅した...</p>
               </div>
             )}
             <Button
               className={`w-full ${
-                bossPlayer && bossPlayer.hp <= 0
+                boss_player && boss_player.hp <= 0
                   ? "bg-white text-green-600 hover:bg-gray-100"
                   : "bg-white text-red-600 hover:bg-gray-100"
               }`}
