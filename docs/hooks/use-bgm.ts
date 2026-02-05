@@ -37,6 +37,7 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
   const { enabled = true, volume = 0.3 } = options
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isUnlocked, setIsUnlocked] = useState(false)
 
   const currentBGMPath = BGM_MAP[screen]
 
@@ -52,9 +53,37 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
     }
   }, [volume])
 
+  // Unlock autoplay after first user interaction
+  useEffect(() => {
+    if (!enabled || isUnlocked) return
+
+    const handleUnlock = () => {
+      if (!audioRef.current) return
+
+      audioRef.current.src = currentBGMPath
+      audioRef.current
+        .play()
+        .then(() => {
+          setIsPlaying(true)
+          setIsUnlocked(true)
+        })
+        .catch(() => {
+          setIsPlaying(false)
+        })
+    }
+
+    window.addEventListener("pointerdown", handleUnlock, { once: true })
+    window.addEventListener("keydown", handleUnlock, { once: true })
+
+    return () => {
+      window.removeEventListener("pointerdown", handleUnlock)
+      window.removeEventListener("keydown", handleUnlock)
+    }
+  }, [currentBGMPath, enabled, isUnlocked])
+
   // Change BGM when screen changes
   useEffect(() => {
-    if (!enabled || !audioRef.current) return
+    if (!enabled || !audioRef.current || !isUnlocked) return
 
     // Stop current BGM
     audioRef.current.pause()
@@ -77,7 +106,7 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
         audioRef.current.pause()
       }
     }
-  }, [currentBGMPath, enabled])
+  }, [currentBGMPath, enabled, isUnlocked])
 
   const toggleBGM = useCallback(() => {
     if (!audioRef.current) return
