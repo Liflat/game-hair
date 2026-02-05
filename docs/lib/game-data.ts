@@ -245,10 +245,14 @@ export const HAIR_ROOTS: HairRoot[] = [
     { id: "event-horizon", name: "イベントホライズン", description: "事象の地平線で全攻撃を無効化", damage: 0, cooldown: 5, type: "defense" }
   ]},
 
-  // Cosmic (1) - Ultra rare tier (0.1% chance)
+  // Cosmic (2) - Ultra rare tier (0.1% chance)
   { id: 31, name: "ゼウスの毛根", rarity: "cosmic", element: "divine", description: "全知全能の神ゼウスの力を宿す究極の毛根。雷と天空を支配する", power: 100, speed: 95, grip: 90, emoji: "⚡", color: "#FFD700", skills: [
     { id: "thunderbolt-supreme", name: "サンダーボルト・スプリーム", description: "オリンポスの雷霆で選択した敵を消し去る(最大3体)", damage: 200, cooldown: 3, type: "aoe", maxTargets: 3 },
     { id: "olympus-blessing", name: "オリンポスの祝福", description: "神々の加護。味方全員のHP完全回復", damage: 0, cooldown: 6, type: "team_heal" }
+  ]},
+  { id: 32, name: "ギャラクティカ毛根", rarity: "cosmic", element: "dark", description: "銀河系全体を支配する究極の毛根。時空を越えた破壊力を持つ", power: 105, speed: 90, grip: 95, emoji: "🌌", color: "#1E1B4B", skills: [
+    { id: "thousand-meteor", name: "サウザンドメテオ", description: "千の隕石で敵全体に攻撃", damage: 150, cooldown: 5, type: "aoe", maxTargets: 8 },
+    { id: "end-world", name: "エンドワールド", description: "選択した敵を消滅させる", damage: 0, cooldown: 7, type: "special" }
   ]},
 
   // Additional Common (5)
