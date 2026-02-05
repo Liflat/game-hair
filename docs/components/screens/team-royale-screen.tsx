@@ -203,7 +203,11 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
     setTeams((prev) => {
       const newTeams = prev.map(t => ({
         ...t,
-        members: t.members.map(p => ({ ...p, prevHp: p.hp }))
+        members: t.members.map(p => ({
+          ...p,
+          prevHp: p.hp,
+          cooldowns: { ...p.cooldowns }
+        }))
       }))
 
       const allPlayers = newTeams.flatMap(t => t.members)
@@ -421,7 +425,10 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
       }
 
       if (selectedSkill.cooldown > 0) {
-        currentPlayer.cooldowns[selectedSkill.id] = selectedSkill.cooldown
+        currentPlayer.cooldowns = {
+          ...currentPlayer.cooldowns,
+          [selectedSkill.id]: selectedSkill.cooldown
+        }
       }
 
       // Check team elimination
@@ -448,7 +455,11 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
       setTeams((prev) => {
         const newTeams = prev.map(t => ({
           ...t,
-          members: t.members.map(p => ({ ...p }))
+          members: t.members.map(p => ({
+            ...p,
+            cooldowns: { ...p.cooldowns },
+            prevHp: p.hp
+          }))
         }))
 
         const allPlayers = newTeams.flatMap(t => t.members)
@@ -595,7 +606,10 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           }
 
           if (skill.cooldown > 0) {
-            npc.cooldowns[skill.id] = skill.cooldown
+            npc.cooldowns = {
+              ...npc.cooldowns,
+              [skill.id]: skill.cooldown
+            }
           }
         }
 
@@ -633,9 +647,10 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           p.statusEffects = p.statusEffects.filter(e => e.duration > 0)
           
           // Update cooldowns
-          Object.keys(p.cooldowns).forEach(key => {
-            if (p.cooldowns[key] > 0) p.cooldowns[key]--
-          })
+          p.cooldowns = Object.entries(p.cooldowns).reduce((acc, [key, value]) => ({
+            ...acc,
+            [key]: value > 0 ? value - 1 : 0
+          }), {})
         })
 
         // Check team elimination
