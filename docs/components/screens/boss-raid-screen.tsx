@@ -63,12 +63,16 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       skills: BOSS_RAID_SKILLS,
     }
     
+    // Calculate boss HP safely
+    const bossStats = calculateStats({ ...boss, level: 1, exp: 0, count: 1 } as CollectedHairRoot)
+    const bossMaxHp = Math.max(1, Math.floor((1000 + (bossStats?.power ?? 0) + (bossStats?.grip ?? 0)) * 1.5))
+    
     const bossPlayer: BattlePlayer = {
       id: 999,
       name: boss.name,
       hairRoot: bossWithRaidSkills,
-      hp: 5000,
-      maxHp: 5000,
+      hp: Math.max(1, bossMaxHp),
+      maxHp: Math.max(1, bossMaxHp),
       isEliminated: false,
       cooldowns: {},
       statusEffects: [],
@@ -105,33 +109,38 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
     return mods.attackMod
   }
 
-  const executePlayerAction = () => {
-    if (!selectedSkill || selectedTeam.length === 0 || isExecuting) return
+  const executePlayerAction = (targetId?: number) => {
+    if (!selectedSkill || isExecuting) return
     
-    const playerIndex = players.findIndex(p => p.id !== 999 && !p.isEliminated)
-    if (playerIndex === -1) return
+    // If target is provided as parameter, use it; otherwise use selectedTarget state
+    const targetToUse = targetId !== undefined ? targetId : selectedTarget
+    
+    // Find the currently active player (first non-eliminated team member)
+    const activePlayer = players.find(p => p.id !== 999 && !p.isEliminated)
+    if (!activePlayer) return
 
     setIsExecuting(true)
     setPhase("action")
 
     setPlayers((prev) => {
       const newPlayers = [...prev]
-      const player = newPlayers[playerIndex]
-      const boss = newPlayers.find(p => p.id === 999)!
+      const player = newPlayers.find(p => p.id === activePlayer.id)
+      const boss = newPlayers.find(p => p.id === 999)
+      if (!player || !boss) return prev
       const aliveTeamPlayers = newPlayers.filter(p => p.id !== 999 && !p.isEliminated)
 
       if (!player) return prev
 
       const stats = calculateStats(player.hairRoot as CollectedHairRoot)
-      const buffedPower = stats.power + (player.buffedStats.power || 0)
+      const buffedPower = (stats?.power ?? 0) + (player.buffedStats.power || 0)
 
       const newLog: string[] = []
 
       // Process skill based on type
       if (selectedSkill.id === "normal-attack") {
         // Normal attack - always 15 damage
-        if (selectedTarget !== null) {
-          const target = newPlayers.find(p => p.id === selectedTarget)
+        if (targetToUse !== null) {
+          const target = newPlayers.find(p => p.id === targetToUse)
           if (target && !target.isEliminated) {
             const baseDamage = 15
             const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
@@ -170,8 +179,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         })
         newLog.push(`${player.name}は通常防御で20%のダメージを軽減!`)
       } else if (selectedSkill.type === "attack") {
-        if (selectedTarget !== null) {
-          const target = newPlayers.find(p => p.id === selectedTarget)
+        if (targetToUse !== null) {
+          const target = newPlayers.find(p => p.id === targetToUse)
           if (target && !target.isEliminated) {
             const baseDamage = selectedSkill.damage || 0
             const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
@@ -294,7 +303,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       } else if (selectedSkill.type === "team_heal") {
         // Healing skills - target single teammate
         const skillBonus = calculateSkillBonus(player.hairRoot as CollectedHairRoot)
-        const target = selectedTarget !== null ? newPlayers.find(p => p.id === selectedTarget) : player
+        const target = targetToUse !== null ? newPlayers.find(p => p.id === targetToUse) : player
         
         if (target && !target.isEliminated) {
           const baseHeal = selectedSkill.damage || 50
@@ -366,7 +375,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       if (selectedBossSkill.id === "normal-attack" && aliveTeam.length > 0) {
         const target = aliveTeam[Math.floor(Math.random() * aliveTeam.length)]
         const stats = calculateStats(boss.hairRoot as CollectedHairRoot)
-        const buffedPower = stats.power + (boss.buffedStats.power || 0)
+        const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
         const baseDamage = 15
         const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
         const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
@@ -397,7 +406,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       } else if (selectedBossSkill.type === "attack" && aliveTeam.length > 0) {
         const target = aliveTeam[Math.floor(Math.random() * aliveTeam.length)]
         const stats = calculateStats(boss.hairRoot as CollectedHairRoot)
-        const buffedPower = stats.power + (boss.buffedStats.power || 0)
+        const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
         const baseDamage = selectedBossSkill.damage || 0
         const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
         const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
@@ -419,7 +428,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       } else if (selectedBossSkill.type === "aoe") {
         aliveTeam.forEach(target => {
           const stats = calculateStats(boss.hairRoot as CollectedHairRoot)
-          const buffedPower = stats.power + (boss.buffedStats.power || 0)
+          const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
           const baseDamage = selectedBossSkill.damage || 0
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
           const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
@@ -487,10 +496,6 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
   const currentSkills = player ? player.hairRoot.skills : []
   const aliveTeam = team_players.filter(p => !p.isEliminated)
   const allAlivePlayers = boss_player && !boss_player.isEliminated ? [boss_player, ...aliveTeam] : aliveTeam
-  
-  // Normal attack and defense skills
-  const normalAttackCooldown = player?.cooldowns["normal-attack"] || 0
-  const normalDefenseCooldown = player?.cooldowns["normal-defense"] || 0
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -589,13 +594,13 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             >
               <div className="flex justify-between items-center mb-2">
                 <span className="font-bold">{boss_player.name}</span>
-                <span className="text-sm text-muted-foreground">HP: {Math.max(0, Math.floor(boss_player.hp ?? 5000))}/5000</span>
+                <span className="text-sm text-muted-foreground">HP: {Math.max(0, Math.floor(boss_player.hp ?? boss_player.maxHp))}/{boss_player.maxHp}</span>
               </div>
               <div className="w-full h-6 bg-muted rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-red-500"
                   initial={{ width: "100%" }}
-                  animate={{ width: `${(Math.max(0, boss_player.hp ?? 5000) / 5000) * 100}%` }}
+                  animate={{ width: `${(Math.max(0, boss_player.hp ?? boss_player.maxHp) / boss_player.maxHp) * 100}%` }}
                   transition={{ duration: 0.3 }}
                 />
               </div>
@@ -646,7 +651,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             </motion.div>
 
             {/* Skill Selection */}
-            {phase === "selecting" && player && !isExecuting && (
+            {phase === "selecting" && player && !isExecuting && players.length > 0 && (
               <>
                 <div className="bg-card rounded-lg p-3 border border-border">
                   <p className="text-sm font-bold mb-2">{player.name}のターン</p>
@@ -710,10 +715,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                         <Button
                           className="w-full text-xs"
                           variant={selectedTarget === 999 ? "default" : "outline"}
-                          onClick={() => {
-                            setSelectedTarget(999)
-                            setTimeout(() => executePlayerAction(), 0)
-                          }}
+                          onClick={() => executePlayerAction(999)}
                           disabled={isExecuting}
                         >
                           {boss_player.name}
@@ -756,10 +758,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                               key={p.id}
                               variant="outline"
                               className="w-full text-xs"
-                              onClick={() => {
-                                setSelectedTarget(p.id)
-                                setTimeout(() => executePlayerAction(), 0)
-                              }}
+                              onClick={() => executePlayerAction(p.id)}
                               disabled={isExecuting}
                             >
                               {p.name}
@@ -788,10 +787,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                             key={boss_player.id}
                             variant="outline"
                             className="w-full text-xs"
-                            onClick={() => {
-                              setSelectedTarget(boss_player.id)
-                              setTimeout(() => executePlayerAction(), 0)
-                            }}
+                            onClick={() => executePlayerAction(boss_player.id)}
                             disabled={isExecuting}
                           >
                             {boss_player.name}
