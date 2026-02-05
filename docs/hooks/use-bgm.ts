@@ -17,19 +17,19 @@ export type ScreenType =
 
 // BGMファイルのマッピング
 const BGM_MAP: Record<ScreenType, string> = {
-  splash: "/bgm/splash.mp3",
-  home: "/bgm/home.mp3",
-  gacha: "/bgm/gacha.mp3",
-  collection: "/bgm/collection.mp3",
-  ranking: "/bgm/ranking.mp3",
-  training: "/bgm/training.mp3",
-  matchmaking: "/bgm/matchmaking.mp3",
-  battle: "/bgm/battle.mp3",
-  "battle-royale": "/bgm/battle.mp3",
-  "team-royale": "/bgm/team-royale.mp3",
-  "boss-raid": "/bgm/battle.mp3",
-  tutorial: "/bgm/home.mp3",
-  profile: "/bgm/home.mp3",
+  splash: "/game-hair/bgm/splash.mp3",
+  home: "/game-hair/bgm/home.mp3",
+  gacha: "/game-hair/bgm/gacha.mp3",
+  collection: "/game-hair/bgm/collection.mp3",
+  ranking: "/game-hair/bgm/ranking.mp3",
+  training: "/game-hair/bgm/training.mp3",
+  matchmaking: "/game-hair/bgm/matchmaking.mp3",
+  battle: "/game-hair/bgm/battle.mp3",
+  "battle-royale": "/game-hair/bgm/battle.mp3",
+  "team-royale": "/game-hair/bgm/team-royale.mp3",
+  "boss-raid": "/game-hair/bgm/battle.mp3",
+  tutorial: "/game-hair/bgm/home.mp3",
+  profile: "/game-hair/bgm/home.mp3",
 }
 
 export interface UseBGMOptions {
@@ -44,24 +44,19 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
   const [isUnlocked, setIsUnlocked] = useState(false)
 
   const currentBGMPath = BGM_MAP[screen]
-  const resolvedBGMPath = currentBGMPath || "/bgm/home.mp3"
-
-  console.log("[BGM] Hook called - Screen:", screen, "Path:", resolvedBGMPath, "Enabled:", enabled, "Volume:", volume)
+  const resolvedBGMPath = currentBGMPath || "/game-hair/bgm/home.mp3"
 
   // Initialize audio element
   useEffect(() => {
-    console.log("[BGM] Initializing audio element for screen:", screen, "enabled:", enabled)
     if (!audioRef.current) {
       const audio = new Audio()
       audio.loop = true
       audio.volume = volume
       audioRef.current = audio
-      console.log("[BGM] Audio element created with volume:", volume)
     } else {
       audioRef.current.volume = volume
-      console.log("[BGM] Audio volume updated to:", volume)
     }
-  }, [volume, screen, enabled])
+  }, [volume])
 
   // Unlock autoplay after first user interaction
   useEffect(() => {
@@ -70,19 +65,16 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
     const handleUnlock = () => {
       if (!audioRef.current) return
 
-      console.log("[BGM] Unlocking autoplay with:", resolvedBGMPath)
       audioRef.current.src = resolvedBGMPath
       audioRef.current
         .play()
         .then(() => {
-          console.log("[BGM] Autoplay unlocked successfully")
           setIsPlaying(true)
           setIsUnlocked(true)
           window.removeEventListener("pointerdown", handleUnlock)
           window.removeEventListener("keydown", handleUnlock)
         })
-        .catch((error) => {
-          console.error("[BGM] Failed to unlock autoplay:", error)
+        .catch(() => {
           setIsPlaying(false)
         })
     }
@@ -98,12 +90,7 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
 
   // Change BGM when screen changes
   useEffect(() => {
-    if (!enabled || !audioRef.current || !isUnlocked) {
-      console.log("[BGM] Skipping BGM change - enabled:", enabled, "hasAudio:", !!audioRef.current, "isUnlocked:", isUnlocked)
-      return
-    }
-
-    console.log("[BGM] Changing BGM to:", resolvedBGMPath)
+    if (!enabled || !audioRef.current || !isUnlocked) return
 
     // Stop current BGM
     audioRef.current.pause()
@@ -114,11 +101,10 @@ export function useBGM(screen: ScreenType, options: UseBGMOptions = {}) {
     audioRef.current
       .play()
       .then(() => {
-        console.log("[BGM] BGM playing successfully:", resolvedBGMPath)
         setIsPlaying(true)
       })
       .catch((error) => {
-        console.error("[BGM] Failed to play BGM:", error, "Path:", resolvedBGMPath)
+        console.error("Failed to play BGM:", error)
         setIsPlaying(false)
       })
 
