@@ -29,9 +29,17 @@ jobs:
       - name: Build
         run: cd docs && pnpm build
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/out
-          force_orphan: true
+      - name: Copy build output to docs folder
+        run: |
+          cd docs
+          rm -rf index.html _next public styles
+          cp -r out/* .
+          rm -rf out
+
+      - name: Push to GitHub
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+          git add docs/
+          git commit -m "Deploy Next.js app [skip ci]" || true
+          git push origin main
