@@ -31,19 +31,24 @@ jobs:
 
       - name: Copy build output to docs folder
         run: |
-          # Remove existing build files
-          rm -f docs/index.html
-          rm -rf docs/_next docs/styles
-          
-          # Copy build output from out directory
+          # Copy build output from out directory to root of docs
           if [ -d "docs/out" ]; then
+            # Remove old files but keep source files
+            rm -rf docs/index.html docs/_next
+            
+            # Copy everything from out to docs root
             cp -r docs/out/* docs/
+            
+            # Cleanup outfolder
             rm -rf docs/out
           else
             echo "Build output directory not found at docs/out"
             ls -la docs/
             exit 1
           fi
+          
+          # Ensure .nojekyll exists
+          touch docs/.nojekyll
 
       - name: Push to GitHub
         run: |
