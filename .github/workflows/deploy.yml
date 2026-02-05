@@ -47,6 +47,12 @@ jobs:
             touch docs/out/.nojekyll
           fi
 
+      - name: Remove not-found pages
+        run: |
+          if [ -d "docs/out" ]; then
+            rm -f docs/out/404.html docs/out/_not-found.html
+          fi
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
