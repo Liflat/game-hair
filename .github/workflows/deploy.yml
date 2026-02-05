@@ -21,19 +21,18 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: 'docs/pnpm-lock.yaml'
+          cache-dependency-path: 'pnpm-lock.yaml'
 
       - name: Install dependencies
-        run: cd docs && pnpm install
+        run: pnpm install
 
       - name: Build
-        run: cd docs && pnpm build
+        run: pnpm build
 
       - name: Copy build output to docs folder
         run: |
-          cd docs
-          rm -rf index.html _next public styles
-          cp -r out/* .
+          rm -rf docs/index.html docs/_next docs/public docs/styles
+          cp -r out/* docs/
           rm -rf out
 
       - name: Push to GitHub
