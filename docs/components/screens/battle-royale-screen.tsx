@@ -216,11 +216,10 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             p.statusEffects = p.statusEffects.filter((e) => e.duration > 0)
             
             // Reduce cooldowns
-            Object.keys(p.cooldowns).forEach((skillId) => {
-              if (p.cooldowns[skillId] > 0) {
-                p.cooldowns[skillId]--
-              }
-            })
+            p.cooldowns = Object.entries(p.cooldowns).reduce((acc, [key, value]) => ({
+              ...acc,
+              [key]: value > 0 ? value - 1 : 0
+            }), {})
           })
 
           return newPlayers
@@ -626,7 +625,10 @@ setPlayerRank(placement)
 
       // Update cooldowns
       if (selectedSkill.cooldown > 0) {
-        player.cooldowns[selectedSkill.id] = selectedSkill.cooldown
+        player.cooldowns = {
+          ...player.cooldowns,
+          [selectedSkill.id]: selectedSkill.cooldown
+        }
       }
 
       return newPlayers
@@ -639,6 +641,7 @@ setPlayerRank(placement)
         const alive = newPlayers.filter((p) => !p.isEliminated)
         
         alive.forEach((player) => {
+          player.cooldowns = { ...player.cooldowns }
           if (player.isNpc && !player.isEliminated) {
             // Check if stunned
             const isStunned = player.statusEffects.some((e) => e.type === "stun")
@@ -675,7 +678,10 @@ setPlayerRank(placement)
                 setBattleLog((prev) => [...prev, `${target.name}が脱落!`])
               }
               if (skill.cooldown > 0) {
-                player.cooldowns[skill.id] = skill.cooldown
+                player.cooldowns = {
+                  ...player.cooldowns,
+                  [skill.id]: skill.cooldown
+                }
               }
             } else if (skill.type === "special") {
               // NPC special skill usage - enhanced for Epic/Legendary
@@ -752,7 +758,10 @@ setPlayerRank(placement)
                 setBattleLog((prev) => [...prev, `${player.name}が全知の力を発動!`])
               }
               if (skill.cooldown > 0) {
-                player.cooldowns[skill.id] = skill.cooldown
+                player.cooldowns = {
+                  ...player.cooldowns,
+                  [skill.id]: skill.cooldown
+                }
               }
             } else if (skill.type === "dot") {
               // NPC DOT attack
@@ -782,7 +791,10 @@ setPlayerRank(placement)
                 }
               }
               if (skill.cooldown > 0) {
-                player.cooldowns[skill.id] = skill.cooldown
+                player.cooldowns = {
+                  ...player.cooldowns,
+                  [skill.id]: skill.cooldown
+                }
               }
             } else if (skill.type === "aoe" && skill.damage > 0) {
               // NPC AOE attack
@@ -803,7 +815,10 @@ setPlayerRank(placement)
                 }
               })
               if (skill.cooldown > 0) {
-                player.cooldowns[skill.id] = skill.cooldown
+                player.cooldowns = {
+                  ...player.cooldowns,
+                  [skill.id]: skill.cooldown
+                }
               }
             } else if (skill.type === "team_heal") {
               // In solo mode, NPC only heals self
@@ -823,7 +838,10 @@ setPlayerRank(placement)
               player.statusEffects.push({ type: "buff", name: "防御強化", duration: 2, value: defValue })
               setBattleLog((prev) => [...prev, `${player.name}は${skill.name}で防御!`])
               if (skill.cooldown > 0) {
-                player.cooldowns[skill.id] = skill.cooldown
+                player.cooldowns = {
+                  ...player.cooldowns,
+                  [skill.id]: skill.cooldown
+                }
               }
             }
           }
