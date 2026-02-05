@@ -616,6 +616,15 @@ setPlayerRank(placement)
               setBattleLog((prev) => [...prev, `全知の力発動! 次の攻撃を完全回避+反撃準備!`])
               break
             }
+            case "end-world": {
+              // Galaktica's end-world - instant kill target
+              if (target && !target.isEliminated) {
+                target.hp = 0
+                target.isEliminated = true
+                setBattleLog((prev) => [...prev, `${target.name}は世界から消滅した!!`])
+              }
+              break
+            }
             default:
               setBattleLog((prev) => [...prev, `${selectedSkill.name}発動!`])
           }
@@ -756,6 +765,12 @@ setPlayerRank(placement)
                 player.statusEffects.push({ type: "buff", name: "オールファーザー", duration: 1, value: 100 })
                 player.statusEffects.push({ type: "buff", name: "反撃準備", duration: 1, value: 80 })
                 setBattleLog((prev) => [...prev, `${player.name}が全知の力を発動!`])
+              } else if (skill.id === "end-world") {
+                if (target && !target.isEliminated) {
+                  target.hp = 0
+                  target.isEliminated = true
+                  setBattleLog((prev) => [...prev, `${player.name}の${skill.name}! ${target.name}は世界から消滅した!!`])
+                }
               }
               if (skill.cooldown > 0) {
                 player.cooldowns = {

@@ -250,93 +250,97 @@ export const HAIR_ROOTS: HairRoot[] = [
     { id: "thunderbolt-supreme", name: "サンダーボルト・スプリーム", description: "オリンポスの雷霆で選択した敵を消し去る(最大3体)", damage: 200, cooldown: 3, type: "aoe", maxTargets: 3 },
     { id: "olympus-blessing", name: "オリンポスの祝福", description: "神々の加護。味方全員のHP完全回復", damage: 0, cooldown: 6, type: "team_heal" }
   ]},
+  { id: 32, name: "ギャラクティカ毛根", rarity: "cosmic", element: "dark", description: "宇宙の彼方から現れた暗黒の毛根。隕石と終焉の力を操る", power: 105, speed: 90, grip: 95, emoji: "🌌", color: "#4B0082", skills: [
+    { id: "thousand-meteor", name: "サウザンドメテオ", description: "1000の隕石で敵全体を襲う", damage: 150, cooldown: 5, type: "aoe", maxTargets: 99 },
+    { id: "end-world", name: "エンドワールド", description: "世界の終わりで敵一体を消滅させる", damage: 9999, cooldown: 7, type: "special" }
+  ]},
 
   // Additional Common (5)
-  { id: 32, name: "ねばねば毛根", rarity: "common", element: "water", description: "粘着質で離さない毛根", power: 9, speed: 10, grip: 18, emoji: "🍯", color: "#D97706", evolvesTo: 11, skills: [
+  { id: 33, name: "ねばねば毛根", rarity: "common", element: "water", description: "粘着質で離さない毛根", power: 9, speed: 10, grip: 18, emoji: "🍯", color: "#D97706", evolvesTo: 11, skills: [
     { id: "sticky-trap", name: "スティッキートラップ", description: "粘着で絡めとる", damage: 14, cooldown: 2, type: "attack" },
     { id: "gum-shield", name: "ガムシールド", description: "粘着バリア", damage: 0, cooldown: 3, type: "defense" }
   ]},
-  { id: 33, name: "とげとげ毛根", rarity: "common", element: "wind", description: "棘だらけの攻撃的な毛根", power: 16, speed: 9, grip: 10, emoji: "🌵", color: "#16A34A", evolvesTo: 15, skills: [
+  { id: 34, name: "とげとげ毛根", rarity: "common", element: "wind", description: "棘だらけの攻撃的な毛根", power: 16, speed: 9, grip: 10, emoji: "🌵", color: "#16A34A", evolvesTo: 15, skills: [
     { id: "thorn-stab", name: "ソーンスタブ", description: "棘で刺す", damage: 22, cooldown: 3, type: "attack" },
     { id: "spike-armor", name: "スパイクアーマー", description: "棘の鎧で反撃", damage: 0, cooldown: 4, type: "defense" }
   ]},
-  { id: 34, name: "ふにゃふにゃ毛根", rarity: "common", element: "water", description: "柔軟で変幻自在な毛根", power: 8, speed: 17, grip: 11, emoji: "🪼", color: "#A78BFA", evolvesTo: 14, skills: [
+  { id: 35, name: "ふにゃふにゃ毛根", rarity: "common", element: "water", description: "柔軟で変幻自在な毛根", power: 8, speed: 17, grip: 11, emoji: "🪼", color: "#A78BFA", evolvesTo: 14, skills: [
     { id: "flex-whip", name: "フレックスウィップ", description: "しなやかに鞭打つ", damage: 13, cooldown: 2, type: "attack" },
     { id: "jelly-absorb", name: "ジェリーアブソーブ", description: "衝撃を吸収", damage: 0, cooldown: 3, type: "defense" }
   ]},
-  { id: 35, name: "ぽよぽよ毛根", rarity: "common", element: "water", description: "弾力のある愛らしい毛根", power: 10, speed: 12, grip: 14, emoji: "🫧", color: "#38BDF8", evolvesTo: 12, skills: [
+  { id: 36, name: "ぽよぽよ毛根", rarity: "common", element: "water", description: "弾力のある愛らしい毛根", power: 10, speed: 12, grip: 14, emoji: "🫧", color: "#38BDF8", evolvesTo: 12, skills: [
     { id: "bounce-attack", name: "バウンスアタック", description: "跳ねて攻撃", damage: 16, cooldown: 2, type: "attack" },
     { id: "elastic-guard", name: "エラスティックガード", description: "弾いて防御", damage: 0, cooldown: 3, type: "defense" }
   ]},
-  { id: 36, name: "きらきら毛根", rarity: "common", element: "light", description: "光を反射する美しい毛根", power: 11, speed: 14, grip: 10, emoji: "💫", color: "#FCD34D", evolvesTo: 19, skills: [
+  { id: 37, name: "きらきら毛根", rarity: "common", element: "light", description: "光を反射する美しい毛根", power: 11, speed: 14, grip: 10, emoji: "💫", color: "#FCD34D", evolvesTo: 19, skills: [
     { id: "sparkle-flash", name: "スパークルフラッシュ", description: "光で目くらまし攻撃", damage: 15, cooldown: 2, type: "attack" },
     { id: "shine-barrier", name: "シャインバリア", description: "光の壁", damage: 0, cooldown: 4, type: "defense" }
   ]},
 
   // Additional Uncommon (5)
-  { id: 37, name: "マグマ毛根", rarity: "uncommon", element: "fire", description: "溶岩のように熱い毛根", power: 28, speed: 14, grip: 16, emoji: "🌋", color: "#DC2626", evolvesTo: 25, skills: [
+  { id: 38, name: "マグマ毛根", rarity: "uncommon", element: "fire", description: "溶岩のように熱い毛根", power: 28, speed: 14, grip: 16, emoji: "🌋", color: "#DC2626", evolvesTo: 25, skills: [
     { id: "lava-flow", name: "ラバフロー", description: "溶岩を流す+炎上付与", damage: 30, cooldown: 4, type: "dot", dotEffect: { name: "炎上", damage: 12, duration: 3 } },
     { id: "magma-armor", name: "マグマアーマー", description: "溶岩の鎧", damage: 0, cooldown: 5, type: "defense" }
   ]},
-  { id: 38, name: "ウィンド毛根", rarity: "uncommon", element: "wind", description: "風を操る軽やかな毛根", power: 16, speed: 30, grip: 12, emoji: "🌬️", color: "#67E8F9", evolvesTo: 27, skills: [
+  { id: 39, name: "ウィンド毛根", rarity: "uncommon", element: "wind", description: "風を操る軽やかな毛根", power: 16, speed: 30, grip: 12, emoji: "🌬️", color: "#67E8F9", evolvesTo: 27, skills: [
     { id: "gale-slash", name: "ゲイルスラッシュ", description: "風で切り裂く", damage: 28, cooldown: 2, type: "attack" },
     { id: "wind-barrier", name: "ウィンドバリア", description: "風の壁", damage: 0, cooldown: 3, type: "defense" }
   ]},
-  { id: 39, name: "グラビティ毛根", rarity: "uncommon", element: "dark", description: "重力を操る神秘的な毛根", power: 24, speed: 15, grip: 20, emoji: "🔮", color: "#8B5CF6", evolvesTo: 28, skills: [
+  { id: 40, name: "グラビティ毛根", rarity: "uncommon", element: "dark", description: "重力を操る神秘的な毛根", power: 24, speed: 15, grip: 20, emoji: "🔮", color: "#8B5CF6", evolvesTo: 28, skills: [
     { id: "gravity-press", name: "グラビティプレス", description: "重力で押しつぶす", damage: 36, cooldown: 4, type: "attack" },
     { id: "zero-gravity", name: "ゼログラビティ", description: "無重力で回避", damage: 0, cooldown: 4, type: "defense" }
   ]},
-  { id: 40, name: "ポイズン毛根", rarity: "uncommon", element: "dark", description: "毒を持つ危険な毛根", power: 22, speed: 20, grip: 18, emoji: "☠️", color: "#84CC16", evolvesTo: 26, skills: [
+  { id: 41, name: "ポイズン毛根", rarity: "uncommon", element: "dark", description: "毒を持つ危険な毛根", power: 22, speed: 20, grip: 18, emoji: "☠️", color: "#84CC16", evolvesTo: 26, skills: [
     { id: "venom-strike", name: "ヴェノムストライク", description: "毒で攻撃+毒付与", damage: 20, cooldown: 3, type: "dot", dotEffect: { name: "毒", damage: 12, duration: 3 } },
     { id: "toxic-cloud", name: "トキシッククラウド", description: "毒霧で守る", damage: 0, cooldown: 4, type: "special" }
   ]},
-  { id: 41, name: "ソニック毛根", rarity: "uncommon", element: "wind", description: "音速を超える高速毛根", power: 18, speed: 32, grip: 10, emoji: "💨", color: "#6366F1", evolvesTo: 22, skills: [
+  { id: 42, name: "ソニック毛根", rarity: "uncommon", element: "wind", description: "音速を超える高速毛根", power: 18, speed: 32, grip: 10, emoji: "💨", color: "#6366F1", evolvesTo: 22, skills: [
     { id: "sonic-boom", name: "ソニックブーム", description: "音速の衝撃波(最大2体)", damage: 25, cooldown: 3, type: "aoe", maxTargets: 2 },
     { id: "speed-blur", name: "スピードブラー", description: "高速移動で回避", damage: 0, cooldown: 2, type: "defense" }
   ]},
 
   // Additional Rare (5)
-  { id: 42, name: "オーロラ毛根", rarity: "rare", element: "light", description: "極光を纏う神秘的な毛根", power: 32, speed: 30, grip: 28, emoji: "🌌", color: "#34D399", evolvesTo: 27, skills: [
+  { id: 43, name: "オーロラ毛根", rarity: "rare", element: "light", description: "極光を纏う神秘的な毛根", power: 32, speed: 30, grip: 28, emoji: "🌌", color: "#34D399", evolvesTo: 27, skills: [
     { id: "aurora-wave", name: "オーロラウェーブ", description: "極光の波動(最大2体)", damage: 42, cooldown: 4, type: "aoe", maxTargets: 2 },
     { id: "northern-veil", name: "ノーザンヴェール", description: "極光の幕で守る", damage: 0, cooldown: 5, type: "defense" }
   ]},
-  { id: 43, name: "ルナ毛根", rarity: "rare", element: "dark", description: "月の力を宿す毛根", power: 28, speed: 35, grip: 30, emoji: "🌙", color: "#E2E8F0", evolvesTo: 29, skills: [
+  { id: 44, name: "ルナ毛根", rarity: "rare", element: "dark", description: "月の力を宿す毛根", power: 28, speed: 35, grip: 30, emoji: "🌙", color: "#E2E8F0", evolvesTo: 29, skills: [
     { id: "lunar-strike", name: "ルナストライク", description: "月光の一撃", damage: 48, cooldown: 4, type: "attack" },
     { id: "moon-blessing", name: "ムーンブレッシング", description: "月の加護で回復", damage: 0, cooldown: 5, type: "special" }
   ]},
-  { id: 44, name: "ソーラー毛根", rarity: "rare", element: "light", description: "太陽の力を宿す毛根", power: 40, speed: 28, grip: 25, emoji: "☀️", color: "#FBBF24", evolvesTo: 25, skills: [
+  { id: 45, name: "ソーラー毛根", rarity: "rare", element: "light", description: "太陽の力を宿す毛根", power: 40, speed: 28, grip: 25, emoji: "☀️", color: "#FBBF24", evolvesTo: 25, skills: [
     { id: "solar-flare", name: "ソーラーフレア", description: "太陽フレア攻撃", damage: 56, cooldown: 4, type: "attack" },
     { id: "sunlight-heal", name: "サンライトヒール", description: "日光で回復", damage: 0, cooldown: 5, type: "special" }
   ]},
-  { id: 45, name: "スピリット毛根", rarity: "rare", element: "divine", description: "精霊の力を持つ毛根", power: 30, speed: 32, grip: 32, emoji: "👻", color: "#A78BFA", evolvesTo: 28, skills: [
+  { id: 46, name: "スピリット毛根", rarity: "rare", element: "divine", description: "精霊の力を持つ毛根", power: 30, speed: 32, grip: 32, emoji: "👻", color: "#A78BFA", evolvesTo: 28, skills: [
     { id: "spirit-lance", name: "スピリットランス", description: "精霊の槍", damage: 50, cooldown: 4, type: "attack" },
     { id: "ethereal-form", name: "エーテルフォーム", description: "霊体化で回避", damage: 0, cooldown: 4, type: "defense" }
   ]},
-  { id: 46, name: "テラ毛根", rarity: "rare", element: "dark", description: "大地の力を持つ毛根", power: 38, speed: 22, grip: 35, emoji: "🏔️", color: "#92400E", evolvesTo: 26, skills: [
+  { id: 47, name: "テラ毛根", rarity: "rare", element: "dark", description: "大地の力を持つ毛根", power: 38, speed: 22, grip: 35, emoji: "🏔️", color: "#92400E", evolvesTo: 26, skills: [
     { id: "earthquake", name: "アースクエイク", description: "地震を起こす(最大2体)", damage: 54, cooldown: 5, type: "aoe", maxTargets: 2 },
     { id: "stone-skin", name: "ストーンスキン", description: "石化して防御", damage: 0, cooldown: 5, type: "defense" }
   ]},
 
   // Additional Epic (3)
-  { id: 47, name: "ケルベロス毛根", rarity: "epic", element: "fire", description: "三つ首の地獄の番犬の力を持つ毛根", power: 52, speed: 42, grip: 45, emoji: "🐕", color: "#7C2D12", evolvesTo: 30, skills: [
+  { id: 48, name: "ケルベロス毛根", rarity: "epic", element: "fire", description: "三つ首の地獄の番犬の力を持つ毛根", power: 52, speed: 42, grip: 45, emoji: "🐕", color: "#7C2D12", evolvesTo: 30, skills: [
     { id: "triple-fang", name: "トリプルファング", description: "三連噛みつき攻撃", damage: 98, cooldown: 4, type: "attack" },
     { id: "hellfire-breath", name: "ヘルファイアブレス", description: "地獄の炎で全てを焼く", damage: 0, cooldown: 5, type: "special" }
   ]},
-  { id: 48, name: "ヴァルキリー毛根", rarity: "epic", element: "light", description: "戦乙女の力を宿す毛根", power: 48, speed: 50, grip: 42, emoji: "⚔️", color: "#F472B6", evolvesTo: 29, skills: [
+  { id: 49, name: "ヴァルキリー毛根", rarity: "epic", element: "light", description: "戦乙女の力を宿す毛根", power: 48, speed: 50, grip: 42, emoji: "⚔️", color: "#F472B6", evolvesTo: 29, skills: [
     { id: "valkyrie-strike", name: "ヴァルキリーストライク", description: "戦乙女の必殺剣", damage: 95, cooldown: 4, type: "attack" },
     { id: "einherjar", name: "エインヘリャル", description: "勇者の魂で復活、HP60%回復", damage: 0, cooldown: 6, type: "special" }
   ]},
-  { id: 49, name: "リヴァイアサン毛根", rarity: "epic", element: "water", description: "海の魔獣の力を持つ毛根", power: 45, speed: 40, grip: 55, emoji: "🐋", color: "#0369A1", evolvesTo: 30, skills: [
+  { id: 50, name: "リヴァイアサン毛根", rarity: "epic", element: "water", description: "海の魔獣の力を持つ毛根", power: 45, speed: 40, grip: 55, emoji: "🐋", color: "#0369A1", evolvesTo: 30, skills: [
     { id: "tidal-wave", name: "タイダルウェーブ", description: "大津波で押し流す(最大3体)", damage: 90, cooldown: 4, type: "aoe", maxTargets: 3 },
     { id: "deep-dive", name: "ディープダイブ", description: "深海に潜り全攻撃回避", damage: 0, cooldown: 5, type: "defense" }
   ]},
 
   // Additional Legendary (2)
-  { id: 50, name: "オーディン毛根", rarity: "legendary", element: "divine", description: "北欧神話の主神の力を宿す毛根", power: 72, speed: 68, grip: 65, emoji: "🦅", color: "#1E40AF", skills: [
+  { id: 51, name: "オーディン毛根", rarity: "legendary", element: "divine", description: "北欧神話の主神の力を宿す毛根", power: 72, speed: 68, grip: 65, emoji: "🦅", color: "#1E40AF", skills: [
     { id: "gungnir", name: "グングニル", description: "必中の神槍で貫く", damage: 145, cooldown: 4, type: "attack" },
     { id: "all-father", name: "オールファーザー", description: "全知の力で次の攻撃を完全回避+反撃", damage: 0, cooldown: 5, type: "special" }
   ]},
-  { id: 51, name: "アマテラス毛根", rarity: "legendary", element: "light", description: "太陽神の力を持つ神聖な毛根", power: 68, speed: 70, grip: 70, emoji: "🌸", color: "#F43F5E", skills: [
+  { id: 52, name: "アマテラス毛根", rarity: "legendary", element: "light", description: "太陽神の力を持つ神聖な毛根", power: 68, speed: 70, grip: 70, emoji: "🌸", color: "#F43F5E", skills: [
     { id: "amaterasu-flame", name: "天照の炎", description: "消えない神火で敵を焼く(最大2体)", damage: 155, cooldown: 4, type: "aoe", maxTargets: 2 },
     { id: "divine-light", name: "神光", description: "神聖な光で味方全員HP50%回復", damage: 0, cooldown: 6, type: "team_heal" }
   ]},
