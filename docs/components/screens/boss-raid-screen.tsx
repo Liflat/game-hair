@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, calculateStats, calculateSkillBonus, getElementCombatModifiers, BOSS_RAID_SKILLS, type HairRoot, type Skill, type CollectedHairRoot, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, BOSS_HAIR_ROOT, calculateStats, calculateSkillBonus, getElementCombatModifiers, BOSS_RAID_SKILLS, type HairRoot, type Skill, type CollectedHairRoot, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -45,7 +45,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
   const [battleLog, setBattleLog] = useState<string[]>([])
   const [isExecuting, setIsExecuting] = useState(false)
 
-  const boss = HAIR_ROOTS.find(h => h.id === 53)!
+  const boss = BOSS_HAIR_ROOT
   const canStartBattle = selectedTeam.length === 5
 
   const handleTeamSelection = (hairRoot: CollectedHairRoot) => {
@@ -57,14 +57,17 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
   }
 
   const initializeBattle = () => {
-    // Create boss player with raid-specific skills
-    const bossWithRaidSkills: HairRoot = {
+    // Create boss player with raid-specific skills and level
+    const bossWithRaidSkills = {
       ...boss,
+      level: 1,
+      exp: 0,
+      count: 1,
       skills: BOSS_RAID_SKILLS,
-    }
+    } as CollectedHairRoot
     
     // Calculate boss HP safely
-    const bossStats = calculateStats({ ...boss, level: 1, exp: 0, count: 1 } as CollectedHairRoot)
+    const bossStats = calculateStats(bossWithRaidSkills)
     const bossMaxHp = Math.max(1, Math.floor((1000 + (bossStats?.power ?? 0) + (bossStats?.grip ?? 0)) * 1.5))
     
     const bossPlayer: BattlePlayer = {
@@ -374,7 +377,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
 
       if (selectedBossSkill.id === "normal-attack" && aliveTeam.length > 0) {
         const target = aliveTeam[Math.floor(Math.random() * aliveTeam.length)]
-        const stats = calculateStats(boss.hairRoot as CollectedHairRoot)
+        const stats = calculateStats(boss.hairRoot as unknown as CollectedHairRoot)
         const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
         const baseDamage = 15
         const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
@@ -405,7 +408,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         newLog.push(`20%ダメージ軽減!`)
       } else if (selectedBossSkill.type === "attack" && aliveTeam.length > 0) {
         const target = aliveTeam[Math.floor(Math.random() * aliveTeam.length)]
-        const stats = calculateStats(boss.hairRoot as CollectedHairRoot)
+        const stats = calculateStats(boss.hairRoot as unknown as CollectedHairRoot)
         const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
         const baseDamage = selectedBossSkill.damage || 0
         const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
@@ -427,7 +430,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         }
       } else if (selectedBossSkill.type === "aoe") {
         aliveTeam.forEach(target => {
-          const stats = calculateStats(boss.hairRoot as CollectedHairRoot)
+          const stats = calculateStats(boss.hairRoot as unknown as CollectedHairRoot)
           const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
           const baseDamage = selectedBossSkill.damage || 0
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)

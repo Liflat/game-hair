@@ -17,6 +17,7 @@ import { BattleScreen } from "@/components/screens/battle-screen"
 import { BattleRoyaleScreen } from "@/components/screens/battle-royale-screen"
 import { TeamRoyaleScreen } from "@/components/screens/team-royale-screen"
 import { BossRaidScreen } from "@/components/screens/boss-raid-screen"
+import { TutorialScreen } from "@/components/screens/tutorial-screen"
 import { ProfileScreen } from "@/components/screens/profile-screen"
 
 function GameApp() {
@@ -79,6 +80,9 @@ function GameApp() {
         )}
         {currentScreen === "boss-raid" && (
           <BossRaidScreen key="boss-raid" onNavigate={handleNavigate} />
+        )}
+        {currentScreen === "tutorial" && (
+          <TutorialScreen key="tutorial" onNavigate={handleNavigate} />
         )}
         {currentScreen === "profile" && (
           <ProfileScreen key="profile" onNavigate={handleNavigate} />

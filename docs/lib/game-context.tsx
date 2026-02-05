@@ -12,7 +12,7 @@ import {
   EVOLUTION_COST,
   getRankFromPoints,
   calculatePointsChange,
-  BOSS_HAIR_GRAND,
+  BOSS_HAIR_ROOT,
   BOSS_RAID_CONFIG,
 } from "./game-data"
 
@@ -245,18 +245,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const defeatBossRaid = useCallback(() => {
     setState((prev) => {
-      const existingCosmicHair = prev.collection.find((h) => h.id === BOSS_HAIR_GRAND.id)
+      const existingCosmicHair = prev.collection.find((h) => h.id === BOSS_HAIR_ROOT.id)
       let newCollection = [...prev.collection]
       
       if (existingCosmicHair) {
         newCollection = newCollection.map((h) =>
-          h.id === BOSS_HAIR_GRAND.id
+          h.id === BOSS_HAIR_ROOT.id
             ? { ...h, count: h.count + 1 }
             : h
         )
       } else {
         const newHairRoot: CollectedHairRoot = {
-          ...BOSS_HAIR_GRAND,
+          ...BOSS_HAIR_ROOT,
           level: 1,
           exp: 0,
           count: 1,
