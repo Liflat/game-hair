@@ -371,7 +371,8 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             if (triggerAllFather(player, target)) {
               break
             }
-            const baseDamage = selectedSkill.damage
+            const skillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.level, exp: 0, count: 1 })
+            const baseDamage = Math.floor(selectedSkill.damage * skillBonus)
             const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
             const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
             target.hp = Math.max(0, target.hp - finalDamage)
@@ -398,7 +399,8 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             .filter((t): t is BattlePlayer => t !== undefined && !t.isEliminated)
           
           if (targets.length > 0) {
-            const baseDamage = selectedSkill.damage
+            const skillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.level, exp: 0, count: 1 })
+            const baseDamage = Math.floor(selectedSkill.damage * skillBonus)
             
             targets.forEach((t) => {
               // Check if target has dodge preparation buff
@@ -443,7 +445,8 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             if (triggerAllFather(player, target)) {
               break
             }
-            const baseDamage = selectedSkill.damage
+            const skillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.level, exp: 0, count: 1 })
+            const baseDamage = Math.floor(selectedSkill.damage * skillBonus)
             const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
             const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
             target.hp = Math.max(0, target.hp - finalDamage)
@@ -739,7 +742,8 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 if (triggerAllFather(player, target)) {
                   return
                 }
-                const baseDamage = Math.floor(skill.damage * (0.8 + Math.random() * 0.4))
+                const skillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.level, exp: 0, count: 1 })
+                const baseDamage = Math.floor(skill.damage * skillBonus * (0.8 + Math.random() * 0.4))
                 const def = target.statusEffects.find((e) => e.name === "防御強化")
                 const reduction = def ? (def.value || 0) / 100 : 0
                 const damage = Math.floor(baseDamage * (1 - reduction))

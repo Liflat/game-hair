@@ -267,6 +267,13 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
 
       if (!currentPlayer || currentPlayer.isEliminated) return prev
       
+      // Check if player is stunned
+      const isStunned = currentPlayer.statusEffects.some((e) => e.type === "stun")
+      if (isStunned) {
+        setBattleLog((logs) => [...logs, `${currentPlayer.name}は行動不能!`])
+        return prev
+      }
+      
       // Only check target for skills that require one
       const requiresTarget = selectedSkill.type === "attack" || selectedSkill.type === "dot" || selectedSkill.id === "end-world" || selectedSkill.id === "static-field" || selectedSkill.id === "entangle"
       if (requiresTarget && (!target || target.isEliminated)) return prev
@@ -294,11 +301,12 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
 
           const stats = getBattleStats(currentPlayer)
           const totalPower = stats.power + currentPlayer.buffedStats.power
+          const skillBonus = getSkillBonus(currentPlayer)
           const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
           if (triggerAllFather(currentPlayer, target)) {
             return prev
           }
-          let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
+          let damage = Math.floor((selectedSkill.damage * skillBonus * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
           
           const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
           if (defBuff) {
@@ -331,11 +339,12 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
 
           const stats = getBattleStats(currentPlayer)
           const totalPower = stats.power + currentPlayer.buffedStats.power
+          const skillBonus = getSkillBonus(currentPlayer)
           const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
           if (triggerAllFather(currentPlayer, target)) {
             return prev
           }
-          let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
+          let damage = Math.floor((selectedSkill.damage * skillBonus * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
           
           const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
           if (defBuff) {
@@ -427,6 +436,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         
         const stats = getBattleStats(currentPlayer)
         const totalPower = stats.power + currentPlayer.buffedStats.power
+        const skillBonus = getSkillBonus(currentPlayer)
         
         targets.forEach(t => {
           // Check if target has dodge preparation buff
@@ -441,7 +451,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             if (triggerAllFather(currentPlayer, t)) {
               return
             }
-            let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
+            let damage = Math.floor((selectedSkill.damage * skillBonus * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
             const defBuff = t.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
             if (defBuff) damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
             
@@ -614,6 +624,13 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         // NPC actions
         const npcs = alivePlayers.filter(p => p.isNpc)
         for (const npc of npcs) {
+          // Check if NPC is stunned
+          const isStunned = npc.statusEffects.some((e) => e.type === "stun")
+          if (isStunned) {
+            setBattleLog((logs) => [...logs, `${npc.name}は行動不能!`])
+            continue
+          }
+          
           const enemyPlayers = alivePlayers.filter(p => p.teamId !== npc.teamId && !p.isEliminated)
           if (enemyPlayers.length === 0) continue
 
@@ -635,10 +652,11 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             } else {
               const stats = getBattleStats(npc)
               const totalPower = stats.power + npc.buffedStats.power
+              const skillBonus = getSkillBonus(npc)
               if (triggerAllFather(npc, target)) {
                 continue
               }
-              let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
+              let damage = Math.floor((skill.damage * skillBonus * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
               
               const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
               if (defBuff) {

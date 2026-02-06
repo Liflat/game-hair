@@ -517,7 +517,14 @@ export const BOSS_HAIR_ROOT: HairRoot = {
   ]
 }
 
-export const LEVEL_UP_EXP = [0, 100, 250, 500, 800, 1200, 1700, 2300, 3000, 4000]
+export const LEVEL_UP_EXP: Record<Rarity, number[]> = {
+  common: [0, 100, 250, 500, 800, 1200, 1700, 2300, 3000, 4000],
+  uncommon: [0, 120, 300, 600, 960, 1440, 2040, 2760, 3600, 4800],
+  rare: [0, 150, 375, 750, 1200, 1800, 2550, 3450, 4500, 6000],
+  epic: [0, 180, 450, 900, 1440, 2160, 3060, 4140, 5400, 7200],
+  legendary: [0, 220, 550, 1100, 1760, 2640, 3740, 5060, 6600, 8800],
+  cosmic: [0, 250, 625, 1250, 2000, 3000, 4250, 5750, 7500, 10000],
+}
 
 // Rank System
 export type RankTier = "bronze" | "silver" | "gold" | "platinum" | "diamond" | "master" | "legend"
@@ -634,20 +641,30 @@ export const BOSS_RAID_CONFIG = {
   },
 }
 export function calculateSkillBonus(hairRoot: CollectedHairRoot): number {
-  // Skill effectiveness increases with level
-  // Returns a multiplier (1.0 at level 1, increases 15% per level)
-  return 1 + (hairRoot.level - 1) * 0.15
+  // Skill effectiveness increases with level and rarity
+  // Level bonus: 8% per level
+  // Rarity bonus: 1.0 to 1.3 (smaller than normal attack to keep balance)
+  const levelBonus = 1 + (hairRoot.level - 1) * 0.08
+  const rarityMultiplier: Record<Rarity, number> = {
+    common: 1.0,
+    uncommon: 1.05,
+    rare: 1.1,
+    epic: 1.15,
+    legendary: 1.2,
+    cosmic: 1.3,
+  }
+  return levelBonus * rarityMultiplier[hairRoot.rarity]
 }
 
 // Get rarity bonus multiplier
 export function getRarityBonus(rarity: Rarity): number {
   const bonuses: Record<Rarity, number> = {
     common: 1.0,
-    uncommon: 1.2,
-    rare: 1.4,
-    epic: 1.6,
-    legendary: 1.8,
-    cosmic: 2.0,
+    uncommon: 1.1,
+    rare: 1.2,
+    epic: 1.3,
+    legendary: 1.4,
+    cosmic: 1.5,
   }
   return bonuses[rarity]
 }
@@ -662,8 +679,8 @@ export function calculateNormalAttackDamage(hairRoot: CollectedHairRoot): number
 
 // Calculate normal defense reduction based on level and rarity
 export function calculateNormalDefenseReduction(hairRoot: CollectedHairRoot): number {
-  const baseReduction = 20
+  const baseReduction = 15
   const levelBonus = 1 + (hairRoot.level - 1) * 0.15
   const rarityBonus = getRarityBonus(hairRoot.rarity)
-  return Math.min(100, Math.floor(baseReduction * levelBonus * rarityBonus))
+  return Math.min(60, Math.floor(baseReduction * levelBonus * rarityBonus))
 }

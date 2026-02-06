@@ -172,8 +172,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         let newExp = h.exp + expGain
         let newLevel = h.level
         
-        while (newLevel < 10 && newExp >= LEVEL_UP_EXP[newLevel]) {
-          newExp -= LEVEL_UP_EXP[newLevel]
+        while (newLevel < 10 && newExp >= LEVEL_UP_EXP[h.rarity][newLevel]) {
+          newExp -= LEVEL_UP_EXP[h.rarity][newLevel]
           newLevel++
         }
         

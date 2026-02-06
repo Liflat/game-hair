@@ -164,13 +164,13 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
                 <div className="flex justify-between text-sm mb-1">
                   <span className="text-muted-foreground">経験値</span>
                   <span className="text-foreground">
-                    {currentData.exp} / {LEVEL_UP_EXP[currentData.level]}
+                    {currentData.exp} / {LEVEL_UP_EXP[currentData.rarity][currentData.level]}
                   </span>
                 </div>
                 <div className="h-4 bg-muted rounded-full overflow-hidden">
                   <motion.div
                     className="h-full bg-gradient-to-r from-secondary to-primary"
-                    animate={{ width: `${(currentData.exp / LEVEL_UP_EXP[currentData.level]) * 100}%` }}
+                    animate={{ width: `${(currentData.exp / LEVEL_UP_EXP[currentData.rarity][currentData.level]) * 100}%` }}
                     transition={{ duration: 0.5 }}
                   />
                 </div>

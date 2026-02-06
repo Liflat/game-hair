@@ -26,6 +26,20 @@ const tutorials = [
     ]
   },
   {
+    id: "elements",
+    title: "属性相性",
+    icon: "⚡",
+    description: "バトルの有利不利",
+    details: [
+      "🔥炎 → 🌪️風 → 💧水 → 🔥炎（三すくみ）",
+      "有利な相性：ダメージ1.3倍、不利な相性：ダメージ0.7倍",
+      "☀️光 ⇔ 🌙闇：お互いに有利（1.3倍）",
+      "✨神 → 🔥炎/💧水/🌪️風に有利（1.3倍）",
+      "☀️光/🌙闇 → ✨神に有利（1.3倍）",
+      "属性相性は攻撃・防御の両方に影響します"
+    ]
+  },
+  {
     id: "collection",
     title: "コレクション",
     icon: "📦",
@@ -204,6 +218,7 @@ export function TutorialScreen({ onNavigate }: TutorialScreenProps) {
               onClick={() => {
                 const screenMap: Record<string, Screen> = {
                   "gacha": "gacha",
+                  "elements": "collection",
                   "collection": "collection",
                   "training": "training",
                   "matchmaking": "matchmaking",
@@ -217,7 +232,7 @@ export function TutorialScreen({ onNavigate }: TutorialScreenProps) {
               }}
               className="w-full h-12"
             >
-              {selectedTutorial.title}を開く
+              {selectedTutorial.id === "elements" ? "コレクションを開く" : `${selectedTutorial.title}を開く`}
             </Button>
           </motion.div>
         ) : null}

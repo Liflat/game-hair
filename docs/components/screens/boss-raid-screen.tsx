@@ -180,10 +180,22 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
 
       if (!player) return prev
 
+      const newLog: string[] = []
+
+      // Check if player is stunned
+      const isStunned = player.statusEffects.some((e) => e.type === "stun")
+      if (isStunned) {
+        newLog.push(`${player.name}は行動不能!`)
+        setBattleLog((prev) => [...prev, ...newLog])
+        setPhase("action")
+        setTimeout(() => {
+          executeBossAction()
+        }, 1500)
+        return prev
+      }
+
       const stats = calculateStats(player.hairRoot as CollectedHairRoot)
       const buffedPower = (stats?.power ?? 0) + (player.buffedStats.power || 0)
-
-      const newLog: string[] = []
 
       const applyAttack = (
         attacker: BattlePlayer,
@@ -279,7 +291,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             if (triggerAllFather(player, target, newLog, newPlayers)) {
               // Attack was dodged
             } else {
-              const baseDamage = selectedSkill.damage || 0
+              const skillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.level, exp: 0, count: 1 })
+              const baseDamage = Math.floor((selectedSkill.damage || 0) * skillBonus)
               const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
               const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
               
@@ -604,6 +617,13 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         allies.forEach((ally) => {
           if (boss.isEliminated || ally.isEliminated) return
 
+          // Check if ally is stunned
+          const isStunned = ally.statusEffects.some((e) => e.type === "stun")
+          if (isStunned) {
+            newLog.push(`${ally.name}は行動不能!`)
+            return
+          }
+
           const availableSkills = ally.hairRoot.skills.filter(s => (ally.cooldowns[s.id] || 0) <= 0)
           const normalDefenseReduction = calculateNormalDefenseReduction({ ...ally.hairRoot, level: ally.level, exp: 0, count: 1 } as CollectedHairRoot)
           const normalDefense: Skill = { id: "normal-defense", name: "通常防御", damage: 0, cooldown: 0, type: "defense", description: `軽減: ${normalDefenseReduction}%` }
@@ -712,7 +732,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             })
             newLog.push(`${ally.name}の${chosenSkill.name}で次の攻撃を完全に回避できる態勢を整えた!`)
           } else if (chosenSkill.type === "attack" || chosenSkill.type === "aoe" || chosenSkill.type === "special") {
-            const baseDamage = chosenSkill.damage || 0
+            const skillBonus = calculateSkillBonus({ ...ally.hairRoot, level: ally.level, exp: 0, count: 1 })
+            const baseDamage = Math.floor((chosenSkill.damage || 0) * skillBonus)
             const label = chosenSkill.id === "normal-attack"
               ? "の通常攻撃が"
               : `の${chosenSkill.name}が`
@@ -756,6 +777,16 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           setBattleLog(prev => [...prev, "すべての毛根が絶滅した..."])
         }
         setPhase("finished")
+        setIsExecuting(false)
+        return newPlayers
+      }
+
+      // Check if boss is stunned
+      const isStunned = boss.statusEffects.some((e) => e.type === "stun")
+      if (isStunned) {
+        setBattleLog(prev => [...prev, `${boss.name}は行動不能!`])
+        setRound(r => r + 1)
+        setPhase("selecting")
         setIsExecuting(false)
         return newPlayers
       }
@@ -826,7 +857,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         } else {
           const stats = calculateStats(boss.hairRoot as unknown as CollectedHairRoot)
           const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
-          const baseDamage = selectedBossSkill.damage || 0
+          const skillBonus = calculateSkillBonus({ ...boss.hairRoot, level: boss.level, exp: 0, count: 1 })
+          const baseDamage = Math.floor((selectedBossSkill.damage || 0) * skillBonus)
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
           const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
           
