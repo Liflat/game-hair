@@ -240,7 +240,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
             <p className="text-xs text-muted-foreground">{selectedHairRoot.name}</p>
             {myElement && (
               <p className="text-[10px] mt-1 px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: ELEMENT_COLORS[myElement] }}>
-                {ELEMENT_NAMES[myElement]}属性
+                {myElement === "neutral" ? "◯" : `${ELEMENT_NAMES[myElement][0]}属性`}
               </p>
             )}
           </div>
@@ -281,7 +281,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
             <p className="text-xs text-muted-foreground">{opponent.hairRoot.name}</p>
             {oppElement && (
               <p className="text-[10px] mt-1 px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: ELEMENT_COLORS[oppElement] }}>
-                {ELEMENT_NAMES[oppElement]}属性
+                {oppElement === "neutral" ? "◯" : `${ELEMENT_NAMES[oppElement][0]}属性`}
               </p>
             )}
           </div>

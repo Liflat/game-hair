@@ -259,7 +259,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
         const attackerStats = calculateStats(attacker.hairRoot as CollectedHairRoot)
         const attackerPower = (attackerStats?.power ?? 0) + (attacker.buffedStats.power || 0)
         const elementMod = getElementDamageMod(attacker.hairRoot, target.hairRoot)
-        const finalDamage = Math.floor(baseDamage * (1 + attackerPower / 100) * elementMod)
+        const finalDamage = Math.floor(baseDamage * (1 + attackerPower / 500) * elementMod)
 
         const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
         const damageAfterDefense = defenseEffect?.value
@@ -295,7 +295,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
             } else {
               const baseDamage = calculateNormalAttackDamage({ ...player.hairRoot, level: player.level, exp: 0, count: 1 } as CollectedHairRoot)
               const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
-              const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+              const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 500) * elementMod)
               
               // Apply defense buff if exists
               const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
@@ -869,7 +869,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
           const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
           const baseDamage = calculateNormalAttackDamage({ ...boss.hairRoot, level: boss.level, exp: 0, count: 1 } as CollectedHairRoot)
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
-          const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+          const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 500) * elementMod)
           
           const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
           const damageAfterDefense = defenseEffect?.value 

@@ -110,7 +110,7 @@ export function BossSelectScreen({ onNavigate }: BossSelectScreenProps) {
                           className="text-xs px-3 py-1 rounded-full text-white font-medium"
                           style={{ backgroundColor: ELEMENT_COLORS[boss.element] }}
                         >
-                          {ELEMENT_NAMES[boss.element]}
+                          {boss.element === "neutral" ? "◯" : ELEMENT_NAMES[boss.element][0]}
                         </span>
                       )}
                     </div>

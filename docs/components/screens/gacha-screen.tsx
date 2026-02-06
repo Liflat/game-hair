@@ -480,7 +480,7 @@ export function GachaScreen({ onNavigate }: GachaScreenProps) {
                         className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold text-white mb-1"
                         style={{ backgroundColor: ELEMENT_COLORS[results[0].element] }}
                       >
-                        {ELEMENT_NAMES[results[0].element]}属性
+                        {results[0].element === "neutral" ? "◯" : `${ELEMENT_NAMES[results[0].element][0]}属性`}
                       </span>
                     )}
                     <p
@@ -554,7 +554,7 @@ export function GachaScreen({ onNavigate }: GachaScreenProps) {
                               className="absolute -top-1 -right-1 w-3 h-3 rounded-full text-[6px] flex items-center justify-center text-white font-bold"
                               style={{ backgroundColor: ELEMENT_COLORS[hairRoot.element] }}
                             >
-                              {ELEMENT_NAMES[hairRoot.element][0]}
+                              {hairRoot.element === "neutral" ? "◯" : ELEMENT_NAMES[hairRoot.element][0]}
                             </span>
                           )}
                         </div>
@@ -678,7 +678,7 @@ export function GachaScreen({ onNavigate }: GachaScreenProps) {
                         className="px-3 py-1 rounded-full text-xs font-bold text-white"
                         style={{ backgroundColor: ELEMENT_COLORS[selectedDetail.element] }}
                       >
-                        {ELEMENT_NAMES[selectedDetail.element]}属性
+                        {selectedDetail.element === "neutral" ? "◯" : `${ELEMENT_NAMES[selectedDetail.element][0]}属性`}
                       </span>
                     </div>
                   )}
@@ -783,7 +783,7 @@ export function GachaScreen({ onNavigate }: GachaScreenProps) {
                         className="px-3 py-1 rounded-full text-xs font-bold text-white"
                         style={{ backgroundColor: ELEMENT_COLORS[pickupDetail.element] }}
                       >
-                        {ELEMENT_NAMES[pickupDetail.element]}属性
+                        {pickupDetail.element === "neutral" ? "◯" : `${ELEMENT_NAMES[pickupDetail.element][0]}属性`}
                       </span>
                     </div>
                   )}
