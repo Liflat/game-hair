@@ -123,6 +123,17 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
   const player = teams.flatMap(t => t.members).find((p) => !p.isNpc)
   const playerTeam = teams.find(t => t.members.some(m => !m.isNpc))
 
+  // Auto-progress when player is eliminated
+  useEffect(() => {
+    if (phase === "select" && player?.isEliminated) {
+      // Player is dead, skip their turn and proceed
+      const timeout = setTimeout(() => {
+        setPhase("action")
+      }, 500)
+      return () => clearTimeout(timeout)
+    }
+  }, [phase, player])
+
   const getBattleStats = useCallback((battlePlayer: BattlePlayer) => {
     return calculateStats({
       ...battlePlayer.hairRoot,
