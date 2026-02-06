@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, getRankColor, getNpcStrengthMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Users, Trophy } from "lucide-react"
@@ -113,6 +113,16 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
   
   const currentRank = getTeamRoyaleRank()
   const strengthMultiplier = getNpcStrengthMultiplier(currentRank)
+  const coinMultiplier = getRankCoinMultiplier(currentRank)
+
+  const getTeamRoyaleBaseCoins = (placement: number): number => {
+    const coinRewards: Record<number, number> = { 1: 300, 2: 150, 3: 80, 4: 30 }
+    return coinRewards[placement] || 30
+  }
+
+  const getTeamRoyaleRewardCoins = (placement: number): number => {
+    return Math.floor(getTeamRoyaleBaseCoins(placement) * coinMultiplier)
+  }
 
   useEffect(() => {
     if (logRef.current) {
@@ -674,7 +684,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           const isPlayerTeamWinner = remainingTeams[0].members.some(m => !m.isNpc)
           if (isPlayerTeamWinner) {
             setPlayerTeamRank(1)
-            addCoins(300)
+            addCoins(getTeamRoyaleRewardCoins(1))
             const change = updateTeamRoyaleRank(1)
             setRankChange(change)
           } else {
@@ -682,8 +692,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             const eliminatedTeamsCount = newTeams.filter(t => t.isEliminated && t.id !== playerTeam?.id).length
             const placement = 4 - eliminatedTeamsCount + (playerTeam?.isEliminated ? 1 : 0)
             setPlayerTeamRank(placement)
-            const coinRewards: Record<number, number> = { 1: 300, 2: 150, 3: 80, 4: 30 }
-            addCoins(coinRewards[placement] || 30)
+            addCoins(getTeamRoyaleRewardCoins(placement))
             const change = updateTeamRoyaleRank(placement)
             setRankChange(change)
           }
@@ -696,8 +705,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           const eliminatedTeamsCount = newTeams.filter(t => t.isEliminated).length
           const placement = 5 - eliminatedTeamsCount
           setPlayerTeamRank(placement)
-          const coinRewards: Record<number, number> = { 1: 300, 2: 150, 3: 80, 4: 30 }
-          addCoins(coinRewards[placement] || 30)
+          addCoins(getTeamRoyaleRewardCoins(placement))
           const change = updateTeamRoyaleRank(placement)
           setRankChange(change)
           setPhase("result")
@@ -712,7 +720,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
     }, 1500)
 
     return () => clearTimeout(timeout)
-  }, [phase, addCoins, updateTeamRoyaleRank, getBattleStats])
+  }, [phase, addCoins, updateTeamRoyaleRank, getBattleStats, coinMultiplier])
 
   const getEnemyPlayers = () => {
     return teams.flatMap(t => t.members).filter(p => p.teamId !== player?.teamId && !p.isEliminated)
@@ -1074,7 +1082,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                 <h2 className="text-3xl font-bold text-destructive mb-4">チーム敗退...</h2>
                 <p className="text-xl text-foreground mb-2">第{playerTeamRank}位</p>
                 <p className="text-secondary mb-2">
-                  +{{ 1: 300, 2: 150, 3: 80, 4: 30 }[playerTeamRank] || 30}コイン獲得!
+                  +{getTeamRoyaleRewardCoins(playerTeamRank)}コイン獲得!
                 </p>
                 {rankChange !== null && (
                   <div className="mb-4">
@@ -1112,7 +1120,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
               
               {winningTeam.members.some(m => !m.isNpc) ? (
                 <>
-                  <p className="text-xl text-secondary mt-4">+300コイン獲得!</p>
+                  <p className="text-xl text-secondary mt-4">+{getTeamRoyaleRewardCoins(1)}コイン獲得!</p>
                   {rankChange !== null && (
                     <div className="mt-2">
                       <span className="text-lg font-bold" style={{ color: getRankColor(currentRank.tier) }}>
@@ -1126,7 +1134,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                 <div className="mt-4">
                   <p className="text-muted-foreground">あなたのチーム順位: 第{playerTeamRank}位</p>
                   <p className="text-secondary mt-1">
-                    +{{ 1: 300, 2: 150, 3: 80, 4: 30 }[playerTeamRank] || 30}コイン獲得!
+                    +{getTeamRoyaleRewardCoins(playerTeamRank)}コイン獲得!
                   </p>
                   {rankChange !== null && (
                     <div className="mt-2">

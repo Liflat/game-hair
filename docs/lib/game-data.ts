@@ -564,6 +564,12 @@ export function getRankColor(tier: RankTier): string {
   return RANK_TIERS.find(t => t.tier === tier)?.color || "#CD7F32"
 }
 
+export function getRankCoinMultiplier(rank: RankInfo): number {
+  const tierIndex = RANK_TIERS.findIndex(t => t.tier === rank.tier)
+  if (tierIndex < 0) return 1
+  return 1 + tierIndex * 0.1
+}
+
 // NPC strength based on rank
 export function getNpcStrengthMultiplier(rank: RankInfo): number {
   const tierIndex = RANK_TIERS.findIndex(t => t.tier === rank.tier)

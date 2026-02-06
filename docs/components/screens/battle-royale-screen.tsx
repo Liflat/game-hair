@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, getRankColor, getNpcStrengthMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Trophy } from "lucide-react"
@@ -107,6 +107,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
   const isExecutingRef = useRef(false)
   
   const currentRank = getRoyaleRank()
+  const coinMultiplier = getRankCoinMultiplier(currentRank)
   
   // Auto-scroll battle log
   useEffect(() => {
@@ -115,6 +116,15 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
     }
   }, [battleLog])
   const strengthMultiplier = getNpcStrengthMultiplier(currentRank)
+
+  const getRoyaleBaseCoins = (placement: number): number => {
+    const coinRewards: Record<number, number> = { 1: 500, 2: 300, 3: 150, 4: 80, 5: 50, 6: 30, 7: 15, 8: 5 }
+    return coinRewards[placement] || 5
+  }
+
+  const getRoyaleRewardCoins = (placement: number): number => {
+    return Math.floor(getRoyaleBaseCoins(placement) * coinMultiplier)
+  }
 
   const myPlayer = players.find((p) => !p.isNpc)
   const alivePlayers = players.filter((p) => !p.isEliminated)
@@ -238,7 +248,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 setPlayerRank(1)
                 // Delay coin/rank updates to avoid setState during render
                 setTimeout(() => {
-                  addCoins(500)
+                  addCoins(getRoyaleRewardCoins(1))
                   const change = updateRoyaleRank(1)
                   setRankChange(change)
                 }, 0)
@@ -247,10 +257,8 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 const playerEliminatedIndex = prev.filter((p) => p.isEliminated).findIndex((p) => p.id === player.id)
                 const placement = 8 - playerEliminatedIndex
                 setPlayerRank(placement)
-                // Coin rewards based on placement
-                const coinRewards: Record<number, number> = { 1: 500, 2: 300, 3: 150, 4: 80, 5: 50, 6: 30, 7: 15, 8: 5 }
                 setTimeout(() => {
-                  addCoins(coinRewards[placement] || 5)
+                  addCoins(getRoyaleRewardCoins(placement))
                   const change = updateRoyaleRank(placement)
                   setRankChange(change)
                 }, 0)
@@ -262,10 +270,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             const placement = 8 - eliminatedBefore
             setPlayerRank(placement)
             // Coin rewards based on placement
-            const coinRewards: Record<number, number> = { 1: 500, 2: 300, 3: 150, 4: 80, 5: 50, 6: 30, 7: 15, 8: 5 }
             // Delay coin/rank update to avoid setState during render
             setTimeout(() => {
-              addCoins(coinRewards[placement] || 5)
+              addCoins(getRoyaleRewardCoins(placement))
               const change = updateRoyaleRank(placement)
               setRankChange(change)
             }, 0)
@@ -888,7 +895,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               setPlayerRank(1)
               // Delay coin/rank update to avoid setState during render
               setTimeout(() => {
-                addCoins(500)
+                addCoins(getRoyaleRewardCoins(1))
                 const change = updateRoyaleRank(1)
                 setRankChange(change)
               }, 0)
@@ -896,9 +903,8 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               const eliminatedOrder = prev.filter((p) => p.isEliminated)
               const placement = eliminatedOrder.length + 1
               setPlayerRank(placement)
-              const coinRewards: Record<number, number> = { 1: 500, 2: 300, 3: 150, 4: 80, 5: 50, 6: 30, 7: 15, 8: 5 }
               setTimeout(() => {
-                addCoins(coinRewards[placement] || 5)
+                addCoins(getRoyaleRewardCoins(placement))
                 const change = updateRoyaleRank(placement)
                 setRankChange(change)
               }, 0)
@@ -910,10 +916,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             const placement = 8 - eliminatedBefore
             setPlayerRank(placement)
             // Coin rewards based on placement
-            const coinRewards: Record<number, number> = { 1: 500, 2: 300, 3: 150, 4: 80, 5: 50, 6: 30, 7: 15, 8: 5 }
             // Delay coin/rank update to avoid setState during render
             setTimeout(() => {
-              addCoins(coinRewards[placement] || 5)
+              addCoins(getRoyaleRewardCoins(placement))
               const change = updateRoyaleRank(placement)
               setRankChange(change)
             }, 0)
@@ -932,7 +937,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
     setSelectedSkill(null)
     setSelectedTarget(null)
     setSelectedTargets([])
-  }, [selectedSkill, selectedTarget, selectedTargets, phase, isExecuting, addCoins, updateRoyaleRank])
+  }, [selectedSkill, selectedTarget, selectedTargets, phase, isExecuting, addCoins, updateRoyaleRank, coinMultiplier])
 
   const continueWatching = () => {
     // Simulate remaining battle
@@ -1381,7 +1386,7 @@ clearInterval(interval)
                 <h2 className="text-3xl font-bold text-destructive mb-4">脱落...</h2>
                 <p className="text-xl text-foreground mb-2">第{playerRank}位</p>
 <p className="text-secondary mb-2">
-  +{{ 1: 500, 2: 300, 3: 150, 4: 80, 5: 50, 6: 30, 7: 15, 8: 5 }[playerRank] || 5}コイン獲得!
+                  +{getRoyaleRewardCoins(playerRank)}コイン獲得!
   </p>
                 {rankChange !== null && (
                   <div className="mb-4">
@@ -1441,7 +1446,7 @@ clearInterval(interval)
 
               {!winner.isNpc && (
                 <>
-                  <p className="text-xl text-secondary mt-4">+500コイン獲得!</p>
+                  <p className="text-xl text-secondary mt-4">+{getRoyaleRewardCoins(1)}コイン獲得!</p>
                   {rankChange !== null && (
                     <div className="mt-2">
                       <span
@@ -1462,7 +1467,7 @@ clearInterval(interval)
                 <div className="mt-4">
                   <p className="text-muted-foreground">あなたの順位: 第{playerRank}位</p>
                   <p className="text-secondary mt-1">
-                    +{{ 1: 500, 2: 300, 3: 150, 4: 80, 5: 50, 6: 30, 7: 15, 8: 5 }[playerRank] || 5}コイン獲得!
+                    +{getRoyaleRewardCoins(playerRank)}コイン獲得!
                   </p>
                 </div>
               )}

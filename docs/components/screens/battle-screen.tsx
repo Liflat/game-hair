@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { RARITY_COLORS, calculateStats, getRankColor, getElementMatchup, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type CollectedHairRoot, type Element } from "@/lib/game-data"
+import { RARITY_COLORS, calculateStats, getRankColor, getRankCoinMultiplier, getElementMatchup, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type CollectedHairRoot, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 
@@ -29,6 +29,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
   const battleTimerRef = useRef<NodeJS.Timeout | null>(null)
   
   const currentRank = getBattleRank()
+  const coinMultiplier = getRankCoinMultiplier(currentRank)
 
   const myStats = selectedHairRoot ? calculateStats(selectedHairRoot) : { power: 0, speed: 0, grip: 0 }
   const opponentStats = opponent?.hairRoot
@@ -40,6 +41,9 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
   const oppElement = opponent?.hairRoot?.element as Element | undefined
   const elementMatchup = myElement && oppElement ? getElementMatchup(myElement, oppElement) : 1.0
   const elementAdvantage = elementMatchup > 1 ? "advantage" : elementMatchup < 1 ? "disadvantage" : "neutral"
+  const displayedCoins = result
+    ? Math.floor((result === "win" ? 50 : result === "draw" ? 20 : 10) * coinMultiplier)
+    : 0
 
   // Start battle sequence
   useEffect(() => {
@@ -124,24 +128,32 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
 
     let battleResult: BattleResult
     // Player is on left - lower progress means player pulled the rope left (win)
+    const getBaseCoins = (resultValue: BattleResult): number => {
+      if (resultValue === "win") return 50
+      if (resultValue === "draw") return 20
+      if (resultValue === "lose") return 10
+      return 0
+    }
+
     if (finalProgress < 45) {
       battleResult = "win"
-      addCoins(50)
     } else if (finalProgress > 55) {
       battleResult = "lose"
-      addCoins(10)
     } else {
       // Close battle - use stats
       if (myTotal > oppTotal) {
         battleResult = "win"
-        addCoins(50)
       } else if (myTotal < oppTotal) {
         battleResult = "lose"
-        addCoins(10)
       } else {
         battleResult = "draw"
-        addCoins(20)
       }
+    }
+
+    const baseCoins = getBaseCoins(battleResult)
+    const awardedCoins = Math.floor(baseCoins * coinMultiplier)
+    if (awardedCoins > 0) {
+      addCoins(awardedCoins)
     }
 
     // Update rank
@@ -152,7 +164,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
 
     setResult(battleResult)
     setPhase("result")
-  }, [myStats, opponentStats, addCoins, updateBattleRank])
+  }, [myStats, opponentStats, addCoins, updateBattleRank, coinMultiplier])
 
   if (!selectedHairRoot || !opponent) return null
 
@@ -414,7 +426,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
                   transition={{ delay: 0.7 }}
                   className="text-muted-foreground mb-2"
                 >
-                  獲得コイン: {result === "win" ? 50 : result === "draw" ? 20 : 10}
+                  獲得コイン: {displayedCoins}
                 </motion.p>
                 {rankChange !== null && (
                   <motion.div
