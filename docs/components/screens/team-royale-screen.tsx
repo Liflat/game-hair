@@ -243,7 +243,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
   const executePlayerAction = useCallback(() => {
     if (!selectedSkill || !player) return
     if ((selectedSkill.type === "attack" || selectedSkill.type === "dot") && selectedTarget === null) return
-    if (selectedSkill.type === "aoe" && selectedTargets.length === 0) return
+    // For AOE skills, at least one target is required (unless full-party AOE with maxTargets >= 10)
+    const isFullPartyAoe = selectedSkill.type === "aoe" && (selectedSkill.maxTargets || 3) >= 10
+    if (selectedSkill.type === "aoe" && !isFullPartyAoe && selectedTargets.length === 0) return
 
     setTeams((prev) => {
       const newTeams = prev.map(t => ({
@@ -371,7 +373,19 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         }
       } else if (selectedSkill.type === "aoe") {
         // AOE attack - hit multiple targets
-        const targets = selectedTargets
+        // Auto-target all enemies for full-party AOE (maxTargets >= 10)
+        let aoeTargetsIds = selectedTargets
+        if ((selectedSkill.maxTargets || 3) >= 10 && selectedTargets.length === 0) {
+          const playerTeam = newTeams.find(t => t.members.some(m => !m.isNpc))
+          const enemyPlayers = allPlayers.filter(p => 
+            p.isNpc && 
+            !p.isEliminated && 
+            !playerTeam?.members.some(m => m.id === p.id)
+          )
+          aoeTargetsIds = enemyPlayers.map(p => p.id)
+        }
+        
+        const targets = aoeTargetsIds
           .map(id => allPlayers.find(p => p.id === id))
           .filter((t): t is BattlePlayer => t !== undefined && !t.isEliminated)
         
@@ -1178,7 +1192,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                     </>
                   )}
 
-                  {selectedSkill && selectedSkill.type === "aoe" && (
+                  {selectedSkill && selectedSkill.type === "aoe" && (selectedSkill.maxTargets || 3) < 10 && (
                     <>
                       <p className="text-sm font-medium text-foreground">ターゲット選択 (最大{selectedSkill.maxTargets}体):</p>
                       <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto">
@@ -1209,13 +1223,17 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                       </div>
                     </>
                   )}
+                  
+                  {selectedSkill && selectedSkill.type === "aoe" && (selectedSkill.maxTargets || 3) >= 10 && (
+                    <p className="text-sm font-medium text-primary">敵全体を攻撃!</p>
+                  )}
 
                   <Button
                     onClick={executePlayerAction}
                     disabled={
                       !selectedSkill || 
                       ((selectedSkill.type === "attack" || selectedSkill.type === "dot") && selectedTarget === null) ||
-                      (selectedSkill.type === "aoe" && selectedTargets.length === 0)
+                      (selectedSkill.type === "aoe" && (selectedSkill.maxTargets || 3) < 10 && selectedTargets.length === 0)
                     }
                     className="w-full bg-primary"
                   >

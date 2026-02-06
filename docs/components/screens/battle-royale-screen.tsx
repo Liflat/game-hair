@@ -317,8 +317,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
 
     // For attack skills, target is required
     if (selectedSkill.type === "attack" && selectedTarget === null) return
-    // For AOE skills, at least one target is required
-    if (selectedSkill.type === "aoe" && selectedTargets.length === 0) return
+    // For AOE skills, at least one target is required (unless full-party AOE with maxTargets >= 10)
+    const isFullPartyAoe = selectedSkill.type === "aoe" && (selectedSkill.maxTargets || 3) >= 10
+    if (selectedSkill.type === "aoe" && !isFullPartyAoe && selectedTargets.length === 0) return
 
     setPhase("action")
 
@@ -365,7 +366,13 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
         }
         case "aoe": {
           // AOE attack - hit multiple selected targets
-          const targets = selectedTargets
+          // Auto-target all enemies for full-party AOE (maxTargets >= 10)
+          let aoeTargetsIds = selectedTargets
+          if ((selectedSkill.maxTargets || 3) >= 10 && selectedTargets.length === 0) {
+            aoeTargetsIds = newPlayers.filter((p) => p.isNpc && !p.isEliminated).map((p) => p.id)
+          }
+          
+          const targets = aoeTargetsIds
             .map((id) => newPlayers.find((p) => p.id === id))
             .filter((t): t is BattlePlayer => t !== undefined && !t.isEliminated)
           
@@ -1157,12 +1164,15 @@ clearInterval(interval)
                     onClick={() => {
                       if (phase === "selecting" && player.isNpc && !player.isEliminated && selectedSkill) {
                         if (selectedSkill.type === "aoe") {
-                          // Toggle target for AOE
+                          const maxTargets = selectedSkill.maxTargets || 3
+                          // Skip manual selection for full-party AOE (auto-targets all)
+                          if (maxTargets >= 10) return
+                          
+                          // Toggle target for limited AOE
                           setSelectedTargets((prev) => {
                             if (prev.includes(player.id)) {
                               return prev.filter((id) => id !== player.id)
                             }
-                            const maxTargets = selectedSkill.maxTargets || 3
                             if (prev.length >= maxTargets) {
                               return [...prev.slice(1), player.id]
                             }
@@ -1392,9 +1402,11 @@ clearInterval(interval)
                         {selectedSkill.type === "defense" || selectedSkill.type === "team_heal" || (selectedSkill.type === "special" && !["static-field", "entangle"].includes(selectedSkill.id))
                           ? `${selectedSkill.name}を発動`
                           : selectedSkill.type === "aoe"
-                            ? selectedTargets.length > 0
-                              ? `${selectedTargets.length}体を攻撃! (最大${selectedSkill.maxTargets || 3}体)`
-                              : `ターゲットを選択 (最大${selectedSkill.maxTargets || 3}体)`
+                            ? (selectedSkill.maxTargets || 3) >= 10
+                              ? "敵全体を攻撃!"
+                              : selectedTargets.length > 0
+                                ? `${selectedTargets.length}体を攻撃! (最大${selectedSkill.maxTargets || 3}体)`
+                                : `ターゲットを選択 (最大${selectedSkill.maxTargets || 3}体)`
                             : selectedTarget !== null 
                               ? "攻撃!" 
                               : "ターゲットを選択してください"}
@@ -1403,7 +1415,7 @@ clearInterval(interval)
                         disabled={
                           isExecuting ||
                           (selectedSkill.type === "attack" || selectedSkill.type === "dot" || ["static-field", "entangle"].includes(selectedSkill.id)) && selectedTarget === null ||
-                          selectedSkill.type === "aoe" && selectedTargets.length === 0
+                          selectedSkill.type === "aoe" && (selectedSkill.maxTargets || 3) < 10 && selectedTargets.length === 0
                         }
                         onClick={executePlayerAction}
                         className="bg-primary"
