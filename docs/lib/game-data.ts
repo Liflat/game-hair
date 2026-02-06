@@ -351,6 +351,9 @@ export const HAIR_ROOTS: HairRoot[] = [
   ]},
 ]
 
+// Gacha pool - excludes boss-only hair (id: 53 - ヘアグランド)
+export const GACHA_HAIR_ROOTS = HAIR_ROOTS.filter(h => h.id !== 53)
+
 // Evolution requirements: 10 duplicates to evolve
 export const EVOLUTION_COST = 10
 
@@ -381,7 +384,7 @@ export function pullGacha(): HairRoot {
     rarity = "common"
   }
 
-  const pool = HAIR_ROOTS.filter((h) => h.rarity === rarity)
+  const pool = GACHA_HAIR_ROOTS.filter((h) => h.rarity === rarity)
   return pool[Math.floor(Math.random() * pool.length)]
 }
 
