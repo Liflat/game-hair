@@ -177,7 +177,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
       cooldowns: {},
       statusEffects: [],
       buffedStats: { power: 0, speed: 0, grip: 0 },
-      level: 1,
+      level: selectedHairRoot.level,
     }
 
     const npcs = Array.from({ length: 7 }, (_, i) => generateNpcPlayer(i, strengthMultiplier, currentRank.tier))
@@ -343,7 +343,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
       // Save prev HP for rewind
       newPlayers.forEach((p) => { p.prevHp = p.hp })
 
-      const stats = calculateStats({ ...player.hairRoot, level: 1, exp: 0, count: 1 })
+      const stats = calculateStats({ ...player.hairRoot, level: player.level, exp: 0, count: 1 })
       const buffedPower = stats.power + player.buffedStats.power
 
       // Helper function to get element damage modifier
@@ -477,7 +477,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
           
           // For normal defense, use calculated value; for others use skill effect
           if (selectedSkill.id === "normal-defense") {
-            finalDefenseValue = calculateNormalDefenseReduction({ ...player.hairRoot, level: 1, exp: 0, count: 1 })
+            finalDefenseValue = calculateNormalDefenseReduction({ ...player.hairRoot, level: player.level, exp: 0, count: 1 })
           } else {
             const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
             finalDefenseValue = Math.min(100, defenseEffect.reduction)
@@ -724,7 +724,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             const availableSkills = player.hairRoot.skills.filter(
               (s) => (player.cooldowns[s.id] || 0) <= 0
             )
-            const normalAtk = calculateNormalAttackDamage({ ...player.hairRoot, level: 1, exp: 0, count: 1 })
+            const normalAtk = calculateNormalAttackDamage({ ...player.hairRoot, level: player.level, exp: 0, count: 1 })
             const skill = availableSkills.length > 0 
               ? availableSkills[Math.floor(Math.random() * availableSkills.length)]
               : { id: "normal-attack", name: "通常攻撃", damage: normalAtk, cooldown: 0, type: "attack" as const, description: "", maxTargets: 1, dotEffect: undefined }

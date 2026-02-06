@@ -336,8 +336,8 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed top-0 left-0 right-0 bottom-0 bg-background/80 backdrop-blur-sm z-[9999] flex items-center justify-center"
-            style={{ position: 'fixed' }}
+            className="fixed inset-0 bg-background/90 backdrop-blur-md flex items-center justify-center"
+            style={{ position: 'fixed', zIndex: 99999 }}
           >
             <motion.div
               initial={{ scale: 0, rotate: -180 }}

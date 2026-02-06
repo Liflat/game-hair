@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import { useGame } from "@/lib/game-context"
+import { calculateStats } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 
 interface HomeScreenProps {
@@ -55,29 +56,34 @@ export function HomeScreen({ onNavigate }: HomeScreenProps) {
       >
         <h2 className="text-sm text-muted-foreground mb-2">選択中の毛根</h2>
         {selectedHairRoot ? (
-          <div className="flex items-center gap-4">
-            <div
-              className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl"
-              style={{ backgroundColor: `${selectedHairRoot.color}20` }}
-            >
-              {selectedHairRoot.emoji}
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-foreground">{selectedHairRoot.name}</p>
-              <p className="text-sm text-muted-foreground">Lv.{selectedHairRoot.level}</p>
-              <div className="flex gap-2 mt-1">
-                <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
-                  力 {selectedHairRoot.power}
-                </span>
-                <span className="text-xs bg-secondary/20 text-secondary px-2 py-0.5 rounded">
-                  速 {selectedHairRoot.speed}
-                </span>
-                <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">
-                  握 {selectedHairRoot.grip}
-                </span>
+          (() => {
+            const stats = calculateStats(selectedHairRoot)
+            return (
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-16 h-16 rounded-xl flex items-center justify-center text-3xl"
+                  style={{ backgroundColor: `${selectedHairRoot.color}20` }}
+                >
+                  {selectedHairRoot.emoji}
+                </div>
+                <div className="flex-1">
+                  <p className="font-bold text-foreground">{selectedHairRoot.name}</p>
+                  <p className="text-sm text-muted-foreground">Lv.{selectedHairRoot.level}</p>
+                  <div className="flex gap-2 mt-1">
+                    <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
+                      力 {stats.power}
+                    </span>
+                    <span className="text-xs bg-secondary/20 text-secondary px-2 py-0.5 rounded">
+                      速 {stats.speed}
+                    </span>
+                    <span className="text-xs bg-accent/20 text-accent px-2 py-0.5 rounded">
+                      握 {stats.grip}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            )
+          })()
         ) : (
           <div className="flex items-center gap-4 text-muted-foreground">
             <div className="w-16 h-16 rounded-xl bg-muted flex items-center justify-center text-2xl">
