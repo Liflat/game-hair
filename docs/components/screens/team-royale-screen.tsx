@@ -373,8 +373,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           }
         }
       } else if (selectedSkill.type === "defense") {
-        // Apply skill bonus from training level
-        const defenseSkillBonus = getSkillBonus(currentPlayer)
+        // No skill bonus for defense - use base values
         let finalDefenseValue: number
         
         // For normal defense, use calculated value; for others use skill effect
@@ -387,7 +386,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           } as any)
         } else {
           const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
-          finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * defenseSkillBonus))
+          finalDefenseValue = defenseEffect.reduction
         }
 
         currentPlayer.statusEffects.push({
@@ -481,43 +480,41 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         })
         setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! チーム全員回復!`])
       } else if (selectedSkill.type === "special") {
-        // Apply skill bonus from training level for special skills
-        const specialSkillBonus = getSkillBonus(currentPlayer)
+        // No skill bonus for special skills - use base values as-is
         
         // Heal skills
         if (selectedSkill.id === "bounce-back" || selectedSkill.id === "helix-heal") {
-          const healAmount = Math.floor(currentPlayer.maxHp * 0.25 * specialSkillBonus)
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.25)
           currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
           setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! HP${healAmount}回復!`])
         } else if (selectedSkill.id === "static-field" || selectedSkill.id === "entangle") {
           if (target && !target.isEliminated) {
-            const stunDuration = Math.floor(1 * specialSkillBonus)
             target.statusEffects.push({
               type: "stun",
               name: selectedSkill.id === "static-field" ? "麻痺" : "拘束",
-              duration: stunDuration
+              duration: 1
             })
             setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${target.name}は動けなくなった!`])
           }
         } else if (selectedSkill.id === "rainbow-aura") {
-          const buffValue = Math.floor(20 * specialSkillBonus)
+          const buffValue = 20
           currentPlayer.buffedStats.power += buffValue
           currentPlayer.buffedStats.speed += buffValue
           currentPlayer.buffedStats.grip += buffValue
           currentPlayer.statusEffects.push({ type: "buff", name: "虹のオーラ", duration: 3, value: buffValue })
           setBattleLog((logs) => [...logs, `${currentPlayer.name}に虹のオーラ! 全ステータス+${buffValue}!`])
         } else if (selectedSkill.id === "rewind") {
-          const healAmount = Math.floor(currentPlayer.maxHp * 0.35 * specialSkillBonus)
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.35)
           currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
           currentPlayer.statusEffects.push({ type: "buff", name: "時間歪曲", duration: 1, value: 100 })
           setBattleLog((logs) => [...logs, `${currentPlayer.name}が時を戻した! HP${healAmount}回復+1ターン無敵!`])
         } else if (selectedSkill.id === "rebirth") {
-          const healAmount = Math.floor(currentPlayer.maxHp * 0.7 * specialSkillBonus)
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.7)
           currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
           setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! HP${healAmount}回復!`])
         } else if (selectedSkill.id === "holy-blessing") {
-          const buffValue = Math.floor(50 * specialSkillBonus)
-          const healAmount = Math.floor(currentPlayer.maxHp * 0.4 * specialSkillBonus)
+          const buffValue = 50
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.4)
           currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
           currentPlayer.buffedStats.power += buffValue
           currentPlayer.buffedStats.speed += buffValue
@@ -525,28 +522,27 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           currentPlayer.statusEffects.push({ type: "buff", name: "神の祝福", duration: 4, value: buffValue })
           setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! 全ステ+${buffValue}, HP${healAmount}回復!`])
         } else if (selectedSkill.id === "toxic-cloud") {
-          // Poison all enemies - bonus increases poison damage
+          // Poison all enemies
           const enemyPlayers = allPlayers.filter(p => p.teamId !== currentPlayer.teamId && !p.isEliminated)
-          const poisonDamage = Math.floor(10 * specialSkillBonus)
           enemyPlayers.forEach(enemy => {
-            enemy.statusEffects.push({ type: "dot", name: "毒", duration: 3, value: poisonDamage })
+            enemy.statusEffects.push({ type: "dot", name: "毒", duration: 3, value: 10 })
           })
           setBattleLog((logs) => [...logs, `${currentPlayer.name}の毒霧! 敵全員が毒状態に! (3ターン)`])
         } else if (selectedSkill.id === "moon-blessing") {
-          const healAmount = Math.floor(currentPlayer.maxHp * 0.4 * specialSkillBonus)
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.4)
           currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
           setBattleLog((logs) => [...logs, `${currentPlayer.name}は月の加護でHP${healAmount}回復!`])
         } else if (selectedSkill.id === "sunlight-heal") {
-          const healAmount = Math.floor(currentPlayer.maxHp * 0.5 * specialSkillBonus)
-          const buffValue = Math.floor(25 * specialSkillBonus)
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.5)
+          const buffValue = 25
           currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
           currentPlayer.buffedStats.power += buffValue
           currentPlayer.statusEffects.push({ type: "buff", name: "太陽の力", duration: 3, value: buffValue })
           setBattleLog((logs) => [...logs, `${currentPlayer.name}に日光の力! HP${healAmount}回復+攻撃力UP!`])
         } else if (selectedSkill.id === "hellfire-breath") {
           const enemyPlayers = allPlayers.filter(p => p.teamId !== currentPlayer.teamId && !p.isEliminated)
-          const burnDamage = Math.floor(30 * specialSkillBonus)
-          const burnDot = Math.floor(15 * specialSkillBonus)
+          const burnDamage = 30
+          const burnDot = 15
           enemyPlayers.forEach(enemy => {
             enemy.hp = Math.max(0, enemy.hp - burnDamage)
             enemy.statusEffects.push({ type: "dot", name: "炎上", duration: 2, value: burnDot })
@@ -558,14 +554,14 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           })
           setBattleLog((logs) => [...logs, `${currentPlayer.name}の地獄の炎! 敵全員に${burnDamage}ダメージ+炎上!`])
         } else if (selectedSkill.id === "einherjar") {
-          const healAmount = Math.floor(currentPlayer.maxHp * 0.6 * specialSkillBonus)
-          const buffValue = Math.floor(50 * specialSkillBonus)
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.6)
+          const buffValue = 50
           currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
           currentPlayer.statusEffects.push({ type: "buff", name: "勇者の魂", duration: 2, value: buffValue })
           setBattleLog((logs) => [...logs, `${currentPlayer.name}に勇者の魂! HP${healAmount}回復+防御強化!`])
         } else if (selectedSkill.id === "all-father") {
           currentPlayer.statusEffects.push({ type: "buff", name: "オールファーザー", duration: 1, value: 100 })
-          const counterValue = Math.floor(80 * specialSkillBonus)
+          const counterValue = 80
           currentPlayer.statusEffects.push({ type: "buff", name: "反撃準備", duration: 1, value: counterValue })
           setBattleLog((logs) => [...logs, `${currentPlayer.name}が全知の力発動! 完全回避+反撃準備!`])
         } else if (selectedSkill.id === "end-world") {

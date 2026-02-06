@@ -442,8 +442,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
         })
         newLog.push(`${player.name}の${selectedSkill.name}で次の攻撃を完全に回避できる態勢を整えた!`)
       } else if (selectedSkill.type === "special") {
-        // Special skills
-        const specialSkillBonus = calculateSkillBonus(player.hairRoot as CollectedHairRoot)
+        // Special skills - no skill bonus for heal/buff/debuff skills
         
         if (selectedSkill.id === "absolute-zero") {
           const targets = [boss, ...aliveTeamPlayers]
@@ -482,19 +481,18 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
             }
           })
         } else if (selectedSkill.id === "bounce-back" || selectedSkill.id === "helix-heal") {
-          const healAmount = Math.floor(player.maxHp * 0.25 * specialSkillBonus)
+          const healAmount = Math.floor(player.maxHp * 0.25)
           player.hp = Math.min(player.maxHp, player.hp + healAmount)
           newLog.push(`${player.name}は${selectedSkill.name}でHPを${healAmount}回復!`)
         } else if (selectedSkill.id === "static-field" || selectedSkill.id === "entangle") {
-          const stunDuration = Math.floor(1 * specialSkillBonus)
           boss.statusEffects.push({
             type: "stun",
             name: selectedSkill.id === "static-field" ? "麻痺" : "拘束",
-            duration: stunDuration
+            duration: 1
           })
           newLog.push(`${boss.name}は${selectedSkill.name}で動けなくなった!`)
         } else if (selectedSkill.id === "rainbow-aura") {
-          const buffValue = Math.floor(20 * specialSkillBonus)
+          const buffValue = 20
           player.buffedStats.power += buffValue
           player.buffedStats.speed += buffValue
           player.buffedStats.grip += buffValue
@@ -506,11 +504,11 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
           })
           newLog.push(`虹のオーラで全ステータス+${buffValue}!`)
         } else if (selectedSkill.id === "holy-blessing") {
-          const buffValue = Math.floor(50 * specialSkillBonus)
+          const buffValue = 50
           player.buffedStats.power += buffValue
           player.buffedStats.speed += buffValue
           player.buffedStats.grip += buffValue
-          const healAmount = Math.floor(player.maxHp * 0.4 * specialSkillBonus)
+          const healAmount = Math.floor(player.maxHp * 0.4)
           player.hp = Math.min(player.maxHp, player.hp + healAmount)
           player.statusEffects.push({
             type: "buff",
@@ -520,11 +518,11 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
           })
           newLog.push(`神の祝福! 全ステータス+${buffValue}、HP${healAmount}回復!`)
         } else if (selectedSkill.id === "rebirth") {
-          const healAmount = Math.floor(player.maxHp * 0.7 * specialSkillBonus)
+          const healAmount = Math.floor(player.maxHp * 0.7)
           player.hp = Math.min(player.maxHp, player.hp + healAmount)
           newLog.push(`不死鳥の再生! ${healAmount}HP回復!`)
         } else if (selectedSkill.id === "rewind") {
-          const healAmount = Math.floor(player.maxHp * 0.35 * specialSkillBonus)
+          const healAmount = Math.floor(player.maxHp * 0.35)
           player.hp = Math.min(player.maxHp, player.hp + healAmount)
           player.statusEffects.push({
             type: "buff",
@@ -704,7 +702,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
           }
 
           if (chosenSkill.type === "team_heal") {
-            const skillBonus = calculateSkillBonus(ally.hairRoot as CollectedHairRoot)
+            // No skill bonus for healing - use base values
             const isFullHeal = chosenSkill.id === "olympus-blessing" || chosenSkill.id === "divine-light"
             
             if (isFullHeal) {
@@ -713,11 +711,11 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
                 let healAmount: number
                 if (chosenSkill.id === "divine-light") {
                   // divine-light heals 50% of max HP
-                  healAmount = Math.floor(allyTarget.maxHp * 0.5 * skillBonus)
+                  healAmount = Math.floor(allyTarget.maxHp * 0.5)
                 } else {
                   // olympus-blessing fully recovers HP
                   const baseHeal = chosenSkill.damage || 50
-                  healAmount = Math.floor(baseHeal * skillBonus)
+                  healAmount = baseHeal
                 }
                 allyTarget.hp = Math.min(allyTarget.maxHp, allyTarget.hp + healAmount)
               })
@@ -728,12 +726,12 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
             } else if (chosenTarget) {
               // Single target heal
               const baseHeal = chosenSkill.damage || 50
-              const healAmount = Math.floor(baseHeal * skillBonus)
+              const healAmount = baseHeal
               chosenTarget.hp = Math.min(chosenTarget.maxHp, chosenTarget.hp + healAmount)
               newLog.push(`${ally.name}の${chosenSkill.name}で${chosenTarget.name}を${healAmount}回復した！`)
             }
           } else if (chosenSkill.type === "defense") {
-            const skillBonus = calculateSkillBonus(ally.hairRoot as CollectedHairRoot)
+            // No skill bonus for defense - use base values
             let finalDefenseValue: number
             let duration: number
             
@@ -748,7 +746,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
               duration = 1
             } else {
               const defenseEffect = getDefenseSkillEffect(chosenSkill.id)
-              finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
+              finalDefenseValue = defenseEffect.reduction
               duration = defenseEffect.duration
             }
             
