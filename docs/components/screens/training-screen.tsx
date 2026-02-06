@@ -105,18 +105,19 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b border-border">
-        <Button variant="ghost" size="icon" onClick={() => onNavigate("home")}>
-          <ArrowLeft className="w-6 h-6" />
-        </Button>
-        <h1 className="text-xl font-bold text-foreground">毛根育毛</h1>
-        <div className="flex items-center gap-2 bg-card px-3 py-1.5 rounded-full border border-border">
-          <span className="text-sm">🪙</span>
-          <span className="font-bold text-secondary text-sm">{coins.toLocaleString()}</span>
-        </div>
-      </header>
+    <>
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Header */}
+        <header className="flex items-center justify-between p-4 border-b border-border">
+          <Button variant="ghost" size="icon" onClick={() => onNavigate("home")}>
+            <ArrowLeft className="w-6 h-6" />
+          </Button>
+          <h1 className="text-xl font-bold text-foreground">毛根育毛</h1>
+          <div className="flex items-center gap-2 bg-card px-3 py-1.5 rounded-full border border-border">
+            <span className="text-sm">🪙</span>
+            <span className="font-bold text-secondary text-sm">{coins.toLocaleString()}</span>
+          </div>
+        </header>
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto p-4">
@@ -336,7 +337,8 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed top-0 left-0 right-0 bottom-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center"
+            className="fixed top-0 left-0 right-0 bottom-0 bg-background/80 backdrop-blur-sm z-[9999] flex items-center justify-center"
+            style={{ position: 'fixed' }}
           >
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
@@ -369,7 +371,8 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 flex items-center justify-center"
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[9998] flex items-center justify-center"
+            style={{ position: 'fixed' }}
           >
             <motion.div
               animate={{ rotate: 360 }}
@@ -380,6 +383,6 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   )
 }
