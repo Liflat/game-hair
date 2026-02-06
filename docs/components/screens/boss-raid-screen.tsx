@@ -136,7 +136,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
       const stats = calculateStats(hair)
       const power = stats?.power ?? 0
       const grip = stats?.grip ?? 0
-      const maxHp = Math.max(1, Math.floor((300 + power + grip) * 1.2))
+      const maxHp = Math.max(1, Math.floor((500 + power + grip) * 1.2))
       return {
         id: idx,
         name: hair.name,

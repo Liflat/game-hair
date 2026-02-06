@@ -74,7 +74,7 @@ function generateNpcPlayer(index: number, strengthMultiplier: number, rankTier: 
   
   const npcLevel = Math.floor(Math.random() * 5) + 1
   const stats = calculateStats({ ...scaledHairRoot, level: npcLevel, exp: 0, count: 1 })
-  const maxHp = Math.floor((300 + stats.power + stats.grip) * strengthMultiplier)
+  const maxHp = Math.floor((500 + stats.power + stats.grip) * strengthMultiplier)
 
   return {
     id: index + 100,
@@ -162,7 +162,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
     if (!selectedHairRoot) return
 
     const stats = calculateStats(selectedHairRoot)
-    const maxHp = 300 + stats.power + stats.grip
+    const maxHp = 500 + stats.power + stats.grip
 
     const myPlayer: BattlePlayer = {
       id: 0,
@@ -742,11 +742,13 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 if (triggerAllFather(player, target)) {
                   return
                 }
+                const stats = calculateStats({ ...player.hairRoot, level: player.level, exp: 0, count: 1 })
+                const buffedPower = (stats?.power ?? 0) + (player.buffedStats.power || 0)
                 const skillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.level, exp: 0, count: 1 })
                 const baseDamage = Math.floor(skill.damage * skillBonus * (0.8 + Math.random() * 0.4))
                 const def = target.statusEffects.find((e) => e.name === "防御強化")
                 const reduction = def ? (def.value || 0) / 100 : 0
-                const damage = Math.floor(baseDamage * (1 - reduction))
+                const damage = Math.floor(baseDamage * (1 + buffedPower / 100) * (1 - reduction))
                 target.hp = Math.max(0, target.hp - damage)
                 setBattleLog((prev) => [...prev, `${player.name}の${skill.name}が${target.name}に${damage}ダメージ!`])
                 
