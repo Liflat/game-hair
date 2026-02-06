@@ -25,6 +25,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
   const [pullProgress, setPullProgress] = useState(50)
   const [rankChange, setRankChange] = useState<number | null>(null)
   const tapCountRef = useRef(0)
+  const pullProgressRef = useRef(50)
   const battleTimerRef = useRef<NodeJS.Timeout | null>(null)
   
   const currentRank = getBattleRank()
@@ -98,6 +99,10 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
     }
   }, [phase, opponentStats.speed])
 
+  useEffect(() => {
+    pullProgressRef.current = pullProgress
+  }, [pullProgress])
+
   const handleTap = useCallback(() => {
     if (phase !== "pulling") return
 
@@ -113,15 +118,16 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
 
   const determinResult = useCallback(() => {
     // Calculate final result based on pull progress and stats
+    const finalProgress = pullProgressRef.current
     const myTotal = myStats.power + myStats.speed + myStats.grip + tapCountRef.current
     const oppTotal = opponentStats.power + opponentStats.speed + opponentStats.grip + Math.floor(Math.random() * 50)
 
     let battleResult: BattleResult
     // Player is on left - lower progress means player pulled the rope left (win)
-    if (pullProgress < 45) {
+    if (finalProgress < 45) {
       battleResult = "win"
       addCoins(50)
-    } else if (pullProgress > 55) {
+    } else if (finalProgress > 55) {
       battleResult = "lose"
       addCoins(10)
     } else {
@@ -146,7 +152,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
 
     setResult(battleResult)
     setPhase("result")
-  }, [pullProgress, myStats, opponentStats, addCoins, updateBattleRank])
+  }, [myStats, opponentStats, addCoins, updateBattleRank])
 
   if (!selectedHairRoot || !opponent) return null
 
