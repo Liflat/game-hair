@@ -336,13 +336,13 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center"
+            className="fixed top-0 left-0 right-0 bottom-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center"
           >
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               exit={{ scale: 0, rotate: 180 }}
-              className="text-center"
+              className="text-center px-4"
             >
               <motion.div
                 animate={{
@@ -353,8 +353,8 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
               >
                 <span className="text-5xl">🎉</span>
               </motion.div>
-              <h2 className="text-3xl font-bold text-foreground mb-2">LEVEL UP!</h2>
-              <p className="text-xl text-secondary">
+              <h2 className="text-4xl font-bold text-foreground mb-4">LEVEL UP!</h2>
+              <p className="text-2xl text-secondary font-bold">
                 Lv.{prevLevel} → Lv.{currentData?.level}
               </p>
             </motion.div>
