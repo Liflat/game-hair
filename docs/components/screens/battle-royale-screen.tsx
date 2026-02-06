@@ -29,6 +29,7 @@ interface BattlePlayer {
   prevHp: number
   isNpc: boolean
   isEliminated: boolean
+  eliminatedAt?: number // Round number when eliminated
   cooldowns: { [skillId: string]: number }
   statusEffects: StatusEffect[]
   buffedStats: { power: number; speed: number; grip: number }
@@ -82,6 +83,7 @@ function generateNpcPlayer(index: number, strengthMultiplier: number, rankTier: 
     prevHp: maxHp,
     isNpc: true,
     isEliminated: false,
+    eliminatedAt: undefined,
     cooldowns: {},
     statusEffects: [],
     buffedStats: { power: 0, speed: 0, grip: 0 },
@@ -168,6 +170,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
       prevHp: maxHp,
       isNpc: false,
       isEliminated: false,
+      eliminatedAt: undefined,
       cooldowns: {},
       statusEffects: [],
       buffedStats: { power: 0, speed: 0, grip: 0 },
@@ -210,6 +213,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 
                 if (target.hp <= 0) {
                   target.isEliminated = true
+                  target.eliminatedAt = round
                   setBattleLog((prev) => [...prev, `${target.name}が脱落!`])
                 }
               }
@@ -228,6 +232,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 setBattleLog((prev) => [...prev, `${p.name}が${dot.name}で${dot.value}ダメージ!`])
                 if (p.hp <= 0) {
                   p.isEliminated = true
+                  p.eliminatedAt = round
                   setBattleLog((prev) => [...prev, `${p.name}が脱落!`])
                 }
               }
@@ -276,10 +281,10 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                   const change = updateRoyaleRank(1)
                   setRankChange(change)
                 }, 0)
-              } else if (player) {
-                // NPC won, calculate player's final placement
-                const playerEliminatedIndex = prev.filter((p) => p.isEliminated).findIndex((p) => p.id === player.id)
-                const placement = 8 - playerEliminatedIndex
+              } else if (player && player.eliminatedAt !== undefined) {
+                // NPC won, calculate player's final placement based on alive player count at elimination
+                const alivePlayers = prev.filter((p) => !p.isEliminated).length
+                const placement = alivePlayers + 1
                 setPlayerRank(placement)
                 setTimeout(() => {
                   addCoins(getRoyaleRewardCoins(placement))
@@ -289,9 +294,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               }
             setIsExecuting(false)
             setPhase("finished")
-          } else if (player?.isEliminated) {
-            const eliminatedBefore = prev.filter((p) => p.isEliminated && p.id !== player.id).length
-            const placement = 8 - eliminatedBefore
+          } else if (player?.isEliminated && player.eliminatedAt !== undefined) {
+            const alivePlayers = prev.filter((p) => !p.isEliminated).length
+            const placement = alivePlayers + 1
             setPlayerRank(placement)
             // Coin rewards based on placement
             // Delay coin/rank update to avoid setState during render
@@ -359,6 +364,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             setBattleLog((prev) => [...prev, `あなたの${selectedSkill.name}が${target.name}に${finalDamage}ダメージ!${elementNote}`])
             if (target.hp <= 0) {
               target.isEliminated = true
+              target.eliminatedAt = round
               setBattleLog((prev) => [...prev, `${target.name}が脱落!`])
             }
           }
@@ -390,6 +396,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               setBattleLog((prev) => [...prev, `${selectedSkill.name}が${t.name}に${finalDamage}ダメージ!${elementNote}`])
               if (t.hp <= 0) {
                 t.isEliminated = true
+                t.eliminatedAt = round
                 setBattleLog((prev) => [...prev, `${t.name}が脱落!`])
               }
             })
@@ -640,6 +647,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               if (target && !target.isEliminated) {
                 target.hp = 0
                 target.isEliminated = true
+                target.eliminatedAt = round
                 setBattleLog((prev) => [...prev, `${target.name}は世界から消滅した!!`])
               }
               break
@@ -707,6 +715,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               
               if (target.hp <= 0) {
                 target.isEliminated = true
+                target.eliminatedAt = round
                 setBattleLog((prev) => [...prev, `${target.name}が脱落!`])
               }
               if (skill.cooldown > 0) {
@@ -792,6 +801,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 if (target && !target.isEliminated) {
                   target.hp = 0
                   target.isEliminated = true
+                  target.eliminatedAt = round
                   setBattleLog((prev) => [...prev, `${player.name}の${skill.name}! ${target.name}は世界から消滅した!!`])
                 }
               }
@@ -828,6 +838,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 
                 if (target.hp <= 0) {
                   target.isEliminated = true
+                  target.eliminatedAt = round
                   setBattleLog((prev) => [...prev, `${target.name}が脱落!`])
                 }
               }
@@ -855,6 +866,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 setBattleLog((prev) => [...prev, `${skill.name}が${t.name}に${dmg}ダメージ!`])
                 if (t.hp <= 0) {
                   t.isEliminated = true
+                  t.eliminatedAt = round
                   setBattleLog((prev) => [...prev, `${t.name}が脱落!`])
                 }
               })
@@ -962,9 +974,10 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 const change = updateRoyaleRank(1)
                 setRankChange(change)
               }, 0)
-            } else {
-              const eliminatedOrder = prev.filter((p) => p.isEliminated)
-              const placement = eliminatedOrder.length + 1
+            } else if (player && player.eliminatedAt !== undefined) {
+              // Calculate placement based on alive player count at elimination
+              const alivePlayers = prev.filter((p) => !p.isEliminated).length
+              const placement = alivePlayers + 1
               setPlayerRank(placement)
               setTimeout(() => {
                 addCoins(getRoyaleRewardCoins(placement))
@@ -974,9 +987,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             }
             setIsExecuting(false)
             setPhase("finished")
-          } else if (player?.isEliminated) {
-            const eliminatedBefore = prev.filter((p) => p.isEliminated && p.id !== player.id).length
-            const placement = 8 - eliminatedBefore
+          } else if (player?.isEliminated && player.eliminatedAt !== undefined) {
+            const alivePlayers = prev.filter((p) => !p.isEliminated).length
+            const placement = alivePlayers + 1
             setPlayerRank(placement)
             // Coin rewards based on placement
             // Delay coin/rank update to avoid setState during render
@@ -1032,6 +1045,7 @@ setWinner(alive[0] || null)
               
               if (target.hp <= 0) {
                 target.isEliminated = true
+                target.eliminatedAt = round
                 setBattleLog((prev) => [...prev.slice(-10), `${target.name}が脱落!`])
               }
             }

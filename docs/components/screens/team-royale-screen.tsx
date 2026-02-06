@@ -24,6 +24,7 @@ interface BattlePlayer {
   prevHp: number
   isNpc: boolean
   isEliminated: boolean
+  eliminatedAt?: number // Round number when eliminated
   cooldowns: Record<string, number>
   statusEffects: { type: "stun" | "buff" | "debuff" | "dot"; name: string; duration: number; value?: number }[]
   buffedStats: { power: number; speed: number; grip: number }
@@ -36,6 +37,7 @@ interface Team {
   color: string
   members: BattlePlayer[]
   isEliminated: boolean
+  eliminatedAt?: number // Round number when team was eliminated
 }
 
 interface TeamBattlePlayer extends BattlePlayer {}
@@ -90,6 +92,7 @@ function generateNpcPlayer(index: number, teamId: number, strengthMultiplier: nu
     prevHp: maxHp,
     isNpc: true,
     isEliminated: false,
+    eliminatedAt: undefined,
     cooldowns: {},
     statusEffects: [],
     buffedStats: { power: 0, speed: 0, grip: 0 },
@@ -150,6 +153,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
       setBattleLog((logs) => [...logs, `${defender.name}の反撃で${attacker.name}に${counterValue}ダメージ!`])
       if (attacker.hp <= 0) {
         attacker.isEliminated = true
+        attacker.eliminatedAt = round
         setBattleLog((logs) => [...logs, `${attacker.name}が脱落!`])
       }
     }
@@ -296,6 +300,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
 
           if (target.hp <= 0) {
             target.isEliminated = true
+            target.eliminatedAt = round
             setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
           }
         }
@@ -332,6 +337,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
 
           if (target.hp <= 0) {
             target.isEliminated = true
+            target.eliminatedAt = round
             setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
           }
         }
@@ -405,6 +411,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           
           if (t.hp <= 0) {
             t.isEliminated = true
+            t.eliminatedAt = round
             setBattleLog((logs) => [...logs, `${t.name}が脱落!`])
           }
         })
@@ -495,6 +502,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             enemy.statusEffects.push({ type: "dot", name: "炎上", duration: 2, value: burnDot })
             if (enemy.hp <= 0) {
               enemy.isEliminated = true
+              enemy.eliminatedAt = round
               setBattleLog((logs) => [...logs, `${enemy.name}が脱落!`])
             }
           })
@@ -514,6 +522,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           if (target && !target.isEliminated) {
             target.hp = 0
             target.isEliminated = true
+            target.eliminatedAt = round
             setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${target.name}は世界から消滅した!!`])
           }
         }
@@ -528,8 +537,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
 
       // Check team elimination
       newTeams.forEach(team => {
-        if (team.members.every(m => m.isEliminated)) {
+        if (team.members.every(m => m.isEliminated) && !team.isEliminated) {
           team.isEliminated = true
+          team.eliminatedAt = round
         }
       })
 
@@ -591,6 +601,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
 
             if (target.hp <= 0) {
               target.isEliminated = true
+              target.eliminatedAt = round
               setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
             }
           } else if (skill.type === "dot") {
@@ -620,6 +631,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
 
             if (target.hp <= 0) {
               target.isEliminated = true
+              target.eliminatedAt = round
               setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
             }
           } else if (skill.type === "aoe") {
@@ -642,6 +654,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
               
               if (t.hp <= 0) {
                 t.isEliminated = true
+                t.eliminatedAt = round
                 setBattleLog((logs) => [...logs, `${t.name}が脱落!`])
               }
             })
@@ -740,6 +753,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                 e.statusEffects.push({ type: "dot", name: "炎上", duration: 2, value: 15 })
                 if (e.hp <= 0) {
                   e.isEliminated = true
+                  e.eliminatedAt = round
                   setBattleLog((logs) => [...logs, `${e.name}が脱落!`])
                 }
               })
@@ -757,6 +771,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
               if (target && !target.isEliminated) {
                 target.hp = 0
                 target.isEliminated = true
+                target.eliminatedAt = round
                 setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! ${target.name}は世界から消滅した!!`])
               }
             } else if (skill.id === "rebirth") {
@@ -792,6 +807,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
               setBattleLog((logs) => [...logs, `${p.name}が${dot.name}で${dot.value}ダメージ!`])
               if (p.hp <= 0) {
                 p.isEliminated = true
+                p.eliminatedAt = round
                 setBattleLog((logs) => [...logs, `${p.name}が脱落!`])
               }
             }
@@ -824,6 +840,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         newTeams.forEach(team => {
           if (team.members.every(m => m.isEliminated) && !team.isEliminated) {
             team.isEliminated = true
+            team.eliminatedAt = round
             setBattleLog((logs) => [...logs, `${team.name}が全滅!`])
           }
         })
@@ -840,10 +857,10 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             addCoins(getTeamRoyaleRewardCoins(1))
             const change = updateTeamRoyaleRank(1)
             setRankChange(change)
-          } else {
-            // Calculate player team's placement
-            const eliminatedTeamsCount = newTeams.filter(t => t.isEliminated && t.id !== playerTeam?.id).length
-            const placement = 4 - eliminatedTeamsCount + (playerTeam?.isEliminated ? 1 : 0)
+          } else if (playerTeam && playerTeam.eliminatedAt !== undefined) {
+            // Calculate player team's placement based on alive team count at elimination
+            const aliveTeams = newTeams.filter(t => !t.isEliminated).length
+            const placement = aliveTeams + 1
             setPlayerTeamRank(placement)
             addCoins(getTeamRoyaleRewardCoins(placement))
             const change = updateTeamRoyaleRank(placement)
@@ -854,9 +871,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         }
 
         // Check if player's team is eliminated
-        if (playerTeam?.isEliminated && playerChar?.isEliminated) {
-          const eliminatedTeamsCount = newTeams.filter(t => t.isEliminated).length
-          const placement = 5 - eliminatedTeamsCount
+        if (playerTeam?.isEliminated && playerChar?.isEliminated && playerTeam.eliminatedAt !== undefined) {
+          const aliveTeams = newTeams.filter(t => !t.isEliminated).length
+          const placement = aliveTeams + 1
           setPlayerTeamRank(placement)
           addCoins(getTeamRoyaleRewardCoins(placement))
           const change = updateTeamRoyaleRank(placement)
