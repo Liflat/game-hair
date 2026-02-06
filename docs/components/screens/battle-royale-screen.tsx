@@ -24,6 +24,7 @@ interface BattlePlayer {
   id: number
   name: string
   hairRoot: HairRoot
+  level: number
   hp: number
   maxHp: number
   prevHp: number
@@ -71,13 +72,15 @@ function generateNpcPlayer(index: number, strengthMultiplier: number, rankTier: 
     grip: Math.floor(baseHairRoot.grip * strengthMultiplier),
   }
   
-  const stats = calculateStats({ ...scaledHairRoot, level: Math.floor(Math.random() * 5) + 1, exp: 0, count: 1 })
+  const npcLevel = Math.floor(Math.random() * 5) + 1
+  const stats = calculateStats({ ...scaledHairRoot, level: npcLevel, exp: 0, count: 1 })
   const maxHp = Math.floor((100 + stats.power + stats.grip) * strengthMultiplier)
 
   return {
     id: index + 100,
     name: NPC_NAMES[index % NPC_NAMES.length],
     hairRoot: scaledHairRoot,
+    level: npcLevel,
     hp: maxHp,
     maxHp,
     prevHp: maxHp,
@@ -174,6 +177,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
       cooldowns: {},
       statusEffects: [],
       buffedStats: { power: 0, speed: 0, grip: 0 },
+      level: 1,
     }
 
     const npcs = Array.from({ length: 7 }, (_, i) => generateNpcPlayer(i, strengthMultiplier, currentRank.tier))
@@ -466,12 +470,11 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
         }
         case "defense": {
           // Defense skills - use shared defense mapping
-          const skillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.hairRoot.level || 1, exp: 0, count: 1 })
           let finalDefenseValue: number
           
           // For normal defense, use calculated value; for others use skill effect
           if (selectedSkill.id === "normal-defense") {
-            finalDefenseValue = calculateNormalDefenseReduction(player.hairRoot as CollectedHairRoot)
+            finalDefenseValue = calculateNormalDefenseReduction({ ...player.hairRoot, level: 1, exp: 0, count: 1 })
           } else {
             const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
             finalDefenseValue = Math.min(100, defenseEffect.reduction)
@@ -486,11 +489,8 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
           
           if (selectedSkill.id !== "normal-defense") {
             const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
-            if (defenseEffect.log) {
-              setBattleLog((prev) => [...prev, defenseEffect.log])
-            } else {
-              setBattleLog((prev) => [...prev, `${selectedSkill.name}で${finalDefenseValue}%ダメージ軽減!`])
-            }
+            const logMessage = defenseEffect.log || `${selectedSkill.name}で${finalDefenseValue}%ダメージ軽減!`
+            setBattleLog((prev) => [...prev, logMessage])
           } else {
             setBattleLog((prev) => [...prev, `${selectedSkill.name}で${finalDefenseValue}%ダメージ軽減!`])
           }
@@ -498,35 +498,32 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
         }
         case "special": {
           // Process special skills based on their id
-          // Apply skill bonus from training level
-          const specialSkillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.hairRoot.level || 1, exp: 0, count: 1 })
           switch (selectedSkill.id) {
             case "bounce-back":
             case "helix-heal": {
-              // Heal skills - bonus increases heal amount
+              // Heal skills
               const baseHealRate = 0.25
-              const healAmount = Math.floor(player.maxHp * baseHealRate * specialSkillBonus)
+              const healAmount = Math.floor(player.maxHp * baseHealRate)
               player.hp = Math.min(player.maxHp, player.hp + healAmount)
               setBattleLog((prev) => [...prev, `あなたは${selectedSkill.name}でHPを${healAmount}回復!`])
               break
             }
             case "static-field":
             case "entangle": {
-              // Stun skills - bonus increases duration
+              // Stun skills
               if (target && !target.isEliminated) {
-                const stunDuration = Math.floor(1 * specialSkillBonus)
                 target.statusEffects.push({
                   type: "stun",
                   name: selectedSkill.id === "static-field" ? "麻痺" : "拘束",
-                  duration: stunDuration
+                  duration: 1
                 })
                 setBattleLog((prev) => [...prev, `${target.name}は${selectedSkill.name}で動けなくなった!`])
               }
               break
             }
             case "rainbow-aura": {
-              // Rainbow aura - moderate buff (bonus increases buff value)
-              const buffValue = Math.floor(20 * specialSkillBonus)
+              // Rainbow aura - moderate buff
+              const buffValue = 20
               player.buffedStats.power += buffValue
               player.buffedStats.speed += buffValue
               player.buffedStats.grip += buffValue
@@ -540,12 +537,12 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               break
             }
             case "holy-blessing": {
-              // Legendary buff - massive stat boost + heal (bonus increases both)
-              const buffValue = Math.floor(50 * specialSkillBonus)
+              // Legendary buff - massive stat boost + heal
+              const buffValue = 50
               player.buffedStats.power += buffValue
               player.buffedStats.speed += buffValue
               player.buffedStats.grip += buffValue
-              const healAmount = Math.floor(player.maxHp * 0.4 * specialSkillBonus)
+              const healAmount = Math.floor(player.maxHp * 0.4)
               player.hp = Math.min(player.maxHp, player.hp + healAmount)
               player.statusEffects.push({
                 type: "buff",
@@ -558,14 +555,14 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             }
             case "rebirth": {
               // Phoenix rebirth - epic heal (70%)
-              const healAmount = Math.floor(player.maxHp * 0.7 * specialSkillBonus)
+              const healAmount = Math.floor(player.maxHp * 0.7)
               player.hp = Math.min(player.maxHp, player.hp + healAmount)
               setBattleLog((prev) => [...prev, `不死鳥の再生! ${healAmount}HP回復!`])
               break
             }
             case "rewind": {
               // Time rewind - restore HP + give invincibility
-              const healAmount = Math.floor(player.maxHp * 0.35 * specialSkillBonus)
+              const healAmount = Math.floor(player.maxHp * 0.35)
               player.hp = Math.min(player.maxHp, player.hp + healAmount)
               player.statusEffects.push({
                 type: "buff",
@@ -678,12 +675,10 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
         }
         case "dodge": {
           // Dodge skills - avoid next attack
-          const skillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.hairRoot.level || 1, exp: 0, count: 1 })
-          const dodgeDuration = Math.floor(1 * skillBonus)
           player.statusEffects.push({
             type: "buff",
             name: "回避準備",
-            duration: dodgeDuration
+            duration: 3
           })
           setBattleLog((prev) => [...prev, `${player.name}が${selectedSkill.name}で攻撃を回避準備!`])
           break
@@ -729,12 +724,8 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             const normalAtk = calculateNormalAttackDamage({ ...player.hairRoot, level: 1, exp: 0, count: 1 })
             const skill = availableSkills.length > 0 
               ? availableSkills[Math.floor(Math.random() * availableSkills.length)]
-              : { id: "normal-attack", name: "通常攻撃", damage: normalAtk, cooldown: 0, type: "attack" as const, description: "" }
+              : { id: "normal-attack", name: "通常攻撃", damage: normalAtk, cooldown: 0, type: "attack" as const, description: "", maxTargets: 1, dotEffect: undefined }
             
-            // Check for defense buff
-            const defenseBonus = target.statusEffects.find((e) => e.name === "防御強化")
-            const defenseReduction = defenseBonus ? (defenseBonus.value || 0) / 100 : 0
-
             if (skill.type === "attack" && skill.damage > 0) {
               // Check if target has dodge preparation buff
               const dodgePrep = target.statusEffects.find((e) => e.name === "回避準備")
@@ -749,7 +740,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                   return
                 }
                 const baseDamage = Math.floor(skill.damage * (0.8 + Math.random() * 0.4))
-                const damage = Math.floor(baseDamage * (1 - defenseReduction))
+                const def = target.statusEffects.find((e) => e.name === "防御強化")
+                const reduction = def ? (def.value || 0) / 100 : 0
+                const damage = Math.floor(baseDamage * (1 - reduction))
                 target.hp = Math.max(0, target.hp - damage)
                 setBattleLog((prev) => [...prev, `${player.name}の${skill.name}が${target.name}に${damage}ダメージ!`])
                 
@@ -979,7 +972,6 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               }
             }
           }
-
         })
 
         // Apply debuff damage (poison, burn)
@@ -1085,7 +1077,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
     setSelectedSkill(null)
     setSelectedTarget(null)
     setSelectedTargets([])
-  }, [selectedSkill, selectedTarget, selectedTargets, phase, isExecuting, addCoins, updateRoyaleRank, coinMultiplier])
+  }, [selectedHairRoot, selectedSkill, selectedTarget, selectedTargets, phase, isExecuting])
 
   const continueWatching = () => {
     // Simulate remaining battle
@@ -1289,6 +1281,7 @@ clearInterval(interval)
                       <p className="text-xs font-medium truncate">
                         {player.isNpc ? player.name : "あなた"}
                       </p>
+                      <p className="text-[10px] text-muted-foreground truncate">{player.hairRoot.name}</p>
                       <div className="h-1.5 bg-muted rounded-full mt-1 overflow-hidden">
                         <div
                           className={`h-full transition-all ${player.hp > player.maxHp * 0.3 ? "bg-accent" : "bg-destructive"}`}
@@ -1358,7 +1351,7 @@ clearInterval(interval)
                     <Button
                       variant={selectedSkill?.id === "normal-attack" ? "default" : "outline"}
                       onClick={() => {
-                        const normalAtkDamage = calculateNormalAttackDamage({ ...myPlayer.hairRoot, level: 1, exp: 0, count: 1 })
+                        const normalAtkDamage = calculateNormalAttackDamage({ ...myPlayer.hairRoot, level: myPlayer.level, exp: 0, count: 1 })
                         setSelectedSkill({
                           id: "normal-attack",
                           name: "通常攻撃",
@@ -1376,14 +1369,14 @@ clearInterval(interval)
                         <Swords className="w-4 h-4" />
                         <span className="font-medium text-sm">通常攻撃</span>
                       </div>
-                      <span className="text-xs text-muted-foreground mt-1">威力: {calculateNormalAttackDamage({ ...myPlayer.hairRoot, level: 1, exp: 0, count: 1 })}</span>
+                      <span className="text-xs text-muted-foreground mt-1">威力: {calculateNormalAttackDamage({ ...myPlayer.hairRoot, level: myPlayer.level, exp: 0, count: 1 })}</span>
                     </Button>
                     
                     {/* Normal Defense - always available */}
                     <Button
                       variant={selectedSkill?.id === "normal-defense" ? "default" : "outline"}
                       onClick={() => {
-                        const normalDefReduction = calculateNormalDefenseReduction({ ...myPlayer.hairRoot, level: 1, exp: 0, count: 1 })
+                        const normalDefReduction = calculateNormalDefenseReduction({ ...myPlayer.hairRoot, level: myPlayer.level, exp: 0, count: 1 })
                         setSelectedSkill({
                           id: "normal-defense",
                           name: "通常防御",
@@ -1401,7 +1394,7 @@ clearInterval(interval)
                         <Shield className="w-4 h-4" />
                         <span className="font-medium text-sm">通常防御</span>
                       </div>
-                      <span className="text-xs text-muted-foreground mt-1">軽減: {calculateNormalDefenseReduction({ ...myPlayer.hairRoot, level: 1, exp: 0, count: 1 })}%</span>
+                      <span className="text-xs text-muted-foreground mt-1">軽減: {calculateNormalDefenseReduction({ ...myPlayer.hairRoot, level: myPlayer.level, exp: 0, count: 1 })}%</span>
                     </Button>
                     
                     {/* Skills */}

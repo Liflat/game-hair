@@ -1282,6 +1282,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                             <div className="text-center w-full">
                               <div className="text-lg">{enemy.hairRoot.emoji}</div>
                               <p className="text-xs truncate">{enemy.name}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">{enemy.hairRoot.name}</p>
                               <p className="text-xs text-muted-foreground">{enemy.hp}HP</p>
                             </div>
                           </Button>
@@ -1314,6 +1315,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                             <div className="text-center w-full">
                               <div className="text-lg">{enemy.hairRoot.emoji}</div>
                               <p className="text-xs truncate">{enemy.name}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">{enemy.hairRoot.name}</p>
                               <p className="text-xs text-muted-foreground">{enemy.hp}HP</p>
                             </div>
                           </Button>

@@ -416,10 +416,10 @@ export const HAIR_ROOTS: HairRoot[] = [
   ]},
 
   // Additional Legendary (2)
-  { id: 51, name: "オーディン毛根", rarity: "legendary", element: "divine", description: "北欧神話の主神の力を宿す毛根", power: 72, speed: 68, grip: 65, emoji: "🦅", color: "#1E40AF", evolvesTo: 32, skills: [
+  { id: 51, name: "オーディン毛根", rarity: "legendary", element: "divine", description: "北欧神話の主神の力を宿す毛根", power: 72, speed: 68, grip: 65, emoji: "🦅", color: "#1E40AF", skills: [
     { id: "gungnir", name: "グングニル", description: "必中の神槍で貫く", damage: 145, cooldown: 4, type: "attack" },
     { id: "all-father", name: "オールファーザー", description: "全知の力で次の攻撃を完全回避+反撃", damage: 0, cooldown: 5, type: "special" },
-    { id: "deep-dive", name: "ディープダイブ", description: "深海に潜り全攻撃回避", damage: 0, cooldown: 5, type: "dodge" }
+    { id: "divine-shield", name: "神盾", description: "神聖なる盾で150%防御", damage: 0, cooldown: 5, type: "defense" }
   ]},
   { id: 52, name: "アマテラス毛根", rarity: "legendary", element: "light", description: "太陽神の力を持つ神聖な毛根", power: 68, speed: 70, grip: 70, emoji: "🌸", color: "#F43F5E", skills: [
     { id: "amaterasu-flame", name: "天照の炎", description: "消えない神火で敵を焼く(最大2体)", damage: 155, cooldown: 4, type: "aoe", maxTargets: 2 },

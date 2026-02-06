@@ -30,6 +30,7 @@ interface BattlePlayer {
   cooldowns: { [skillId: string]: number }
   statusEffects: StatusEffect[]
   buffedStats: { power: number; speed: number; grip: number }
+  level: number
 }
 
 type BattlePhase = "preparation" | "selecting" | "action" | "finished"
@@ -80,6 +81,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       cooldowns: {},
       statusEffects: [],
       buffedStats: { power: 0, speed: 0, grip: 0 },
+      level: 1,
     }
 
     // Create team players
@@ -98,6 +100,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         cooldowns: {},
         statusEffects: [],
         buffedStats: { power: 0, speed: 0, grip: 0 },
+        level: hair.level,
       }
     })
 
@@ -231,7 +234,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             if (triggerAllFather(player, target, newLog, newPlayers)) {
               // Attack was dodged
             } else {
-              const baseDamage = calculateNormalAttackDamage(player.hairRoot as CollectedHairRoot)
+              const baseDamage = calculateNormalAttackDamage({ ...player.hairRoot, level: player.level, exp: 0, count: 1 } as CollectedHairRoot)
               const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
               const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
               
@@ -346,7 +349,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         
         // For normal defense, use calculated value; for others use skill effect
         if (selectedSkill.id === "normal-defense") {
-          finalDefenseValue = calculateNormalDefenseReduction(player.hairRoot as CollectedHairRoot)
+          finalDefenseValue = calculateNormalDefenseReduction({ ...player.hairRoot, level: player.level, exp: 0, count: 1 } as CollectedHairRoot)
         } else {
           const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
           finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
@@ -602,7 +605,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           if (boss.isEliminated || ally.isEliminated) return
 
           const availableSkills = ally.hairRoot.skills.filter(s => (ally.cooldowns[s.id] || 0) <= 0)
-          const normalDefenseReduction = calculateNormalDefenseReduction(ally.hairRoot as CollectedHairRoot)
+          const normalDefenseReduction = calculateNormalDefenseReduction({ ...ally.hairRoot, level: ally.level, exp: 0, count: 1 } as CollectedHairRoot)
           const normalDefense: Skill = { id: "normal-defense", name: "通常防御", damage: 0, cooldown: 0, type: "defense", description: `軽減: ${normalDefenseReduction}%` }
           const skillPool = [...availableSkills, normalDefense]
           const defensiveSkills = skillPool.filter(s => s.type === "defense" || s.type === "dodge")
@@ -612,7 +615,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           const healTarget = isHealer && needsHealing ? getLowestHpAlly(aliveTeamPlayers) : null
           const healSkill = isHealer ? availableSkills.find(s => s.type === "team_heal") : undefined
 
-          let chosenSkill: Skill = { id: "normal-attack", name: "通常攻撃", damage: calculateNormalAttackDamage(ally.hairRoot as CollectedHairRoot), cooldown: 0, type: "attack", description: `威力: ${calculateNormalAttackDamage(ally.hairRoot as CollectedHairRoot)}` }
+          let chosenSkill: Skill = { id: "normal-attack", name: "通常攻撃", damage: calculateNormalAttackDamage({ ...ally.hairRoot, level: ally.level, exp: 0, count: 1 } as CollectedHairRoot), cooldown: 0, type: "attack", description: `威力: ${calculateNormalAttackDamage({ ...ally.hairRoot, level: ally.level, exp: 0, count: 1 } as CollectedHairRoot)}` }
           let chosenTarget: BattlePlayer | null = null
 
           if (healSkill && healTarget && healTarget.hp / healTarget.maxHp < 0.5) {
@@ -763,7 +766,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       const availableSkills = skills.filter(s => (boss.cooldowns[s.id] || 0) <= 0)
       const selectedBossSkill = availableSkills.length > 0 
         ? availableSkills[Math.floor(Math.random() * availableSkills.length)]
-        : { id: "normal-attack", name: "通常攻撃", damage: calculateNormalAttackDamage(boss.hairRoot as CollectedHairRoot), cooldown: 0, type: "attack" as const, description: "" }
+        : { id: "normal-attack", name: "通常攻撃", damage: calculateNormalAttackDamage({ ...boss.hairRoot, level: boss.level, exp: 0, count: 1 } as CollectedHairRoot), cooldown: 0, type: "attack" as const, description: "" }
       
       const newLog: string[] = []
 
@@ -786,7 +789,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         } else {
           const stats = calculateStats(boss.hairRoot as unknown as CollectedHairRoot)
           const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
-          const baseDamage = calculateNormalAttackDamage(boss.hairRoot as CollectedHairRoot)
+          const baseDamage = calculateNormalAttackDamage({ ...boss.hairRoot, level: boss.level, exp: 0, count: 1 } as CollectedHairRoot)
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
           const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
           
@@ -879,7 +882,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         if (selectedBossSkill.id === "normal-defense") {
           finalDefenseValue = calculateNormalDefenseReduction({
             ...boss.hairRoot,
-            level: 10,
+            level: boss.level,
             exp: 0,
             count: 1
           } as any)
@@ -1122,7 +1125,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                     {/* Normal Attack - always available */}
                     <button
                       onClick={() => {
-                        const normalAtkDamage = calculateNormalAttackDamage(player.hairRoot as CollectedHairRoot)
+                        const normalAtkDamage = calculateNormalAttackDamage({ ...player.hairRoot, level: player.level, exp: 0, count: 1 } as CollectedHairRoot)
                         setSelectedSkill({ id: "normal-attack", name: "通常攻撃", damage: normalAtkDamage, cooldown: 0, type: "attack", description: `威力: ${normalAtkDamage}` })
                       }}
                       className={`p-2 rounded-lg text-left border text-xs transition-all ${
@@ -1132,13 +1135,13 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                       }`}
                     >
                       <p className="font-medium">通常攻撃</p>
-                      <p className="text-muted-foreground text-xs">威力: {calculateNormalAttackDamage(player.hairRoot as CollectedHairRoot)}</p>
+                      <p className="text-muted-foreground text-xs">威力: {calculateNormalAttackDamage({ ...player.hairRoot, level: player.level, exp: 0, count: 1 } as CollectedHairRoot)}</p>
                     </button>
 
                     {/* Normal Defense - always available */}
                     <button
                       onClick={() => {
-                        const normalDefReduction = calculateNormalDefenseReduction(player.hairRoot as CollectedHairRoot)
+                        const normalDefReduction = calculateNormalDefenseReduction({ ...player.hairRoot, level: player.level, exp: 0, count: 1 } as CollectedHairRoot)
                         setSelectedSkill({ id: "normal-defense", name: "通常防御", damage: 0, cooldown: 0, type: "defense", description: `軽減: ${normalDefReduction}%` })
                       }}
                       className={`p-2 rounded-lg text-left border text-xs transition-all ${
@@ -1148,7 +1151,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                       }`}
                     >
                       <p className="font-medium">通常防御</p>
-                      <p className="text-muted-foreground text-xs">軽減: {calculateNormalDefenseReduction(player.hairRoot as CollectedHairRoot)}%</p>
+                      <p className="text-muted-foreground text-xs">軽減: {calculateNormalDefenseReduction({ ...player.hairRoot, level: player.level, exp: 0, count: 1 } as CollectedHairRoot)}%</p>
                     </button>
                     {currentSkills.map((skill) => {
                       const onCooldown = (player.cooldowns[skill.id] || 0) > 0
