@@ -548,7 +548,7 @@ export const BOSS_RAID_CONFIG = {
   defeatReward: {
     coins: 1000,
     exp: 500,
-    hairRoot: BOSS_HAIR_GRAND,
+    hairRoot: BOSS_HAIR_ROOT,
   },
 }
 export function calculateSkillBonus(hairRoot: CollectedHairRoot): number {
