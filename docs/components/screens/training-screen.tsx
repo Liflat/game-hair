@@ -14,8 +14,8 @@ interface TrainingScreenProps {
 
 const trainingMethods = [
   { id: "light", name: "軽いトレーニング", exp: 20, cost: 5, icon: Zap, color: "bg-accent" },
-  { id: "normal", name: "通常トレーニング", exp: 50, cost: 15, icon: Dumbbell, color: "bg-secondary" },
-  { id: "intense", name: "ハードトレーニング", exp: 120, cost: 40, icon: Sparkles, color: "bg-primary" },
+  { id: "normal", name: "通常トレーニング", exp: 65, cost: 15, icon: Dumbbell, color: "bg-secondary" },
+  { id: "intense", name: "ハードトレーニング", exp: 200, cost: 40, icon: Sparkles, color: "bg-primary" },
 ]
 
 const RARITY_ORDER: Record<Rarity, number> = {

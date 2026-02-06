@@ -129,6 +129,30 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
   const myPlayer = players.find((p) => !p.isNpc)
   const alivePlayers = players.filter((p) => !p.isEliminated)
 
+  const triggerAllFather = (attacker: BattlePlayer, defender: BattlePlayer): boolean => {
+    const allFather = defender.statusEffects.find((e) => e.type === "buff" && e.name === "オールファーザー")
+    if (!allFather) return false
+
+    const counter = defender.statusEffects.find((e) => e.type === "buff" && e.name === "反撃準備")
+    defender.statusEffects = defender.statusEffects.filter(
+      (e) => e.name !== "オールファーザー" && e.name !== "反撃準備"
+    )
+
+    setBattleLog((prev) => [...prev, `${defender.name}はオールファーザーで攻撃を完全回避!`])
+
+    const counterValue = counter?.value ?? 0
+    if (counterValue > 0) {
+      attacker.hp = Math.max(0, attacker.hp - counterValue)
+      setBattleLog((prev) => [...prev, `${defender.name}の反撃で${attacker.name}に${counterValue}ダメージ!`])
+      if (attacker.hp <= 0) {
+        attacker.isEliminated = true
+        setBattleLog((prev) => [...prev, `${attacker.name}が脱落!`])
+      }
+    }
+
+    return true
+  }
+
   const startBattle = useCallback(() => {
     if (!selectedHairRoot) return
 
@@ -323,6 +347,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
       switch (selectedSkill.type) {
         case "attack": {
           if (target && !target.isEliminated) {
+            if (triggerAllFather(player, target)) {
+              break
+            }
             const baseDamage = selectedSkill.damage
             const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
             const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
@@ -346,6 +373,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             const baseDamage = selectedSkill.damage
             
             targets.forEach((t) => {
+              if (triggerAllFather(player, t)) {
+                return
+              }
               const elementMod = getElementDamageMod(player.hairRoot, t.hairRoot)
               const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
               t.hp = Math.max(0, t.hp - finalDamage)
@@ -373,6 +403,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
         case "dot": {
           // DOT attack - damage + apply status effect
           if (target && !target.isEliminated) {
+            if (triggerAllFather(player, target)) {
+              break
+            }
             const baseDamage = selectedSkill.damage
             const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
             const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
@@ -643,6 +676,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             const defenseReduction = defenseBonus ? (defenseBonus.value || 0) / 100 : 0
 
             if (skill.type === "attack" && skill.damage > 0) {
+              if (triggerAllFather(player, target)) {
+                return
+              }
               const baseDamage = Math.floor(skill.damage * (0.8 + Math.random() * 0.4))
               const damage = Math.floor(baseDamage * (1 - defenseReduction))
               target.hp = Math.max(0, target.hp - damage)
@@ -749,6 +785,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               const enemies = alive.filter((p) => p.id !== player.id && !p.isEliminated)
               if (enemies.length > 0) {
                 const target = enemies[Math.floor(Math.random() * enemies.length)]
+                if (triggerAllFather(player, target)) {
+                  return
+                }
                 const baseDamage = Math.floor(skill.damage * (0.8 + Math.random() * 0.4))
                 const def = target.statusEffects.find((e) => e.name === "防御強化")
                 const reduction = def ? (def.value || 0) / 100 : 0
@@ -785,6 +824,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               const baseDamage = Math.floor(skill.damage * (0.8 + Math.random() * 0.4))
               
               aoeTargets.forEach((t) => {
+                if (triggerAllFather(player, t)) {
+                  return
+                }
                 const def = t.statusEffects.find((e) => e.name === "防御強化")
                 const reduction = def ? (def.value || 0) / 100 : 0
                 const dmg = Math.floor(baseDamage * (1 - reduction))

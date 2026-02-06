@@ -112,6 +112,41 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
     return mods.attackMod
   }
 
+  const triggerAllFather = (
+    attacker: BattlePlayer,
+    defender: BattlePlayer,
+    newLog: string[],
+    newPlayers: BattlePlayer[]
+  ): boolean => {
+    const allFatherBuff = defender.statusEffects.find(e => e.type === "buff" && e.name === "オールファーザー")
+    if (!allFatherBuff) return false
+
+    const counterBuff = defender.statusEffects.find(e => e.type === "buff" && e.name === "反撃準備")
+    defender.statusEffects = defender.statusEffects.filter(
+      e => e.name !== "オールファーザー" && e.name !== "反撃準備"
+    )
+
+    newLog.push(`${defender.name}はオールファーザーで攻撃を完全回避!`)
+
+    if (counterBuff?.value) {
+      const counterDamage = counterBuff.value
+      attacker.hp = Math.max(0, attacker.hp - counterDamage)
+      newLog.push(`${defender.name}の反撃が${attacker.name}に${counterDamage}ダメージ!`)
+
+      if (attacker.hp <= 0) {
+        attacker.isEliminated = true
+        if (attacker.id === 999) {
+          newLog.push("ヘアグランドを倒した！")
+          defeatBossRaid()
+        } else {
+          newLog.push(`${attacker.name}が脱落!`)
+        }
+      }
+    }
+
+    return true
+  }
+
   const executePlayerAction = (targetId?: number) => {
     if (!selectedSkill || isExecuting) return
     
@@ -145,6 +180,12 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         baseDamage: number,
         label: string
       ) => {
+        // Check for all-father dodge
+        if (triggerAllFather(attacker, target, newLog, newPlayers)) {
+          // Attack was dodged
+          return
+        }
+
         const attackerStats = calculateStats(attacker.hairRoot as CollectedHairRoot)
         const attackerPower = (attackerStats?.power ?? 0) + (attacker.buffedStats.power || 0)
         const elementMod = getElementDamageMod(attacker.hairRoot, target.hairRoot)
@@ -178,29 +219,34 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         if (targetToUse !== null) {
           const target = newPlayers.find(p => p.id === targetToUse)
           if (target && !target.isEliminated) {
-            const baseDamage = 15
-            const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
-            const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
-            
-            // Apply defense buff if exists
-            const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
-            const damageAfterDefense = defenseEffect?.value 
-              ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
-              : finalDamage
+            // Check for all-father dodge
+            if (triggerAllFather(player, target, newLog, newPlayers)) {
+              // Attack was dodged
+            } else {
+              const baseDamage = 15
+              const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
+              const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+              
+              // Apply defense buff if exists
+              const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+              const damageAfterDefense = defenseEffect?.value 
+                ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+                : finalDamage
 
-            target.hp = Math.max(0, target.hp - damageAfterDefense)
-            
-            const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
-            const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
-            newLog.push(`${player.name}の通常攻撃が${target.name}に${damageAfterDefense}ダメージ!${elementNote}${defenseNote}`)
-            
-            if (target.hp <= 0) {
-              target.isEliminated = true
-              if (target.id === 999) {
-                newLog.push("ヘアグランドを倒した！")
-                defeatBossRaid()
-              } else {
-                newLog.push(`${target.name}が脱落!`)
+              target.hp = Math.max(0, target.hp - damageAfterDefense)
+              
+              const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
+              const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
+              newLog.push(`${player.name}の通常攻撃が${target.name}に${damageAfterDefense}ダメージ!${elementNote}${defenseNote}`)
+              
+              if (target.hp <= 0) {
+                target.isEliminated = true
+                if (target.id === 999) {
+                  newLog.push("ヘアグランドを倒した！")
+                  defeatBossRaid()
+                } else {
+                  newLog.push(`${target.name}が脱落!`)
+                }
               }
             }
           }
@@ -218,29 +264,34 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         if (targetToUse !== null) {
           const target = newPlayers.find(p => p.id === targetToUse)
           if (target && !target.isEliminated) {
-            const baseDamage = selectedSkill.damage || 0
-            const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
-            const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
-            
-            // Apply defense buff if exists
-            const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
-            const damageAfterDefense = defenseEffect?.value 
-              ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
-              : finalDamage
+            // Check for all-father dodge
+            if (triggerAllFather(player, target, newLog, newPlayers)) {
+              // Attack was dodged
+            } else {
+              const baseDamage = selectedSkill.damage || 0
+              const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
+              const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+              
+              // Apply defense buff if exists
+              const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+              const damageAfterDefense = defenseEffect?.value 
+                ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+                : finalDamage
 
-            target.hp = Math.max(0, target.hp - damageAfterDefense)
-            
-            const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
-            const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
-            newLog.push(`${player.name}の${selectedSkill.name}が${target.name}に${damageAfterDefense}ダメージ!${elementNote}${defenseNote}`)
-            
-            if (target.hp <= 0) {
-              target.isEliminated = true
-              if (target.id === 999) {
-                newLog.push("ヘアグランドを倒した！")
-                defeatBossRaid()
-              } else {
-                newLog.push(`${target.name}が脱落!`)
+              target.hp = Math.max(0, target.hp - damageAfterDefense)
+              
+              const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
+              const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
+              newLog.push(`${player.name}の${selectedSkill.name}が${target.name}に${damageAfterDefense}ダメージ!${elementNote}${defenseNote}`)
+              
+              if (target.hp <= 0) {
+                target.isEliminated = true
+                if (target.id === 999) {
+                  newLog.push("ヘアグランドを倒した！")
+                  defeatBossRaid()
+                } else {
+                  newLog.push(`${target.name}が脱落!`)
+                }
               }
             }
           }
@@ -250,28 +301,33 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         const targets = [boss]
 
         targets.forEach(target => {
-          const baseDamage = selectedSkill.damage || 0
-          const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
-          const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
-          
-          const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
-          const damageAfterDefense = defenseEffect?.value 
-            ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
-            : finalDamage
+          // Check for all-father dodge
+          if (triggerAllFather(player, target, newLog, newPlayers)) {
+            // Attack was dodged
+          } else {
+            const baseDamage = selectedSkill.damage || 0
+            const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
+            const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+            
+            const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+            const damageAfterDefense = defenseEffect?.value 
+              ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+              : finalDamage
 
-          target.hp = Math.max(0, target.hp - damageAfterDefense)
-          
-          const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
-          const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
-          newLog.push(`${selectedSkill.name}が${target.name}に${damageAfterDefense}ダメージ!${elementNote}${defenseNote}`)
-          
-          if (target.hp <= 0) {
-            target.isEliminated = true
-            if (target.id === 999) {
-              newLog.push("ヘアグランドを倒した！")
-              defeatBossRaid()
-            } else {
-              newLog.push(`${target.name}が脱落!`)
+            target.hp = Math.max(0, target.hp - damageAfterDefense)
+            
+            const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
+            const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
+            newLog.push(`${selectedSkill.name}が${target.name}に${damageAfterDefense}ダメージ!${elementNote}${defenseNote}`)
+            
+            if (target.hp <= 0) {
+              target.isEliminated = true
+              if (target.id === 999) {
+                newLog.push("ヘアグランドを倒した！")
+                defeatBossRaid()
+              } else {
+                newLog.push(`${target.name}が脱落!`)
+              }
             }
           }
         })
@@ -293,8 +349,9 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         }
       } else if (selectedSkill.type === "special") {
         // Special skills
+        const specialSkillBonus = calculateSkillBonus(player.hairRoot as CollectedHairRoot)
+        
         if (selectedSkill.id === "absolute-zero") {
-          const skillBonus = calculateSkillBonus(player.hairRoot as CollectedHairRoot)
           const targets = [boss, ...aliveTeamPlayers]
           const baseDamage = selectedSkill.damage || 0
           
@@ -330,6 +387,135 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
               }
             }
           })
+        } else if (selectedSkill.id === "bounce-back" || selectedSkill.id === "helix-heal") {
+          const healAmount = Math.floor(player.maxHp * 0.25 * specialSkillBonus)
+          player.hp = Math.min(player.maxHp, player.hp + healAmount)
+          newLog.push(`${player.name}は${selectedSkill.name}でHPを${healAmount}回復!`)
+        } else if (selectedSkill.id === "static-field" || selectedSkill.id === "entangle") {
+          const stunDuration = Math.floor(1 * specialSkillBonus)
+          boss.statusEffects.push({
+            type: "stun",
+            name: selectedSkill.id === "static-field" ? "麻痺" : "拘束",
+            duration: stunDuration
+          })
+          newLog.push(`${boss.name}は${selectedSkill.name}で動けなくなった!`)
+        } else if (selectedSkill.id === "rainbow-aura") {
+          const buffValue = Math.floor(20 * specialSkillBonus)
+          player.buffedStats.power += buffValue
+          player.buffedStats.speed += buffValue
+          player.buffedStats.grip += buffValue
+          player.statusEffects.push({
+            type: "buff",
+            name: "虹のオーラ",
+            duration: 3,
+            value: buffValue
+          })
+          newLog.push(`虹のオーラで全ステータス+${buffValue}!`)
+        } else if (selectedSkill.id === "holy-blessing") {
+          const buffValue = Math.floor(50 * specialSkillBonus)
+          player.buffedStats.power += buffValue
+          player.buffedStats.speed += buffValue
+          player.buffedStats.grip += buffValue
+          const healAmount = Math.floor(player.maxHp * 0.4 * specialSkillBonus)
+          player.hp = Math.min(player.maxHp, player.hp + healAmount)
+          player.statusEffects.push({
+            type: "buff",
+            name: "神の祝福",
+            duration: 4,
+            value: buffValue
+          })
+          newLog.push(`神の祝福! 全ステータス+${buffValue}、HP${healAmount}回復!`)
+        } else if (selectedSkill.id === "rebirth") {
+          const healAmount = Math.floor(player.maxHp * 0.7 * specialSkillBonus)
+          player.hp = Math.min(player.maxHp, player.hp + healAmount)
+          newLog.push(`不死鳥の再生! ${healAmount}HP回復!`)
+        } else if (selectedSkill.id === "rewind") {
+          const healAmount = Math.floor(player.maxHp * 0.35 * specialSkillBonus)
+          player.hp = Math.min(player.maxHp, player.hp + healAmount)
+          player.statusEffects.push({
+            type: "buff",
+            name: "時間歪曲",
+            duration: 1,
+            value: 100
+          })
+          newLog.push(`時を戻した! HP${healAmount}回復+1ターン無敵!`)
+        } else if (selectedSkill.id === "toxic-cloud") {
+          boss.statusEffects.push({
+            type: "debuff",
+            name: "毒",
+            duration: 3,
+            value: 10
+          })
+          newLog.push(`毒霧が${boss.name}を包み込んだ!`)
+        } else if (selectedSkill.id === "moon-blessing") {
+          const healAmount = Math.floor(player.maxHp * 0.4)
+          player.hp = Math.min(player.maxHp, player.hp + healAmount)
+          newLog.push(`月の加護で${healAmount}HP回復!`)
+        } else if (selectedSkill.id === "sunlight-heal") {
+          const healAmount = Math.floor(player.maxHp * 0.5)
+          player.hp = Math.min(player.maxHp, player.hp + healAmount)
+          player.buffedStats.power += 25
+          player.statusEffects.push({
+            type: "buff",
+            name: "太陽の力",
+            duration: 3,
+            value: 25
+          })
+          newLog.push(`日光でHP${healAmount}回復+攻撃力UP!`)
+        } else if (selectedSkill.id === "hellfire-breath") {
+          const targets = [boss, ...aliveTeamPlayers]
+          const burnDamage = 30
+          targets.forEach(target => {
+            if (target.id === player.id) return
+            target.hp = Math.max(0, target.hp - burnDamage)
+            target.statusEffects.push({
+              type: "debuff",
+              name: "炎上",
+              duration: 2,
+              value: 15
+            })
+            if (target.hp <= 0) {
+              target.isEliminated = true
+              if (target.id === 999) {
+                newLog.push("ヘアグランドを倒した！")
+                defeatBossRaid()
+              } else {
+                newLog.push(`${target.name}が脱落!`)
+              }
+            }
+          })
+          newLog.push(`地獄の炎が全員を焼き尽くす! ${burnDamage}ダメージ+炎上!`)
+        } else if (selectedSkill.id === "einherjar") {
+          const healAmount = Math.floor(player.maxHp * 0.6)
+          player.hp = Math.min(player.maxHp, player.hp + healAmount)
+          player.statusEffects.push({
+            type: "buff",
+            name: "勇者の魂",
+            duration: 2,
+            value: 50
+          })
+          newLog.push(`勇者の魂が宿る! HP${healAmount}回復+防御強化!`)
+        } else if (selectedSkill.id === "all-father") {
+          player.statusEffects.push({
+            type: "buff",
+            name: "オールファーザー",
+            duration: 1,
+            value: 100
+          })
+          player.statusEffects.push({
+            type: "buff",
+            name: "反撃準備",
+            duration: 1,
+            value: 80
+          })
+          newLog.push(`全知の力発動! 次の攻撃を完全回避+反撃準備!`)
+        } else if (selectedSkill.id === "end-world") {
+          boss.hp = 0
+          boss.isEliminated = true
+          newLog.push(`${boss.name}は世界から消滅した!!`)
+          defeatBossRaid()
+        } else {
+          newLog.push(`${selectedSkill.name}発動!`)
         }
       } else if (selectedSkill.type === "team_heal") {
         // Healing skills - target single teammate
@@ -485,25 +671,31 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
 
       if (selectedBossSkill.id === "normal-attack" && aliveTeam.length > 0) {
         const target = aliveTeam[Math.floor(Math.random() * aliveTeam.length)]
-        const stats = calculateStats(boss.hairRoot as unknown as CollectedHairRoot)
-        const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
-        const baseDamage = 15
-        const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
-        const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
         
-        const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
-        const damageAfterDefense = defenseEffect?.value 
-          ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
-          : finalDamage
+        // Check for all-father dodge
+        if (triggerAllFather(boss, target, newLog, newPlayers)) {
+          // Attack was dodged
+        } else {
+          const stats = calculateStats(boss.hairRoot as unknown as CollectedHairRoot)
+          const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
+          const baseDamage = 15
+          const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
+          const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+          
+          const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+          const damageAfterDefense = defenseEffect?.value 
+            ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+            : finalDamage
 
-        target.hp = Math.max(0, target.hp - damageAfterDefense)
-        
-        const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
-        newLog.push(`${target.name}に${damageAfterDefense}ダメージ!${defenseNote}`)
-        
-        if (target.hp <= 0) {
-          target.isEliminated = true
-          newLog.push(`${target.name}が脱落!`)
+          target.hp = Math.max(0, target.hp - damageAfterDefense)
+          
+          const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
+          newLog.push(`${target.name}に${damageAfterDefense}ダメージ!${defenseNote}`)
+          
+          if (target.hp <= 0) {
+            target.isEliminated = true
+            newLog.push(`${target.name}が脱落!`)
+          }
         }
       } else if (selectedBossSkill.id === "normal-defense") {
         // Normal defense - 20% damage reduction for 1 turn
@@ -516,28 +708,11 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         newLog.push(`20%ダメージ軽減!`)
       } else if (selectedBossSkill.type === "attack" && aliveTeam.length > 0) {
         const target = aliveTeam[Math.floor(Math.random() * aliveTeam.length)]
-        const stats = calculateStats(boss.hairRoot as unknown as CollectedHairRoot)
-        const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
-        const baseDamage = selectedBossSkill.damage || 0
-        const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
-        const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
         
-        const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
-        const damageAfterDefense = defenseEffect?.value 
-          ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
-          : finalDamage
-
-        target.hp = Math.max(0, target.hp - damageAfterDefense)
-        
-        const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
-        newLog.push(`${target.name}に${damageAfterDefense}ダメージ!${defenseNote}`)
-        
-        if (target.hp <= 0) {
-          target.isEliminated = true
-          newLog.push(`${target.name}が脱落!`)
-        }
-      } else if (selectedBossSkill.type === "aoe") {
-        aliveTeam.forEach(target => {
+        // Check for all-father dodge
+        if (triggerAllFather(boss, target, newLog, newPlayers)) {
+          // Attack was dodged
+        } else {
           const stats = calculateStats(boss.hairRoot as unknown as CollectedHairRoot)
           const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
           const baseDamage = selectedBossSkill.damage || 0
@@ -557,6 +732,34 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           if (target.hp <= 0) {
             target.isEliminated = true
             newLog.push(`${target.name}が脱落!`)
+          }
+        }
+      } else if (selectedBossSkill.type === "aoe") {
+        aliveTeam.forEach(target => {
+          // Check for all-father dodge
+          if (triggerAllFather(boss, target, newLog, newPlayers)) {
+            // Attack was dodged
+          } else {
+            const stats = calculateStats(boss.hairRoot as unknown as CollectedHairRoot)
+            const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
+            const baseDamage = selectedBossSkill.damage || 0
+            const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
+            const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+            
+            const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+            const damageAfterDefense = defenseEffect?.value 
+              ? Math.floor(finalDamage * (1 - (defenseEffect.value / 100)))
+              : finalDamage
+
+            target.hp = Math.max(0, target.hp - damageAfterDefense)
+            
+            const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
+            newLog.push(`${target.name}に${damageAfterDefense}ダメージ!${defenseNote}`)
+            
+            if (target.hp <= 0) {
+              target.isEliminated = true
+              newLog.push(`${target.name}が脱落!`)
+            }
           }
         })
       } else if (selectedBossSkill.type === "defense") {

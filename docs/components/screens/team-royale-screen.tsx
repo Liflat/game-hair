@@ -133,6 +133,30 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
   const player = teams.flatMap(t => t.members).find((p) => !p.isNpc)
   const playerTeam = teams.find(t => t.members.some(m => !m.isNpc))
 
+  const triggerAllFather = (attacker: BattlePlayer, defender: BattlePlayer): boolean => {
+    const allFather = defender.statusEffects.find((e) => e.type === "buff" && e.name === "オールファーザー")
+    if (!allFather) return false
+
+    const counter = defender.statusEffects.find((e) => e.type === "buff" && e.name === "反撃準備")
+    defender.statusEffects = defender.statusEffects.filter(
+      (e) => e.name !== "オールファーザー" && e.name !== "反撃準備"
+    )
+
+    setBattleLog((logs) => [...logs, `${defender.name}はオールファーザーで攻撃を完全回避!`])
+
+    const counterValue = counter?.value ?? 0
+    if (counterValue > 0) {
+      attacker.hp = Math.max(0, attacker.hp - counterValue)
+      setBattleLog((logs) => [...logs, `${defender.name}の反撃で${attacker.name}に${counterValue}ダメージ!`])
+      if (attacker.hp <= 0) {
+        attacker.isEliminated = true
+        setBattleLog((logs) => [...logs, `${attacker.name}が脱落!`])
+      }
+    }
+
+    return true
+  }
+
   // Auto-progress when player is eliminated
   useEffect(() => {
     if (phase === "select" && player?.isEliminated) {
@@ -250,6 +274,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         const stats = getBattleStats(currentPlayer)
         const totalPower = stats.power + currentPlayer.buffedStats.power
         const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
+        if (triggerAllFather(currentPlayer, target)) {
+          return prev
+        }
         let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
         
         const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
@@ -270,6 +297,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         const stats = getBattleStats(currentPlayer)
         const totalPower = stats.power + currentPlayer.buffedStats.power
         const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
+        if (triggerAllFather(currentPlayer, target)) {
+          return prev
+        }
         let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
         
         const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
@@ -324,6 +354,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         const totalPower = stats.power + currentPlayer.buffedStats.power
         
         targets.forEach(t => {
+          if (triggerAllFather(currentPlayer, t)) {
+            return
+          }
           let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
           const defBuff = t.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
           if (defBuff) damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
@@ -356,7 +389,33 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         const specialSkillBonus = getSkillBonus(currentPlayer)
         
         // Heal skills
-        if (selectedSkill.id === "rebirth") {
+        if (selectedSkill.id === "bounce-back" || selectedSkill.id === "helix-heal") {
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.25 * specialSkillBonus)
+          currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! HP${healAmount}回復!`])
+        } else if (selectedSkill.id === "static-field" || selectedSkill.id === "entangle") {
+          if (target && !target.isEliminated) {
+            const stunDuration = Math.floor(1 * specialSkillBonus)
+            target.statusEffects.push({
+              type: "stun",
+              name: selectedSkill.id === "static-field" ? "麻痺" : "拘束",
+              duration: stunDuration
+            })
+            setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${target.name}は動けなくなった!`])
+          }
+        } else if (selectedSkill.id === "rainbow-aura") {
+          const buffValue = Math.floor(20 * specialSkillBonus)
+          currentPlayer.buffedStats.power += buffValue
+          currentPlayer.buffedStats.speed += buffValue
+          currentPlayer.buffedStats.grip += buffValue
+          currentPlayer.statusEffects.push({ type: "buff", name: "虹のオーラ", duration: 3, value: buffValue })
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}に虹のオーラ! 全ステータス+${buffValue}!`])
+        } else if (selectedSkill.id === "rewind") {
+          const healAmount = Math.floor(currentPlayer.maxHp * 0.35 * specialSkillBonus)
+          currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
+          currentPlayer.statusEffects.push({ type: "buff", name: "時間歪曲", duration: 1, value: 100 })
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}が時を戻した! HP${healAmount}回復+1ターン無敵!`])
+        } else if (selectedSkill.id === "rebirth") {
           const healAmount = Math.floor(currentPlayer.maxHp * 0.7 * specialSkillBonus)
           currentPlayer.hp = Math.min(currentPlayer.maxHp, currentPlayer.hp + healAmount)
           setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! HP${healAmount}回復!`])
@@ -478,6 +537,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           if (skill.type === "attack") {
             const stats = getBattleStats(npc)
             const totalPower = stats.power + npc.buffedStats.power
+            if (triggerAllFather(npc, target)) {
+              continue
+            }
             let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
             
             const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
@@ -496,6 +558,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             // NPC DOT attack
             const stats = getBattleStats(npc)
             const totalPower = stats.power + npc.buffedStats.power
+            if (triggerAllFather(npc, target)) {
+              continue
+            }
             let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
             
             const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
@@ -526,6 +591,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             const totalPower = stats.power + npc.buffedStats.power
             
             targets.forEach(t => {
+              if (triggerAllFather(npc, t)) {
+                return
+              }
               let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
               const defBuff = t.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
               if (defBuff) damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
@@ -565,7 +633,33 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             }
           } else if (skill.type === "special") {
             // NPC special skills
-            if (skill.id === "toxic-cloud") {
+            if (skill.id === "bounce-back" || skill.id === "helix-heal") {
+              const healAmount = Math.floor(npc.maxHp * 0.25)
+              npc.hp = Math.min(npc.maxHp, npc.hp + healAmount)
+              setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}でHP回復!`])
+            } else if (skill.id === "static-field" || skill.id === "entangle") {
+              if (target && !target.isEliminated) {
+                target.statusEffects.push({
+                  type: "stun",
+                  name: skill.id === "static-field" ? "麻痺" : "拘束",
+                  duration: 1
+                })
+                setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! ${target.name}は動けなくなった!`])
+              }
+            } else if (skill.id === "rewind") {
+              const healAmount = Math.floor(npc.maxHp * 0.35)
+              npc.hp = Math.min(npc.maxHp, npc.hp + healAmount)
+              npc.statusEffects.push({ type: "buff", name: "時間歪曲", duration: 1, value: 100 })
+              setBattleLog((logs) => [...logs, `${npc.name}が時を戻した!`])
+            } else if (skill.id === "holy-blessing") {
+              const healAmount = Math.floor(npc.maxHp * 0.4)
+              npc.hp = Math.min(npc.maxHp, npc.hp + healAmount)
+              npc.buffedStats.power += 50
+              npc.buffedStats.speed += 50
+              npc.buffedStats.grip += 50
+              npc.statusEffects.push({ type: "buff", name: "神の祝福", duration: 4, value: 50 })
+              setBattleLog((logs) => [...logs, `${npc.name}に神の祝福!`])
+            } else if (skill.id === "toxic-cloud") {
               enemyPlayers.forEach(e => {
                 e.statusEffects.push({ type: "debuff", name: "毒", duration: 3, value: 10 })
               })
