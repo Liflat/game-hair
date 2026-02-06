@@ -355,11 +355,11 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
               <div className="relative h-8 bg-muted rounded-full overflow-hidden mb-4">
                 <div className="absolute inset-0 flex">
                   <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all duration-100"
+                    className="h-full bg-gradient-to-r from-red-400 to-red-500 transition-all duration-100"
                     style={{ width: `${pullProgress}%` }}
                   />
                   <div
-                    className="h-full bg-gradient-to-r from-red-400 to-red-500 flex-1"
+                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400 flex-1"
                   />
                 </div>
                 <motion.div
@@ -370,8 +370,8 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
               </div>
 
               <div className="flex justify-between text-sm">
-                <span className="text-blue-400">あなた</span>
-                <span className="text-red-400">{opponent.name}</span>
+                <span className="text-red-400">あなた</span>
+                <span className="text-blue-400">{opponent.name}</span>
               </div>
             </motion.div>
           )}
