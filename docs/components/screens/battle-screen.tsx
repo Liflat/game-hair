@@ -80,7 +80,8 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
     // AI opponent tapping
     const opponentInterval = setInterval(() => {
       const opponentTapPower = 0.5 + Math.random() * (opponentStats.speed / 100)
-      setPullProgress((prev) => Math.max(0, Math.min(100, prev - opponentTapPower)))
+      // Opponent is on the right, so tapping pulls right (increases progress)
+      setPullProgress((prev) => Math.max(0, Math.min(100, prev + opponentTapPower)))
     }, 100)
 
     // Battle timer - 10 seconds
@@ -104,10 +105,11 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
     // Apply element matchup to tap power (grip strength)
     const baseTapPower = 0.8 + (myStats.speed / 100) * 0.5 + (myStats.grip / 100) * 0.3
     const tapPower = baseTapPower * elementMatchup
-    setPullProgress((prev) => Math.max(0, Math.min(100, prev + tapPower)))
+    // Player is on the left, so tapping pulls left (decreases progress)
+    setPullProgress((prev) => Math.max(0, Math.min(100, prev - tapPower)))
 
     setPlayerPower((prev) => prev + 1)
-  }, [phase, myStats.speed, myStats.grip])
+  }, [phase, myStats.speed, myStats.grip, elementMatchup])
 
   const determinResult = useCallback(() => {
     // Calculate final result based on pull progress and stats
@@ -115,10 +117,11 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
     const oppTotal = opponentStats.power + opponentStats.speed + opponentStats.grip + Math.floor(Math.random() * 50)
 
     let battleResult: BattleResult
-    if (pullProgress > 55) {
+    // Player is on left - lower progress means player pulled the rope left (win)
+    if (pullProgress < 45) {
       battleResult = "win"
       addCoins(50)
-    } else if (pullProgress < 45) {
+    } else if (pullProgress > 55) {
       battleResult = "lose"
       addCoins(10)
     } else {
