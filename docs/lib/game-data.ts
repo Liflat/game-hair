@@ -734,7 +734,7 @@ export const BOSS_RAID_CONFIGS: Record<number, BossRaidConfig> = {
   53: {
     boss: BOSS_HAIR_GRAND,
     skills: BOSS_RAID_SKILLS_GRAND,
-    maxHp: 3000,
+    maxHp: 5000,
     defeatReward: {
       coins: 1000,
       exp: 500,
@@ -744,7 +744,7 @@ export const BOSS_RAID_CONFIGS: Record<number, BossRaidConfig> = {
   54: {
     boss: BOSS_ARMAGEDDON,
     skills: BOSS_RAID_SKILLS_ARMAGEDDON,
-    maxHp: 3500,
+    maxHp: 10000,
     defeatReward: {
       coins: 1500,
       exp: 750,
@@ -754,7 +754,7 @@ export const BOSS_RAID_CONFIGS: Record<number, BossRaidConfig> = {
   55: {
     boss: BOSS_KEZAG,
     skills: BOSS_RAID_SKILLS_KEZAG,
-    maxHp: 5000,
+    maxHp: 20000,
     defeatReward: {
       coins: 3000,
       exp: 1500,
