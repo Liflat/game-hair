@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, getRankColor, getNpcStrengthMultiplier, getElementCombatModifiers, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, getRankColor, getNpcStrengthMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Users, Trophy } from "lucide-react"
@@ -289,51 +289,21 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
       } else if (selectedSkill.type === "defense") {
         // Apply skill bonus from training level
         const defenseSkillBonus = getSkillBonus(currentPlayer)
-        let baseDefenseValue = 20
-        let duration = 1
-        
-        // Common tier (20-25%)
-        if (selectedSkill.id === "normal-defense") {
-          baseDefenseValue = 20
-          duration = 1
-        } else if (["fluffy-shield", "spiral-defense", "rigid-stance", "slip-away", "mini-barrier", "bushy-cover", "glossy-reflect", "stone-wall", "flow-dodge", "gum-shield", "spike-armor", "jelly-absorb", "elastic-guard", "shine-barrier"].includes(selectedSkill.id)) {
-          baseDefenseValue = 25
-          duration = 2
-        }
-        // Uncommon tier (30-35%)
-        else if (["mirror-coat", "immovable", "coil-dodge", "heat-aura", "freeze-guard", "magma-armor", "wind-barrier", "zero-gravity", "speed-blur"].includes(selectedSkill.id)) {
-          baseDefenseValue = 35
-          duration = 2
-        }
-        // Rare tier (40-45%)
-        else if (["treasure-guard", "scale-armor", "prism-barrier", "dark-veil", "iron-fortress", "northern-veil", "stone-skin", "ethereal-form", "deep-dive"].includes(selectedSkill.id)) {
-          baseDefenseValue = 45
-          duration = 2
-        }
-        // Epic tier (50-60%)
-        else if (selectedSkill.id === "depth-guard") {
-          baseDefenseValue = 50
-          duration = 2
-        } else if (selectedSkill.id === "cosmic-shield") {
-          baseDefenseValue = 60
-          duration = 2
-        }
-        // Legendary tier (100%)
-        else if (selectedSkill.id === "event-horizon") {
-          baseDefenseValue = 100
-          duration = 1
-        }
-        
-        // Apply skill bonus (cap at 100%)
-        const finalDefenseValue = Math.min(100, Math.floor(baseDefenseValue * defenseSkillBonus))
-        
+        const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
+        const finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * defenseSkillBonus))
+
         currentPlayer.statusEffects.push({
           type: "buff",
           name: "防御強化",
-          duration,
+          duration: defenseEffect.duration,
           value: finalDefenseValue
         })
-        setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${finalDefenseValue}%ダメージ軽減!`])
+        const defenseLog = defenseEffect.log
+        if (defenseLog) {
+          setBattleLog((logs) => [...logs, defenseLog])
+        } else {
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${finalDefenseValue}%ダメージ軽減!`])
+        }
       } else if (selectedSkill.type === "aoe") {
         // AOE attack - hit multiple targets
         const targets = selectedTargets
@@ -570,8 +540,19 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             })
             setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! チーム全員回復!`])
           } else if (skill.type === "defense") {
-            npc.statusEffects.push({ type: "buff", name: "防御強化", duration: 2, value: 30 })
-            setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}!`])
+            const defenseEffect = getDefenseSkillEffect(skill.id)
+            npc.statusEffects.push({
+              type: "buff",
+              name: "防御強化",
+              duration: defenseEffect.duration,
+              value: defenseEffect.reduction
+            })
+            const defenseLog = defenseEffect.log
+            if (defenseLog) {
+              setBattleLog((logs) => [...logs, defenseLog])
+            } else {
+              setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}!`])
+            }
           } else if (skill.type === "special") {
             // NPC special skills
             if (skill.id === "toxic-cloud") {
@@ -932,7 +913,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                     
                     {/* Skills */}
                     {player.hairRoot.skills.map((skill) => {
-                      const isOnCooldown = player.cooldowns[skill.id] && player.cooldowns[skill.id] > 0
+                      const isOnCooldown = (player.cooldowns[skill.id] || 0) > 0
                       return (
                         <Button
                           key={skill.id}

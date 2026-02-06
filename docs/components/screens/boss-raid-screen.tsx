@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, BOSS_HAIR_ROOT, calculateStats, calculateSkillBonus, getElementCombatModifiers, BOSS_RAID_SKILLS, type HairRoot, type Skill, type CollectedHairRoot, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, BOSS_HAIR_ROOT, calculateStats, calculateSkillBonus, getElementCombatModifiers, getDefenseSkillEffect, BOSS_RAID_SKILLS, type HairRoot, type Skill, type CollectedHairRoot, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -278,24 +278,19 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       } else if (selectedSkill.type === "defense") {
         // Defense skills
         const skillBonus = calculateSkillBonus(player.hairRoot as CollectedHairRoot)
-        let defenseValue = 20
-
-        if (selectedSkill.id === "normal-defense") {
-          defenseValue = 20
-        } else if (selectedSkill.id === "demon-king-shell") {
-          defenseValue = 90
-        } else {
-          defenseValue = 25
-        }
-
-        const finalDefenseValue = Math.min(100, Math.floor(defenseValue * skillBonus))
+        const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
+        const finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
         player.statusEffects.push({
           type: "buff",
           name: "防御強化",
-          duration: 1,
+          duration: defenseEffect.duration,
           value: finalDefenseValue
         })
-        newLog.push(`${player.name}の${selectedSkill.name}で${finalDefenseValue}%ダメージ軽減!`)
+        if (defenseEffect.log) {
+          newLog.push(defenseEffect.log)
+        } else {
+          newLog.push(`${player.name}の${selectedSkill.name}で${finalDefenseValue}%ダメージ軽減!`)
+        }
       } else if (selectedSkill.type === "special") {
         // Special skills
         if (selectedSkill.id === "absolute-zero") {
@@ -406,22 +401,19 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             newLog.push(`${ally.name}の${chosenSkill.name}で${chosenTarget.name}を${healAmount}回復した！`)
           } else if (chosenSkill.type === "defense") {
             const skillBonus = calculateSkillBonus(ally.hairRoot as CollectedHairRoot)
-            let defenseValue = 25
-
-            if (chosenSkill.id === "normal-defense") {
-              defenseValue = 20
-            } else if (chosenSkill.id === "demon-king-shell") {
-              defenseValue = 90
-            }
-
-            const finalDefenseValue = Math.min(100, Math.floor(defenseValue * skillBonus))
+            const defenseEffect = getDefenseSkillEffect(chosenSkill.id)
+            const finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
             ally.statusEffects.push({
               type: "buff",
               name: "防御強化",
-              duration: 1,
+              duration: defenseEffect.duration,
               value: finalDefenseValue
             })
-            newLog.push(`${ally.name}の${chosenSkill.name}で${finalDefenseValue}%ダメージ軽減!`)
+            if (defenseEffect.log) {
+              newLog.push(defenseEffect.log)
+            } else {
+              newLog.push(`${ally.name}の${chosenSkill.name}で${finalDefenseValue}%ダメージ軽減!`)
+            }
           } else if (chosenSkill.type === "attack" || chosenSkill.type === "aoe" || chosenSkill.type === "special") {
             const baseDamage = chosenSkill.damage || 0
             const label = chosenSkill.id === "normal-attack"
@@ -569,22 +561,19 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         })
       } else if (selectedBossSkill.type === "defense") {
         const skillBonus = calculateSkillBonus(boss.hairRoot as CollectedHairRoot)
-        let defenseValue = 20
-
-        if (selectedBossSkill.id === "normal-defense") {
-          defenseValue = 20
-        } else if (selectedBossSkill.id === "demon-king-shell-raid") {
-          defenseValue = 90
-        }
-
-        const finalDefenseValue = Math.min(100, Math.floor(defenseValue * skillBonus))
+        const defenseEffect = getDefenseSkillEffect(selectedBossSkill.id)
+        const finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
         boss.statusEffects.push({
           type: "buff",
           name: "防御強化",
-          duration: 1,
+          duration: defenseEffect.duration,
           value: finalDefenseValue
         })
-        newLog.push(`${finalDefenseValue}%ダメージ軽減!`)
+        if (defenseEffect.log) {
+          newLog.push(defenseEffect.log)
+        } else {
+          newLog.push(`${finalDefenseValue}%ダメージ軽減!`)
+        }
       }
 
       const aliveAfterBoss = newPlayers.filter(p => p.id !== 999 && !p.isEliminated)

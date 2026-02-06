@@ -81,6 +81,81 @@ export interface Skill {
   dotEffect?: { name: string; damage: number; duration: number } // For dot skills
 }
 
+export interface DefenseSkillEffect {
+  reduction: number
+  duration: number
+  log?: string
+}
+
+const COMMON_DEFENSE_SKILLS = new Set([
+  "fluffy-shield",
+  "spiral-defense",
+  "rigid-stance",
+  "slip-away",
+  "mini-barrier",
+  "bushy-cover",
+  "glossy-reflect",
+  "stone-wall",
+  "flow-dodge",
+  "gum-shield",
+  "spike-armor",
+  "jelly-absorb",
+  "elastic-guard",
+  "shine-barrier",
+])
+
+const UNCOMMON_DEFENSE_SKILLS = new Set([
+  "mirror-coat",
+  "immovable",
+  "coil-dodge",
+  "heat-aura",
+  "freeze-guard",
+  "magma-armor",
+  "wind-barrier",
+  "zero-gravity",
+  "speed-blur",
+])
+
+const RARE_DEFENSE_SKILLS = new Set([
+  "treasure-guard",
+  "scale-armor",
+  "prism-barrier",
+  "dark-veil",
+  "iron-fortress",
+  "northern-veil",
+  "stone-skin",
+  "ethereal-form",
+  "deep-dive",
+])
+
+export function getDefenseSkillEffect(skillId: string): DefenseSkillEffect {
+  if (skillId === "normal-defense") {
+    return { reduction: 20, duration: 1 }
+  }
+  if (skillId === "event-horizon") {
+    return { reduction: 100, duration: 1, log: "イベントホライズン発動! 全攻撃無効化!" }
+  }
+  if (skillId === "demon-king-shell" || skillId === "demon-king-shell-raid") {
+    return { reduction: 90, duration: 1 }
+  }
+  if (skillId === "depth-guard") {
+    return { reduction: 50, duration: 2 }
+  }
+  if (skillId === "cosmic-shield") {
+    return { reduction: 60, duration: 2 }
+  }
+  if (COMMON_DEFENSE_SKILLS.has(skillId)) {
+    return { reduction: 25, duration: 2 }
+  }
+  if (UNCOMMON_DEFENSE_SKILLS.has(skillId)) {
+    return { reduction: 35, duration: 2 }
+  }
+  if (RARE_DEFENSE_SKILLS.has(skillId)) {
+    return { reduction: 45, duration: 2 }
+  }
+  return { reduction: 20, duration: 1 }
+}
+
 export interface HairRoot {
   id: number
   name: string

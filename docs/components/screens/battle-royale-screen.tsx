@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, getRankColor, getNpcStrengthMultiplier, getElementCombatModifiers, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, getRankColor, getNpcStrengthMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Trophy } from "lucide-react"
@@ -392,69 +392,21 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
           break
         }
         case "defense": {
-          // Defense skills - stronger based on skill ID
-          // Apply skill bonus from training level
+          // Defense skills - use shared defense mapping
           const skillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.hairRoot.level || 1, exp: 0, count: 1 })
-          let baseDefenseValue = 20 // Normal defense default
-          let duration = 1
-          let skillName = selectedSkill.name
-          let defenseValue = 0 // Declare defenseValue variable
-          
-          // Common tier defense (20-25%)
-          if (selectedSkill.id === "normal-defense") {
-            defenseValue = 20
-            duration = 1
-          } else if (["fluffy-shield", "spiral-defense", "rigid-stance", "slip-away", "mini-barrier", "bushy-cover", "glossy-reflect", "stone-wall", "flow-dodge"].includes(selectedSkill.id)) {
-            defenseValue = 25
-            duration = 2
-          }
-          // Uncommon tier defense (30-35%)
-          else if (["mirror-coat", "immovable", "coil-dodge", "heat-aura", "freeze-guard"].includes(selectedSkill.id)) {
-            baseDefenseValue = 35
-            duration = 2
-          }
-          // Rare tier defense (40-45%)
-          else if (["treasure-guard", "scale-armor", "prism-barrier", "dark-veil", "iron-fortress"].includes(selectedSkill.id)) {
-            baseDefenseValue = 45
-            duration = 2
-          }
-          // Epic tier defense (50-60%)
-          else if (selectedSkill.id === "depth-guard") {
-            baseDefenseValue = 50
-            duration = 2
-          } else if (selectedSkill.id === "cosmic-shield") {
-            baseDefenseValue = 60
-            duration = 2
-          }
-          // Legendary tier defense (100% - full negation)
-          else if (selectedSkill.id === "event-horizon") {
-            baseDefenseValue = 100
-            duration = 1
-            setBattleLog((prev) => [...prev, `イ�����ントホライズン発動! 全攻撃無効化!`])
-          }
-          // New hair root defenses
-          else if (["gum-shield", "spike-armor", "jelly-absorb", "elastic-guard", "shine-barrier"].includes(selectedSkill.id)) {
-            baseDefenseValue = 25
-            duration = 2
-          } else if (["magma-armor", "wind-barrier", "zero-gravity", "speed-blur"].includes(selectedSkill.id)) {
-            baseDefenseValue = 35
-            duration = 2
-          } else if (["northern-veil", "stone-skin", "ethereal-form", "deep-dive"].includes(selectedSkill.id)) {
-            baseDefenseValue = 45
-            duration = 2
-          }
-          
-          // Apply skill bonus (cap at 100%)
-          const finalDefenseValue = Math.min(100, Math.floor(baseDefenseValue * skillBonus))
-          
+          const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
+          const finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
+
           player.statusEffects.push({
             type: "buff",
             name: "防御強化",
-            duration,
+            duration: defenseEffect.duration,
             value: finalDefenseValue
           })
-          if (selectedSkill.id !== "event-horizon") {
-            setBattleLog((prev) => [...prev, `${skillName}で${finalDefenseValue}%ダメージ軽減!`])
+          if (defenseEffect.log) {
+            setBattleLog((prev) => [...prev, defenseEffect.log])
+          } else {
+            setBattleLog((prev) => [...prev, `${selectedSkill.name}で${finalDefenseValue}%ダメージ軽減!`])
           }
           break
         }
@@ -853,12 +805,18 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               }
             } else if (skill.type === "defense") {
               // NPC defense skills
-              let defValue = 30
-              if (skill.id === "depth-guard") defValue = 50
-              else if (skill.id === "cosmic-shield") defValue = 60
-              else if (skill.id === "event-horizon") defValue = 100
-              player.statusEffects.push({ type: "buff", name: "防御強化", duration: 2, value: defValue })
-              setBattleLog((prev) => [...prev, `${player.name}は${skill.name}で防御!`])
+              const defenseEffect = getDefenseSkillEffect(skill.id)
+              player.statusEffects.push({
+                type: "buff",
+                name: "防御強化",
+                duration: defenseEffect.duration,
+                value: defenseEffect.reduction
+              })
+              if (defenseEffect.log) {
+                setBattleLog((prev) => [...prev, defenseEffect.log])
+              } else {
+                setBattleLog((prev) => [...prev, `${player.name}は${skill.name}で防御!`])
+              }
               if (skill.cooldown > 0) {
                 player.cooldowns = {
                   ...player.cooldowns,
