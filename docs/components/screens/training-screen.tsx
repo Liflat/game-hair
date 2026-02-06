@@ -111,7 +111,7 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
         <Button variant="ghost" size="icon" onClick={() => onNavigate("home")}>
           <ArrowLeft className="w-6 h-6" />
         </Button>
-        <h1 className="text-xl font-bold text-foreground">毛根育成</h1>
+        <h1 className="text-xl font-bold text-foreground">毛根育毛</h1>
         <div className="flex items-center gap-2 bg-card px-3 py-1.5 rounded-full border border-border">
           <span className="text-sm">🪙</span>
           <span className="font-bold text-secondary text-sm">{coins.toLocaleString()}</span>
@@ -208,7 +208,7 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
             <div className="w-20 h-20 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center text-3xl text-muted-foreground">
               ?
             </div>
-            <p className="text-muted-foreground">育成する毛根を選択してください</p>
+            <p className="text-muted-foreground">育毛する毛根を選択してください</p>
           </div>
         )}
 

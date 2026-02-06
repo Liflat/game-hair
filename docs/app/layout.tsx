@@ -18,7 +18,7 @@ const delaGothicOne = Dela_Gothic_One({
 
 export const metadata: Metadata = {
   title: "毛根伝説 | 抜いて育てて絡めて戦え",
-  description: "脱毛コインで毛根を引き抜き、育成して対戦する新感覚ガチャゲーム。51種類の毛根をコレクションしよう！伝説のコズミックレア「ゼウスの毛根」を手に入れろ！",
+  description: "脱毛コインで毛根を引き抜き、育毛して対戦する新感覚ガチャゲーム。51種類の毛根をコレクションしよう！伝説のコズミックレア「ゼウスの毛根」を手に入れろ！",
   generator: "v0.app",
 }
 

@@ -11,7 +11,7 @@ interface HomeScreenProps {
 const menuItems = [
   { id: "gacha" as const, label: "ガチャ", icon: "🎰", description: "毛根を引き抜こう", color: "from-primary to-rose-600" },
   { id: "collection" as const, label: "コレクション", icon: "📦", description: "毛根図鑑", color: "from-secondary to-amber-600" },
-  { id: "training" as const, label: "育成", icon: "💪", description: "毛根を育てよう", color: "from-accent to-emerald-600" },
+  { id: "training" as const, label: "育毛", icon: "💪", description: "毛根を育てよう", color: "from-accent to-emerald-600" },
   { id: "matchmaking" as const, label: "1vs1対戦", icon: "⚔️", description: "バトルに挑戦", color: "from-blue-500 to-indigo-600" },
   { id: "battle-royale" as const, label: "ソロバトロワ", icon: "👑", description: "8人で最強決定戦", color: "from-purple-500 to-pink-600" },
   { id: "team-royale" as const, label: "チームバトロワ", icon: "👥", description: "4チーム対抗戦", color: "from-cyan-500 to-teal-600" },
