@@ -76,7 +76,7 @@ export interface Skill {
   description: string
   damage: number
   cooldown: number
-  type: "attack" | "defense" | "special" | "aoe" | "team_heal" | "dot"
+  type: "attack" | "defense" | "special" | "aoe" | "team_heal" | "dot" | "dodge"
   maxTargets?: number // For aoe skills - max number of targets to select
   dotEffect?: { name: string; damage: number; duration: number } // For dot skills
 }
@@ -205,7 +205,7 @@ export const HAIR_ROOTS: HairRoot[] = [
   ]},
   { id: 4, name: "ほそほそ毛根", rarity: "common", element: "wind", description: "細いけど意外としぶとい", power: 8, speed: 18, grip: 10, emoji: "🪡", color: "#4A3728", evolvesTo: 14, skills: [
     { id: "needle-strike", name: "ニードルストライク", description: "素早く突く", damage: 12, cooldown: 1, type: "attack" },
-    { id: "slip-away", name: "スリップアウェイ", description: "細さを活かして回避", damage: 0, cooldown: 3, type: "defense" }
+    { id: "slip-away", name: "スリップアウェイ", description: "細さを活かして回避", damage: 0, cooldown: 3, type: "dodge" }
   ]},
   { id: 5, name: "ぷちぷち毛根", rarity: "common", element: "fire", description: "小さくて可愛い毛根", power: 9, speed: 14, grip: 12, emoji: "💠", color: "#5C4033", evolvesTo: 15, skills: [
     { id: "pop-attack", name: "ポップアタック", description: "弾けて攻撃", damage: 16, cooldown: 2, type: "attack" },
@@ -247,7 +247,7 @@ export const HAIR_ROOTS: HairRoot[] = [
   ]},
   { id: 14, name: "スプリング毛根", rarity: "uncommon", element: "wind", description: "バネのように跳ねる毛根", power: 15, speed: 28, grip: 15, emoji: "🎯", color: "#718096", evolvesTo: 22, skills: [
     { id: "spring-shot", name: "スプリングショット", description: "跳ねて急襲", damage: 24, cooldown: 2, type: "attack" },
-    { id: "coil-dodge", name: "コイルドッジ", description: "バネで飛んで回避", damage: 0, cooldown: 3, type: "defense" }
+    { id: "coil-dodge", name: "コイルドッジ", description: "バネで飛んで回避", damage: 0, cooldown: 3, type: "dodge" }
   ]},
   { id: 15, name: "フレイム毛根", rarity: "uncommon", element: "fire", description: "燃えるような赤い毛根", power: 25, speed: 18, grip: 14, emoji: "🔥", color: "#EF4444", evolvesTo: 25, skills: [
     { id: "fire-blast", name: "ファイアブラスト", description: "炎を纏って突撃+炎上付与", damage: 28, cooldown: 4, type: "dot", dotEffect: { name: "炎上", damage: 10, duration: 3 } },
@@ -368,7 +368,7 @@ export const HAIR_ROOTS: HairRoot[] = [
   ]},
   { id: 40, name: "グラビティ毛根", rarity: "uncommon", element: "dark", description: "重力を操る神秘的な毛根", power: 24, speed: 15, grip: 20, emoji: "🔮", color: "#8B5CF6", evolvesTo: 28, skills: [
     { id: "gravity-press", name: "グラビティプレス", description: "重力で押しつぶす", damage: 36, cooldown: 4, type: "attack" },
-    { id: "zero-gravity", name: "ゼログラビティ", description: "無重力で回避", damage: 0, cooldown: 4, type: "defense" }
+    { id: "zero-gravity", name: "ゼログラビティ", description: "無重力で回避", damage: 0, cooldown: 4, type: "dodge" }
   ]},
   { id: 41, name: "ポイズン毛根", rarity: "uncommon", element: "dark", description: "毒を持つ危険な毛根", power: 22, speed: 20, grip: 18, emoji: "☠️", color: "#84CC16", evolvesTo: 26, skills: [
     { id: "venom-strike", name: "ヴェノムストライク", description: "毒で攻撃+毒付与", damage: 20, cooldown: 3, type: "dot", dotEffect: { name: "毒", damage: 12, duration: 3 } },
@@ -376,7 +376,7 @@ export const HAIR_ROOTS: HairRoot[] = [
   ]},
   { id: 42, name: "ソニック毛根", rarity: "uncommon", element: "wind", description: "音速を超える高速毛根", power: 18, speed: 32, grip: 10, emoji: "💨", color: "#6366F1", evolvesTo: 22, skills: [
     { id: "sonic-boom", name: "ソニックブーム", description: "音速の衝撃波(最大2体)", damage: 25, cooldown: 3, type: "aoe", maxTargets: 2 },
-    { id: "speed-blur", name: "スピードブラー", description: "高速移動で回避", damage: 0, cooldown: 2, type: "defense" }
+    { id: "speed-blur", name: "スピードブラー", description: "高速移動で回避", damage: 0, cooldown: 2, type: "dodge" }
   ]},
 
   // Additional Rare (5)
@@ -394,7 +394,7 @@ export const HAIR_ROOTS: HairRoot[] = [
   ]},
   { id: 46, name: "スピリット毛根", rarity: "rare", element: "divine", description: "精霊の力を持つ毛根", power: 30, speed: 32, grip: 32, emoji: "👻", color: "#A78BFA", evolvesTo: 28, skills: [
     { id: "spirit-lance", name: "スピリットランス", description: "精霊の槍", damage: 50, cooldown: 4, type: "attack" },
-    { id: "ethereal-form", name: "エーテルフォーム", description: "霊体化で回避", damage: 0, cooldown: 4, type: "defense" }
+    { id: "ethereal-form", name: "エーテルフォーム", description: "霊体化で回避", damage: 0, cooldown: 4, type: "dodge" }
   ]},
   { id: 47, name: "テラ毛根", rarity: "rare", element: "dark", description: "大地の力を持つ毛根", power: 38, speed: 22, grip: 35, emoji: "🏔️", color: "#92400E", evolvesTo: 26, skills: [
     { id: "earthquake", name: "アースクエイク", description: "地震を起こす(最大2体)", damage: 54, cooldown: 5, type: "aoe", maxTargets: 2 },
@@ -412,19 +412,20 @@ export const HAIR_ROOTS: HairRoot[] = [
   ]},
   { id: 50, name: "リヴァイアサン毛根", rarity: "epic", element: "water", description: "海の魔獣の力を持つ毛根", power: 45, speed: 40, grip: 55, emoji: "🐋", color: "#0369A1", evolvesTo: 30, skills: [
     { id: "tidal-wave", name: "タイダルウェーブ", description: "大津波で押し流す(最大3体)", damage: 90, cooldown: 4, type: "aoe", maxTargets: 3 },
-    { id: "deep-dive", name: "ディープダイブ", description: "深海に潜り全攻撃回避", damage: 0, cooldown: 5, type: "defense" }
+    { id: "deep-dive", name: "ディープダイブ", description: "深海に潜り全攻撃回避", damage: 0, cooldown: 5, type: "dodge" }
   ]},
 
   // Additional Legendary (2)
-  { id: 51, name: "オーディン毛根", rarity: "legendary", element: "divine", description: "北欧神話の主神の力を宿す毛根", power: 72, speed: 68, grip: 65, emoji: "🦅", color: "#1E40AF", skills: [
+  { id: 51, name: "オーディン毛根", rarity: "legendary", element: "divine", description: "北欧神話の主神の力を宿す毛根", power: 72, speed: 68, grip: 65, emoji: "🦅", color: "#1E40AF", evolvesTo: 32, skills: [
     { id: "gungnir", name: "グングニル", description: "必中の神槍で貫く", damage: 145, cooldown: 4, type: "attack" },
-    { id: "all-father", name: "オールファーザー", description: "全知の力で次の攻撃を完全回避+反撃", damage: 0, cooldown: 5, type: "special" }
+    { id: "all-father", name: "オールファーザー", description: "全知の力で次の攻撃を完全回避+反撃", damage: 0, cooldown: 5, type: "special" },
+    { id: "deep-dive", name: "ディープダイブ", description: "深海に潜り全攻撃回避", damage: 0, cooldown: 5, type: "dodge" }
   ]},
   { id: 52, name: "アマテラス毛根", rarity: "legendary", element: "light", description: "太陽神の力を持つ神聖な毛根", power: 68, speed: 70, grip: 70, emoji: "🌸", color: "#F43F5E", skills: [
     { id: "amaterasu-flame", name: "天照の炎", description: "消えない神火で敵を焼く(最大2体)", damage: 155, cooldown: 4, type: "aoe", maxTargets: 2 },
     { id: "divine-light", name: "神光", description: "神聖な光で味方全員HP50%回復", damage: 0, cooldown: 6, type: "team_heal" }
   ]},
-]
+] 
 
 // Gacha pool - excludes boss-only hair (id: 53 - ヘアグランド)
 export const GACHA_HAIR_ROOTS = HAIR_ROOTS.filter(h => h.id !== 53)
@@ -636,4 +637,33 @@ export function calculateSkillBonus(hairRoot: CollectedHairRoot): number {
   // Skill effectiveness increases with level
   // Returns a multiplier (1.0 at level 1, increases 15% per level)
   return 1 + (hairRoot.level - 1) * 0.15
+}
+
+// Get rarity bonus multiplier
+export function getRarityBonus(rarity: Rarity): number {
+  const bonuses: Record<Rarity, number> = {
+    common: 1.0,
+    uncommon: 1.2,
+    rare: 1.4,
+    epic: 1.6,
+    legendary: 1.8,
+    cosmic: 2.0,
+  }
+  return bonuses[rarity]
+}
+
+// Calculate normal attack damage based on level and rarity
+export function calculateNormalAttackDamage(hairRoot: CollectedHairRoot): number {
+  const baseDamage = 15
+  const levelBonus = 1 + (hairRoot.level - 1) * 0.15
+  const rarityBonus = getRarityBonus(hairRoot.rarity)
+  return Math.floor(baseDamage * levelBonus * rarityBonus)
+}
+
+// Calculate normal defense reduction based on level and rarity
+export function calculateNormalDefenseReduction(hairRoot: CollectedHairRoot): number {
+  const baseReduction = 20
+  const levelBonus = 1 + (hairRoot.level - 1) * 0.15
+  const rarityBonus = getRarityBonus(hairRoot.rarity)
+  return Math.min(100, Math.floor(baseReduction * levelBonus * rarityBonus))
 }

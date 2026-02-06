@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
-import { ArrowLeft, User, Trophy, Swords, Crown, Users, Check, Edit2, Volume2, Sun } from "lucide-react"
+import { ArrowLeft, User, Trophy, Swords, Crown, Users, Check, Edit2, Volume2, Sun, Download, Upload, Trash2 } from "lucide-react"
 
 interface ProfileScreenProps {
   onNavigate: (screen: Screen) => void
@@ -42,7 +42,10 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
     setBrightness,
     getBattleRank,
     getRoyaleRank,
-    getTeamRoyaleRank
+    getTeamRoyaleRank,
+    resetGameData,
+    exportGameData,
+    importGameData,
   } = useGame()
   
   const [isEditing, setIsEditing] = useState(false)
@@ -58,6 +61,39 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
       updateProfile(editName.trim(), editTitle)
       setIsEditing(false)
     }
+  }
+
+  const handleExport = () => {
+    const data = exportGameData()
+    const blob = new Blob([data], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `game-hair-save-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImport = () => {
+    const input = document.createElement("input")
+    input.type = "file"
+    input.accept = ".json"
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+      
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const data = event.target?.result as string
+        if (importGameData(data)) {
+          alert("データをインポートしました！")
+        }
+      }
+      reader.readAsText(file)
+    }
+    input.click()
   }
 
   return (
@@ -320,6 +356,50 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
                 <span className="text-sm font-medium text-foreground">{rarity.count}</span>
               </div>
             ))}
+          </div>
+        </motion.div>
+
+        {/* Data Management */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="bg-card rounded-2xl p-6 border border-border"
+        >
+          <h3 className="text-lg font-bold text-foreground mb-4">データ管理</h3>
+          
+          <div className="space-y-3">
+            <Button
+              onClick={handleExport}
+              variant="outline"
+              className="w-full justify-start gap-2"
+            >
+              <Download className="w-4 h-4" />
+              データをエクスポート
+            </Button>
+            
+            <Button
+              onClick={handleImport}
+              variant="outline"
+              className="w-full justify-start gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              データをインポート
+            </Button>
+            
+            <Button
+              onClick={resetGameData}
+              variant="destructive"
+              className="w-full justify-start gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              データをリセット
+            </Button>
+            
+            <p className="text-xs text-muted-foreground mt-2">
+              ※ データは自動的にブラウザに保存されます。<br />
+              エクスポートで他の端末にデータを移行できます。
+            </p>
           </div>
         </motion.div>
       </div>

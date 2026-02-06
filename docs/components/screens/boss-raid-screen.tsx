@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, BOSS_HAIR_ROOT, calculateStats, calculateSkillBonus, getElementCombatModifiers, getDefenseSkillEffect, BOSS_RAID_SKILLS, type HairRoot, type Skill, type CollectedHairRoot, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, BOSS_HAIR_ROOT, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getElementCombatModifiers, getDefenseSkillEffect, BOSS_RAID_SKILLS, type HairRoot, type Skill, type CollectedHairRoot, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -118,6 +118,14 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
     newLog: string[],
     newPlayers: BattlePlayer[]
   ): boolean => {
+    // Check for dodge-skill avoidance first
+    const dodgeBuff = defender.statusEffects.find(e => e.type === "buff" && e.name === "回避準備")
+    if (dodgeBuff) {
+      defender.statusEffects = defender.statusEffects.filter(e => e.name !== "回避準備")
+      newLog.push(`${defender.name}の回避で攻撃を完全に回避した!`)
+      return true
+    }
+
     const allFatherBuff = defender.statusEffects.find(e => e.type === "buff" && e.name === "オールファーザー")
     if (!allFatherBuff) return false
 
@@ -215,7 +223,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
 
       // Process skill based on type
       if (selectedSkill.id === "normal-attack") {
-        // Normal attack - always 15 damage
+        // Normal attack - use calculated damage based on level and rarity
         if (targetToUse !== null) {
           const target = newPlayers.find(p => p.id === targetToUse)
           if (target && !target.isEliminated) {
@@ -223,7 +231,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             if (triggerAllFather(player, target, newLog, newPlayers)) {
               // Attack was dodged
             } else {
-              const baseDamage = 15
+              const baseDamage = calculateNormalAttackDamage(player.hairRoot as CollectedHairRoot)
               const elementMod = getElementDamageMod(player.hairRoot, target.hairRoot)
               const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
               
@@ -334,19 +342,42 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       } else if (selectedSkill.type === "defense") {
         // Defense skills
         const skillBonus = calculateSkillBonus(player.hairRoot as CollectedHairRoot)
-        const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
-        const finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
+        let finalDefenseValue: number
+        
+        // For normal defense, use calculated value; for others use skill effect
+        if (selectedSkill.id === "normal-defense") {
+          finalDefenseValue = calculateNormalDefenseReduction(player.hairRoot as CollectedHairRoot)
+        } else {
+          const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
+          finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
+        }
+        
         player.statusEffects.push({
           type: "buff",
           name: "防御強化",
-          duration: defenseEffect.duration,
+          duration: selectedSkill.id === "normal-defense" ? 1 : getDefenseSkillEffect(selectedSkill.id).duration,
           value: finalDefenseValue
         })
-        if (defenseEffect.log) {
-          newLog.push(defenseEffect.log)
-        } else {
+        
+        if (selectedSkill.id === "normal-defense") {
           newLog.push(`${player.name}の${selectedSkill.name}で${finalDefenseValue}%ダメージ軽減!`)
+        } else {
+          const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
+          if (defenseEffect.log) {
+            newLog.push(defenseEffect.log)
+          } else {
+            newLog.push(`${player.name}の${selectedSkill.name}で${finalDefenseValue}%ダメージ軽減!`)
+          }
         }
+      } else if (selectedSkill.type === "dodge") {
+        // Dodge skills - next attack is completely avoided
+        player.statusEffects.push({
+          type: "buff",
+          name: "回避準備",
+          duration: 1,
+          value: 100
+        })
+        newLog.push(`${player.name}の${selectedSkill.name}で次の攻撃を完全に回避できる態勢を整えた!`)
       } else if (selectedSkill.type === "special") {
         // Special skills
         const specialSkillBonus = calculateSkillBonus(player.hairRoot as CollectedHairRoot)
@@ -518,15 +549,37 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           newLog.push(`${selectedSkill.name}発動!`)
         }
       } else if (selectedSkill.type === "team_heal") {
-        // Healing skills - target single teammate
+        // Healing skills - olympus-blessing and divine-light heal all, others heal single teammate
         const skillBonus = calculateSkillBonus(player.hairRoot as CollectedHairRoot)
-        const target = targetToUse !== null ? newPlayers.find(p => p.id === targetToUse) : player
+        const isFullHeal = selectedSkill.id === "olympus-blessing" || selectedSkill.id === "divine-light"
         
-        if (target && !target.isEliminated) {
-          const baseHeal = selectedSkill.damage || 50
-          const healAmount = Math.floor(baseHeal * skillBonus)
-          target.hp = Math.min(target.maxHp, target.hp + healAmount)
-          newLog.push(`${player.name}の${selectedSkill.name}で${target.name}を${healAmount}回復した！`)
+        if (isFullHeal) {
+          // Full heal all alive teammates
+          aliveTeamPlayers.forEach(ally => {
+            let healAmount: number
+            if (selectedSkill.id === "divine-light") {
+              // divine-light heals 50% of max HP
+              healAmount = Math.floor(ally.maxHp * 0.5 * skillBonus)
+            } else {
+              // olympus-blessing fully recovers HP
+              const baseHeal = selectedSkill.damage || 50
+              healAmount = Math.floor(baseHeal * skillBonus)
+            }
+            ally.hp = Math.min(ally.maxHp, ally.hp + healAmount)
+          })
+          const healMessage = selectedSkill.id === "divine-light" 
+            ? `${player.name}の${selectedSkill.name}で全員のHP50%が回復した！`
+            : `${player.name}の${selectedSkill.name}で全員のHPが完全回復した！`
+          newLog.push(healMessage)
+        } else {
+          // Single target heal
+          const target = targetToUse !== null ? newPlayers.find(p => p.id === targetToUse) : player
+          if (target && !target.isEliminated) {
+            const baseHeal = selectedSkill.damage || 50
+            const healAmount = Math.floor(baseHeal * skillBonus)
+            target.hp = Math.min(target.maxHp, target.hp + healAmount)
+            newLog.push(`${player.name}の${selectedSkill.name}で${target.name}を${healAmount}回復した！`)
+          }
         }
       }
 
@@ -549,16 +602,17 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           if (boss.isEliminated || ally.isEliminated) return
 
           const availableSkills = ally.hairRoot.skills.filter(s => (ally.cooldowns[s.id] || 0) <= 0)
-          const normalDefense: Skill = { id: "normal-defense", name: "通常防御", damage: 0, cooldown: 0, type: "defense", description: "軽減: 20%" }
+          const normalDefenseReduction = calculateNormalDefenseReduction(ally.hairRoot as CollectedHairRoot)
+          const normalDefense: Skill = { id: "normal-defense", name: "通常防御", damage: 0, cooldown: 0, type: "defense", description: `軽減: ${normalDefenseReduction}%` }
           const skillPool = [...availableSkills, normalDefense]
-          const defensiveSkills = skillPool.filter(s => s.type === "defense")
-          const offensiveSkills = skillPool.filter(s => s.type !== "defense" && s.type !== "team_heal")
+          const defensiveSkills = skillPool.filter(s => s.type === "defense" || s.type === "dodge")
+          const offensiveSkills = skillPool.filter(s => s.type !== "defense" && s.type !== "team_heal" && s.type !== "dodge")
 
           const isHealer = healer && ally.id === healer.id
           const healTarget = isHealer && needsHealing ? getLowestHpAlly(aliveTeamPlayers) : null
           const healSkill = isHealer ? availableSkills.find(s => s.type === "team_heal") : undefined
 
-          let chosenSkill: Skill = { id: "normal-attack", name: "通常攻撃", damage: 15, cooldown: 0, type: "attack", description: "威力: 15" }
+          let chosenSkill: Skill = { id: "normal-attack", name: "通常攻撃", damage: calculateNormalAttackDamage(ally.hairRoot as CollectedHairRoot), cooldown: 0, type: "attack", description: `威力: ${calculateNormalAttackDamage(ally.hairRoot as CollectedHairRoot)}` }
           let chosenTarget: BattlePlayer | null = null
 
           if (healSkill && healTarget && healTarget.hp / healTarget.maxHp < 0.5) {
@@ -579,27 +633,81 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             }
           }
 
-          if (chosenSkill.type === "team_heal" && chosenTarget) {
+          if (chosenSkill.type === "team_heal") {
             const skillBonus = calculateSkillBonus(ally.hairRoot as CollectedHairRoot)
-            const baseHeal = chosenSkill.damage || 50
-            const healAmount = Math.floor(baseHeal * skillBonus)
-            chosenTarget.hp = Math.min(chosenTarget.maxHp, chosenTarget.hp + healAmount)
-            newLog.push(`${ally.name}の${chosenSkill.name}で${chosenTarget.name}を${healAmount}回復した！`)
+            const isFullHeal = chosenSkill.id === "olympus-blessing" || chosenSkill.id === "divine-light"
+            
+            if (isFullHeal) {
+              // Full heal all alive teammates
+              aliveTeamPlayers.forEach(allyTarget => {
+                let healAmount: number
+                if (chosenSkill.id === "divine-light") {
+                  // divine-light heals 50% of max HP
+                  healAmount = Math.floor(allyTarget.maxHp * 0.5 * skillBonus)
+                } else {
+                  // olympus-blessing fully recovers HP
+                  const baseHeal = chosenSkill.damage || 50
+                  healAmount = Math.floor(baseHeal * skillBonus)
+                }
+                allyTarget.hp = Math.min(allyTarget.maxHp, allyTarget.hp + healAmount)
+              })
+              const healMessage = chosenSkill.id === "divine-light"
+                ? `${ally.name}の${chosenSkill.name}で全員のHP50%が回復した！`
+                : `${ally.name}の${chosenSkill.name}で全員のHPが完全回復した！`
+              newLog.push(healMessage)
+            } else if (chosenTarget) {
+              // Single target heal
+              const baseHeal = chosenSkill.damage || 50
+              const healAmount = Math.floor(baseHeal * skillBonus)
+              chosenTarget.hp = Math.min(chosenTarget.maxHp, chosenTarget.hp + healAmount)
+              newLog.push(`${ally.name}の${chosenSkill.name}で${chosenTarget.name}を${healAmount}回復した！`)
+            }
           } else if (chosenSkill.type === "defense") {
             const skillBonus = calculateSkillBonus(ally.hairRoot as CollectedHairRoot)
-            const defenseEffect = getDefenseSkillEffect(chosenSkill.id)
-            const finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
+            let finalDefenseValue: number
+            let duration: number
+            
+            // For normal defense, use calculated value; for others use skill effect
+            if (chosenSkill.id === "normal-defense") {
+              finalDefenseValue = calculateNormalDefenseReduction({
+                ...ally.hairRoot,
+                level: ally.level,
+                exp: 0,
+                count: 1
+              } as any)
+              duration = 1
+            } else {
+              const defenseEffect = getDefenseSkillEffect(chosenSkill.id)
+              finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
+              duration = defenseEffect.duration
+            }
+            
             ally.statusEffects.push({
               type: "buff",
               name: "防御強化",
-              duration: defenseEffect.duration,
+              duration: duration,
               value: finalDefenseValue
             })
-            if (defenseEffect.log) {
-              newLog.push(defenseEffect.log)
-            } else {
+            
+            if (chosenSkill.id === "normal-defense") {
               newLog.push(`${ally.name}の${chosenSkill.name}で${finalDefenseValue}%ダメージ軽減!`)
+            } else {
+              const defenseEffect = getDefenseSkillEffect(chosenSkill.id)
+              if (defenseEffect.log) {
+                newLog.push(defenseEffect.log)
+              } else {
+                newLog.push(`${ally.name}の${chosenSkill.name}で${finalDefenseValue}%ダメージ軽減!`)
+              }
             }
+          } else if (chosenSkill.type === "dodge") {
+            // Dodge skills - next attack is completely avoided
+            ally.statusEffects.push({
+              type: "buff",
+              name: "回避準備",
+              duration: 1,
+              value: 100
+            })
+            newLog.push(`${ally.name}の${chosenSkill.name}で次の攻撃を完全に回避できる態勢を整えた!`)
           } else if (chosenSkill.type === "attack" || chosenSkill.type === "aoe" || chosenSkill.type === "special") {
             const baseDamage = chosenSkill.damage || 0
             const label = chosenSkill.id === "normal-attack"
@@ -655,7 +763,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       const availableSkills = skills.filter(s => (boss.cooldowns[s.id] || 0) <= 0)
       const selectedBossSkill = availableSkills.length > 0 
         ? availableSkills[Math.floor(Math.random() * availableSkills.length)]
-        : { id: "normal-attack", name: "通常攻撃", damage: 15, cooldown: 0, type: "attack" as const, description: "" }
+        : { id: "normal-attack", name: "通常攻撃", damage: calculateNormalAttackDamage(boss.hairRoot as CollectedHairRoot), cooldown: 0, type: "attack" as const, description: "" }
       
       const newLog: string[] = []
 
@@ -678,7 +786,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         } else {
           const stats = calculateStats(boss.hairRoot as unknown as CollectedHairRoot)
           const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
-          const baseDamage = 15
+          const baseDamage = calculateNormalAttackDamage(boss.hairRoot as CollectedHairRoot)
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
           const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
           
@@ -764,18 +872,40 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         })
       } else if (selectedBossSkill.type === "defense") {
         const skillBonus = calculateSkillBonus(boss.hairRoot as CollectedHairRoot)
-        const defenseEffect = getDefenseSkillEffect(selectedBossSkill.id)
-        const finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
+        let finalDefenseValue: number
+        let duration: number
+        
+        // For normal defense, use calculated value; for others use skill effect
+        if (selectedBossSkill.id === "normal-defense") {
+          finalDefenseValue = calculateNormalDefenseReduction({
+            ...boss.hairRoot,
+            level: 10,
+            exp: 0,
+            count: 1
+          } as any)
+          duration = 1
+        } else {
+          const defenseEffect = getDefenseSkillEffect(selectedBossSkill.id)
+          finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
+          duration = defenseEffect.duration
+        }
+        
         boss.statusEffects.push({
           type: "buff",
           name: "防御強化",
-          duration: defenseEffect.duration,
+          duration: duration,
           value: finalDefenseValue
         })
-        if (defenseEffect.log) {
-          newLog.push(defenseEffect.log)
-        } else {
+        
+        if (selectedBossSkill.id === "normal-defense") {
           newLog.push(`${finalDefenseValue}%ダメージ軽減!`)
+        } else {
+          const defenseEffect = getDefenseSkillEffect(selectedBossSkill.id)
+          if (defenseEffect.log) {
+            newLog.push(defenseEffect.log)
+          } else {
+            newLog.push(`${finalDefenseValue}%ダメージ軽減!`)
+          }
         }
       }
 
@@ -796,13 +926,19 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         return newPlayers
       }
 
-      // Reduce all cooldowns once per round (after boss action)
+      // Reduce all cooldowns and status effect durations once per round (after boss action)
       newPlayers.forEach(p => {
+        // Reduce cooldowns
         Object.keys(p.cooldowns).forEach(skillId => {
           if (p.cooldowns[skillId] > 0) {
             p.cooldowns[skillId]--
           }
         })
+        
+        // Reduce status effect durations
+        p.statusEffects = p.statusEffects.map(e => ({ ...e, duration: e.duration - 1 }))
+        // Remove expired status effects
+        p.statusEffects = p.statusEffects.filter(e => e.duration > 0)
       })
 
       setRound(prev => prev + 1)
@@ -985,7 +1121,10 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                   <div className="grid grid-cols-2 gap-2">
                     {/* Normal Attack - always available */}
                     <button
-                      onClick={() => setSelectedSkill({ id: "normal-attack", name: "通常攻撃", damage: 15, cooldown: 0, type: "attack", description: "威力: 15" })}
+                      onClick={() => {
+                        const normalAtkDamage = calculateNormalAttackDamage(player.hairRoot as CollectedHairRoot)
+                        setSelectedSkill({ id: "normal-attack", name: "通常攻撃", damage: normalAtkDamage, cooldown: 0, type: "attack", description: `威力: ${normalAtkDamage}` })
+                      }}
                       className={`p-2 rounded-lg text-left border text-xs transition-all ${
                         selectedSkill?.id === "normal-attack"
                           ? "border-primary bg-primary/20"
@@ -998,7 +1137,10 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
 
                     {/* Normal Defense - always available */}
                     <button
-                      onClick={() => setSelectedSkill({ id: "normal-defense", name: "通常防御", damage: 0, cooldown: 0, type: "defense", description: "軽減: 20%" })}
+                      onClick={() => {
+                        const normalDefReduction = calculateNormalDefenseReduction(player.hairRoot as CollectedHairRoot)
+                        setSelectedSkill({ id: "normal-defense", name: "通常防御", damage: 0, cooldown: 0, type: "defense", description: `軽減: ${normalDefReduction}%` })
+                      }}
                       className={`p-2 rounded-lg text-left border text-xs transition-all ${
                         selectedSkill?.id === "normal-defense"
                           ? "border-primary bg-primary/20"
@@ -1075,21 +1217,39 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                         >
                           防御 - {player.name}に使用
                         </Button>
+                      ) : selectedSkill.type === "dodge" ? (
+                        <Button
+                          className="w-full text-xs"
+                          onClick={() => executePlayerAction()}
+                          disabled={isExecuting}
+                        >
+                          回避態勢 - {player.name}に使用
+                        </Button>
                       ) : selectedSkill.type === "team_heal" ? (
-                        // Heal skill - select teammate
-                        team_players
-                          .filter(p => !p.isEliminated)
-                          .map((p) => (
-                            <Button
-                              key={p.id}
-                              variant="outline"
-                              className="w-full text-xs"
-                              onClick={() => executePlayerAction(p.id)}
-                              disabled={isExecuting}
-                            >
-                              {p.name}
-                            </Button>
-                          ))
+                        // Heal skill - olympus-blessing and divine-light show full heal button, others show teammate selection
+                        selectedSkill.id === "olympus-blessing" || selectedSkill.id === "divine-light" ? (
+                          <Button
+                            className="w-full text-xs"
+                            onClick={() => executePlayerAction()}
+                            disabled={isExecuting}
+                          >
+                            全体回復 - {selectedSkill.name}
+                          </Button>
+                        ) : (
+                          team_players
+                            .filter(p => !p.isEliminated)
+                            .map((p) => (
+                              <Button
+                                key={p.id}
+                                variant="outline"
+                                className="w-full text-xs"
+                                onClick={() => executePlayerAction(p.id)}
+                                disabled={isExecuting}
+                              >
+                                {p.name}
+                              </Button>
+                            ))
+                        )
                       ) : selectedSkill.type === "special" ? (
                         <Button
                           className="w-full text-xs"

@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
 import {
   type CollectedHairRoot,
   type GameState,
@@ -15,6 +15,8 @@ import {
   BOSS_HAIR_ROOT,
   BOSS_RAID_CONFIG,
 } from "./game-data"
+
+const STORAGE_KEY = "game-hair-save-data"
 
 interface GameContextType extends GameState {
   pullSingle: () => CollectedHairRoot | null
@@ -36,12 +38,51 @@ interface GameContextType extends GameState {
   setBgmVolume: (volume: number) => void
   setBrightness: (brightness: number) => void
   defeatBossRaid: () => void
+  resetGameData: () => void
+  exportGameData: () => string
+  importGameData: (data: string) => boolean
 }
 
 const GameContext = createContext<GameContextType | null>(null)
 
+// Load game state from localStorage
+function loadGameState(): GameState {
+  if (typeof window === "undefined") return INITIAL_GAME_STATE
+  
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (!saved) return INITIAL_GAME_STATE
+    
+    const parsed = JSON.parse(saved)
+    // Merge with INITIAL_GAME_STATE to ensure all new fields exist
+    return {
+      ...INITIAL_GAME_STATE,
+      ...parsed,
+    }
+  } catch (error) {
+    console.error("Failed to load game data:", error)
+    return INITIAL_GAME_STATE
+  }
+}
+
+// Save game state to localStorage
+function saveGameState(state: GameState): void {
+  if (typeof window === "undefined") return
+  
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  } catch (error) {
+    console.error("Failed to save game data:", error)
+  }
+}
+
 export function GameProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<GameState>(INITIAL_GAME_STATE)
+  const [state, setState] = useState<GameState>(loadGameState)
+  
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    saveGameState(state)
+  }, [state])
 
   const pullSingle = useCallback((): CollectedHairRoot | null => {
     if (state.coins < 10) return null
@@ -343,6 +384,39 @@ export function GameProvider({ children }: { children: ReactNode }) {
     [state.collection]
   )
 
+  const resetGameData = useCallback(() => {
+    if (typeof window === "undefined") return
+    
+    if (confirm("すべてのデータをリセットしますか？この操作は取り消せません。")) {
+      setState(INITIAL_GAME_STATE)
+      localStorage.removeItem(STORAGE_KEY)
+    }
+  }, [])
+
+  const exportGameData = useCallback((): string => {
+    return JSON.stringify(state, null, 2)
+  }, [state])
+
+  const importGameData = useCallback((data: string): boolean => {
+    try {
+      const parsed = JSON.parse(data)
+      // Validate that it has the required structure
+      if (typeof parsed.coins !== "number" || !Array.isArray(parsed.collection)) {
+        throw new Error("Invalid game data format")
+      }
+      
+      setState({
+        ...INITIAL_GAME_STATE,
+        ...parsed,
+      })
+      return true
+    } catch (error) {
+      console.error("Failed to import game data:", error)
+      alert("データのインポートに失敗しました。正しいフォーマットか確認してください。")
+      return false
+    }
+  }, [])
+
   return (
     <GameContext.Provider
       value={{
@@ -366,6 +440,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
         setBgmVolume,
         setBrightness,
         defeatBossRaid,
+        resetGameData,
+        exportGameData,
+        importGameData,
       }}
     >
       {children}

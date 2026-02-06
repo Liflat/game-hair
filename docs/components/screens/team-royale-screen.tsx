@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Users, Trophy } from "lucide-react"
@@ -336,20 +336,38 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
       } else if (selectedSkill.type === "defense") {
         // Apply skill bonus from training level
         const defenseSkillBonus = getSkillBonus(currentPlayer)
-        const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
-        const finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * defenseSkillBonus))
+        let finalDefenseValue: number
+        
+        // For normal defense, use calculated value; for others use skill effect
+        if (selectedSkill.id === "normal-defense") {
+          finalDefenseValue = calculateNormalDefenseReduction({
+            ...currentPlayer.hairRoot,
+            level: currentPlayer.level,
+            exp: 0,
+            count: 1
+          } as any)
+        } else {
+          const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
+          finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * defenseSkillBonus))
+        }
 
         currentPlayer.statusEffects.push({
           type: "buff",
           name: "防御強化",
-          duration: defenseEffect.duration,
+          duration: selectedSkill.id === "normal-defense" ? 1 : getDefenseSkillEffect(selectedSkill.id).duration,
           value: finalDefenseValue
         })
-        const defenseLog = defenseEffect.log
-        if (defenseLog) {
-          setBattleLog((logs) => [...logs, defenseLog])
-        } else {
+        
+        if (selectedSkill.id === "normal-defense") {
           setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${finalDefenseValue}%ダメージ軽減!`])
+        } else {
+          const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
+          const defenseLog = defenseEffect.log
+          if (defenseLog) {
+            setBattleLog((logs) => [...logs, defenseLog])
+          } else {
+            setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${finalDefenseValue}%ダメージ軽減!`])
+          }
         }
       } else if (selectedSkill.type === "aoe") {
         // AOE attack - hit multiple targets
@@ -625,18 +643,38 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             })
             setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! チーム全員回復!`])
           } else if (skill.type === "defense") {
-            const defenseEffect = getDefenseSkillEffect(skill.id)
+            let defenseValue: number
+            
+            // For normal defense, use calculated value; for others use skill effect
+            if (skill.id === "normal-defense") {
+              defenseValue = calculateNormalDefenseReduction({
+                ...npc.hairRoot,
+                level: npc.level,
+                exp: 0,
+                count: 1
+              } as any)
+            } else {
+              const defenseEffect = getDefenseSkillEffect(skill.id)
+              defenseValue = defenseEffect.reduction
+            }
+            
             npc.statusEffects.push({
               type: "buff",
               name: "防御強化",
-              duration: defenseEffect.duration,
-              value: defenseEffect.reduction
+              duration: skill.id === "normal-defense" ? 1 : getDefenseSkillEffect(skill.id).duration,
+              value: defenseValue
             })
-            const defenseLog = defenseEffect.log
-            if (defenseLog) {
-              setBattleLog((logs) => [...logs, defenseLog])
+            
+            if (skill.id === "normal-defense") {
+              setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! ${defenseValue}%ダメージ軽減!`])
             } else {
-              setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}!`])
+              const defenseEffect = getDefenseSkillEffect(skill.id)
+              const defenseLog = defenseEffect.log
+              if (defenseLog) {
+                setBattleLog((logs) => [...logs, defenseLog])
+              } else {
+                setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! ${defenseValue}%ダメージ軽減!`])
+              }
             }
           } else if (skill.type === "special") {
             // NPC special skills
@@ -980,21 +1018,34 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                     <Button
                       variant={selectedSkill?.id === "normal-attack" ? "default" : "outline"}
                       className={`h-auto py-2 px-3 text-left ${selectedSkill?.id === "normal-attack" ? "" : "bg-transparent"}`}
-                      onClick={() => setSelectedSkill({
-                        id: "normal-attack",
-                        name: "通常攻撃",
-                        description: "基本的な攻撃",
-                        damage: 15,
-                        cooldown: 0,
-                        type: "attack"
-                      })}
+                      onClick={() => {
+                        const normalAtkDamage = calculateNormalAttackDamage({
+                          ...player.hairRoot,
+                          level: player.level,
+                          exp: 0,
+                          count: 1
+                        } as any)
+                        setSelectedSkill({
+                          id: "normal-attack",
+                          name: "通常攻撃",
+                          description: "基本的な攻撃",
+                          damage: normalAtkDamage,
+                          cooldown: 0,
+                          type: "attack"
+                        })
+                      }}
                     >
                       <div className="w-full">
                         <div className="flex items-center gap-1 mb-1">
                           <Swords className="w-3 h-3" />
                           <span className="text-xs font-medium">通常攻撃</span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">威力: 15</span>
+                        <span className="text-[10px] text-muted-foreground">威力: {calculateNormalAttackDamage({
+                          ...player.hairRoot,
+                          level: player.level,
+                          exp: 0,
+                          count: 1
+                        } as any)}</span>
                       </div>
                     </Button>
                     
@@ -1002,21 +1053,34 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                     <Button
                       variant={selectedSkill?.id === "normal-defense" ? "default" : "outline"}
                       className={`h-auto py-2 px-3 text-left ${selectedSkill?.id === "normal-defense" ? "" : "bg-transparent"}`}
-                      onClick={() => setSelectedSkill({
-                        id: "normal-defense",
-                        name: "通常防御",
-                        description: "基本的な防御",
-                        damage: 0,
-                        cooldown: 0,
-                        type: "defense"
-                      })}
+                      onClick={() => {
+                        const normalDefReduction = calculateNormalDefenseReduction({
+                          ...player.hairRoot,
+                          level: player.level,
+                          exp: 0,
+                          count: 1
+                        } as any)
+                        setSelectedSkill({
+                          id: "normal-defense",
+                          name: "通常防御",
+                          description: "基本的な防御",
+                          damage: 0,
+                          cooldown: 0,
+                          type: "defense"
+                        })
+                      }}
                     >
                       <div className="w-full">
                         <div className="flex items-center gap-1 mb-1">
                           <Shield className="w-3 h-3" />
                           <span className="text-xs font-medium">通常防御</span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground">軽減: 20%</span>
+                        <span className="text-[10px] text-muted-foreground">軽減: {calculateNormalDefenseReduction({
+                          ...player.hairRoot,
+                          level: player.level,
+                          exp: 0,
+                          count: 1
+                        } as any)}%</span>
                       </div>
                     </Button>
                     

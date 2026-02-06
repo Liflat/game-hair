@@ -6,16 +6,18 @@ import { useGame } from "@/lib/game-context"
 import { RARITY_COLORS, RARITY_NAMES, LEVEL_UP_EXP, calculateStats, type CollectedHairRoot, type Rarity } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Zap, Dumbbell, Sparkles, TrendingUp, ArrowUpDown } from "lucide-react"
+import { ArrowLeft, Zap, Dumbbell, Sparkles, TrendingUp, ArrowUpDown, Flame, Crown } from "lucide-react"
 
 interface TrainingScreenProps {
   onNavigate: (screen: Screen) => void
 }
 
 const trainingMethods = [
-  { id: "light", name: "軽いトレーニング", exp: 20, cost: 5, icon: Zap, color: "bg-accent" },
-  { id: "normal", name: "通常トレーニング", exp: 65, cost: 15, icon: Dumbbell, color: "bg-secondary" },
-  { id: "intense", name: "ハードトレーニング", exp: 200, cost: 40, icon: Sparkles, color: "bg-primary" },
+  { id: "light", name: "軽いトレーニング", exp: 50, cost: 10, icon: Zap, color: "bg-accent" },
+  { id: "normal", name: "普通のトレーニング", exp: 200, cost: 50, icon: Dumbbell, color: "bg-secondary" },
+  { id: "hard", name: "ハードトレーニング", exp: 500, cost: 100, icon: Sparkles, color: "bg-primary" },
+  { id: "intense", name: "激トレーニング", exp: 2000, cost: 300, icon: Flame, color: "bg-destructive" },
+  { id: "god", name: "ゴッドトレーニング", exp: 5000, cost: 500, icon: Crown, color: "bg-yellow-500" },
 ]
 
 const RARITY_ORDER: Record<Rarity, number> = {
@@ -105,10 +107,9 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
   }
 
   return (
-    <>
-      <div className="min-h-screen bg-background flex flex-col">
-        {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b border-border">
+    <div className="relative min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="flex items-center justify-between p-4 border-b border-border">
           <Button variant="ghost" size="icon" onClick={() => onNavigate("home")}>
             <ArrowLeft className="w-6 h-6" />
           </Button>
@@ -203,7 +204,7 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
                 )
               })}
             </div>
-          </motion.div>
+        </motion.div>
         ) : (
           <div className="bg-card rounded-2xl p-8 mb-6 text-center border border-border">
             <div className="w-20 h-20 bg-muted rounded-full mx-auto mb-4 flex items-center justify-center text-3xl text-muted-foreground">
@@ -212,8 +213,6 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
             <p className="text-muted-foreground">育毛する毛根を選択してください</p>
           </div>
         )}
-
-        {/* Training Methods */}
         {currentData && currentData.level < 10 && (
           <div className="space-y-3 mb-6">
             <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -383,6 +382,6 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </div>
   )
 }
