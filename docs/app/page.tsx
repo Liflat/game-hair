@@ -29,6 +29,10 @@ function GameApp() {
   useBGM(currentScreen, { enabled: bgmEnabled, volume: bgmVolume })
 
   const handleNavigate = useCallback((screen: Screen) => {
+    // Reset battle opponent when navigating away from battle
+    if (screen !== "battle") {
+      setBattleOpponent(null)
+    }
     setCurrentScreen(screen)
   }, [])
 
