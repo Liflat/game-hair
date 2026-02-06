@@ -780,10 +780,19 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       }
 
       const aliveAfterBoss = newPlayers.filter(p => p.id !== 999 && !p.isEliminated)
+      
+      // First update the battle log with all damage messages
+      setBattleLog(prev => [...prev, ...newLog])
+      
       if (aliveAfterBoss.length === 0) {
-        setBattleLog(prev => [...prev, ...newLog, "毛根が死滅した..."])
-        setPhase("finished")
-        setIsExecuting(false)
+        // Show all elimination messages first, then show defeat message after delay
+        setTimeout(() => {
+          setBattleLog(prev => [...prev, "毛根が死滅した..."])
+          setTimeout(() => {
+            setPhase("finished")
+            setIsExecuting(false)
+          }, 1000)
+        }, 500)
         return newPlayers
       }
 
@@ -796,7 +805,6 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         })
       })
 
-      setBattleLog(prev => [...prev, ...newLog])
       setRound(prev => prev + 1)
       setPhase("selecting")
       setSelectedSkill(null)

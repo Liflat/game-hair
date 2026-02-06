@@ -16,7 +16,7 @@ type BattlePhase = "intro" | "tangling" | "pulling" | "result"
 type BattleResult = "win" | "lose" | "draw" | null
 
 export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
-  const { selectedHairRoot, addCoins, getBattleRank, updateBattleRank } = useGame()
+  const { selectedHairRoot, addCoins, getBattleRank, updateBattleRank, trainHairRoot } = useGame()
   const [phase, setPhase] = useState<BattlePhase>("intro")
   const [playerPower, setPlayerPower] = useState(0)
   const [opponentPower, setOpponentPower] = useState(0)
@@ -156,6 +156,15 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
       addCoins(awardedCoins)
     }
 
+    // Award experience based on result
+    if (selectedHairRoot) {
+      const expRewards = { win: 30, draw: 15, lose: 5 }
+      const exp = expRewards[battleResult as keyof typeof expRewards] || 0
+      if (exp > 0) {
+        trainHairRoot(selectedHairRoot.id, exp)
+      }
+    }
+
     // Update rank
     if (battleResult !== "draw") {
       const change = updateBattleRank(battleResult === "win")
@@ -164,7 +173,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
 
     setResult(battleResult)
     setPhase("result")
-  }, [myStats, opponentStats, addCoins, updateBattleRank, coinMultiplier])
+  }, [myStats, opponentStats, addCoins, updateBattleRank, coinMultiplier, selectedHairRoot, trainHairRoot])
 
   if (!selectedHairRoot || !opponent) return null
 

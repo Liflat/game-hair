@@ -98,7 +98,7 @@ function generateNpcPlayer(index: number, teamId: number, strengthMultiplier: nu
 }
 
 export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
-  const { selectedHairRoot, addCoins, getTeamRoyaleRank, updateTeamRoyaleRank, playerName } = useGame()
+  const { selectedHairRoot, addCoins, getTeamRoyaleRank, updateTeamRoyaleRank, playerName, trainHairRoot } = useGame()
   const [phase, setPhase] = useState<BattlePhase>("waiting")
   const [teams, setTeams] = useState<Team[]>([])
   const [round, setRound] = useState(1)
@@ -122,6 +122,11 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
 
   const getTeamRoyaleRewardCoins = (placement: number): number => {
     return Math.floor(getTeamRoyaleBaseCoins(placement) * coinMultiplier)
+  }
+
+  const getTeamRoyaleRewardExp = (placement: number): number => {
+    const expRewards: Record<number, number> = { 1: 100, 2: 70, 3: 40, 4: 20 }
+    return expRewards[placement] || 20
   }
 
   useEffect(() => {
@@ -781,6 +786,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             addCoins(getTeamRoyaleRewardCoins(1))
             const change = updateTeamRoyaleRank(1)
             setRankChange(change)
+            if (selectedHairRoot) {
+              trainHairRoot(selectedHairRoot.id, getTeamRoyaleRewardExp(1))
+            }
           } else {
             // Calculate player team's placement
             const eliminatedTeamsCount = newTeams.filter(t => t.isEliminated && t.id !== playerTeam?.id).length
@@ -789,6 +797,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             addCoins(getTeamRoyaleRewardCoins(placement))
             const change = updateTeamRoyaleRank(placement)
             setRankChange(change)
+            if (selectedHairRoot) {
+              trainHairRoot(selectedHairRoot.id, getTeamRoyaleRewardExp(placement))
+            }
           }
           setPhase("finished")
           return newTeams
@@ -802,6 +813,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           addCoins(getTeamRoyaleRewardCoins(placement))
           const change = updateTeamRoyaleRank(placement)
           setRankChange(change)
+          if (selectedHairRoot) {
+            trainHairRoot(selectedHairRoot.id, getTeamRoyaleRewardExp(placement))
+          }
           setPhase("result")
           return newTeams
         }
@@ -814,7 +828,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
     }, 1500)
 
     return () => clearTimeout(timeout)
-  }, [phase, addCoins, updateTeamRoyaleRank, getBattleStats, coinMultiplier])
+  }, [phase, addCoins, updateTeamRoyaleRank, getBattleStats, coinMultiplier, selectedHairRoot, trainHairRoot])
 
   const getEnemyPlayers = () => {
     return teams.flatMap(t => t.members).filter(p => p.teamId !== player?.teamId && !p.isEliminated)

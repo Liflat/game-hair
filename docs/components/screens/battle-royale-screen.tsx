@@ -91,7 +91,7 @@ function generateNpcPlayer(index: number, strengthMultiplier: number, rankTier: 
 type BattlePhase = "waiting" | "selecting" | "action" | "result" | "finished"
 
 export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
-  const { selectedHairRoot, addCoins, getRoyaleRank, updateRoyaleRank } = useGame()
+  const { selectedHairRoot, addCoins, getRoyaleRank, updateRoyaleRank, trainHairRoot } = useGame()
   const [phase, setPhase] = useState<BattlePhase>("waiting")
   const [players, setPlayers] = useState<BattlePlayer[]>([])
   const [round, setRound] = useState(1)
@@ -124,6 +124,14 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
 
   const getRoyaleRewardCoins = (placement: number): number => {
     return Math.floor(getRoyaleBaseCoins(placement) * coinMultiplier)
+  }
+
+  const getRoyaleRewardExp = (placement: number): number => {
+    if (placement === 1) return 100
+    if (placement === 2) return 80
+    if (placement === 3) return 60
+    if (placement === 4) return 40
+    return 20
   }
 
   const myPlayer = players.find((p) => !p.isNpc)
@@ -275,6 +283,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                   addCoins(getRoyaleRewardCoins(1))
                   const change = updateRoyaleRank(1)
                   setRankChange(change)
+                  if (selectedHairRoot) {
+                    trainHairRoot(selectedHairRoot.id, getRoyaleRewardExp(1))
+                  }
                 }, 0)
               } else if (player) {
                 // NPC won, calculate player's final placement
@@ -285,6 +296,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                   addCoins(getRoyaleRewardCoins(placement))
                   const change = updateRoyaleRank(placement)
                   setRankChange(change)
+                  if (selectedHairRoot) {
+                    trainHairRoot(selectedHairRoot.id, getRoyaleRewardExp(placement))
+                  }
                 }, 0)
               }
             setIsExecuting(false)
@@ -940,6 +954,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 addCoins(getRoyaleRewardCoins(1))
                 const change = updateRoyaleRank(1)
                 setRankChange(change)
+                if (selectedHairRoot) {
+                  trainHairRoot(selectedHairRoot.id, getRoyaleRewardExp(1))
+                }
               }, 0)
             } else {
               const eliminatedOrder = prev.filter((p) => p.isEliminated)
@@ -949,6 +966,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 addCoins(getRoyaleRewardCoins(placement))
                 const change = updateRoyaleRank(placement)
                 setRankChange(change)
+                if (selectedHairRoot) {
+                  trainHairRoot(selectedHairRoot.id, getRoyaleRewardExp(placement))
+                }
               }, 0)
             }
             setIsExecuting(false)
@@ -963,6 +983,9 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               addCoins(getRoyaleRewardCoins(placement))
               const change = updateRoyaleRank(placement)
               setRankChange(change)
+              if (selectedHairRoot) {
+                trainHairRoot(selectedHairRoot.id, getRoyaleRewardExp(placement))
+              }
             }, 0)
             setPhase("result")
           } else {
@@ -979,7 +1002,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
     setSelectedSkill(null)
     setSelectedTarget(null)
     setSelectedTargets([])
-  }, [selectedSkill, selectedTarget, selectedTargets, phase, isExecuting, addCoins, updateRoyaleRank, coinMultiplier])
+  }, [selectedSkill, selectedTarget, selectedTargets, phase, isExecuting, addCoins, updateRoyaleRank, coinMultiplier, selectedHairRoot, trainHairRoot])
 
   const continueWatching = () => {
     // Simulate remaining battle
