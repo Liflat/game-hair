@@ -307,10 +307,15 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
                   backgroundColor: `${RARITY_COLORS[hairRoot.rarity]}10`,
                 }}
               >
-                <span className="text-2xl">{hairRoot.emoji}</span>
-                <span className="absolute bottom-1 right-1 text-xs bg-background/80 px-1 rounded">
-                  Lv.{hairRoot.level}
-                </span>
+                <div className="w-full h-full flex flex-col items-center justify-center">
+                  <span className="text-2xl mb-1">{hairRoot.emoji}</span>
+                  <span className="text-[10px] text-muted-foreground line-clamp-1">
+                    {hairRoot.name}
+                  </span>
+                  <span className="absolute bottom-1 right-1 text-xs bg-background/80 px-1 rounded">
+                    Lv.{hairRoot.level}
+                  </span>
+                </div>
               </motion.button>
             ))}
             {collection.length === 0 && (
@@ -346,16 +351,36 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
               exit={{ scale: 0, rotate: 180 }}
               className="text-center px-4"
             >
-              <motion.div
-                animate={{
-                  scale: [1, 1.2, 1],
-                }}
-                transition={{ duration: 0.5, repeat: Number.POSITIVE_INFINITY }}
-                className="w-32 h-32 bg-gradient-to-r from-secondary to-primary rounded-full flex items-center justify-center mx-auto mb-4"
-              >
-                <span className="text-5xl">🎉</span>
-              </motion.div>
-              <h2 className="text-4xl font-bold text-foreground mb-4">LEVEL UP!</h2>
+              {selectedForTraining && (
+                <motion.div
+                  className="w-32 h-32 rounded-2xl flex items-center justify-center mx-auto mb-4 relative"
+                  style={{ 
+                    backgroundColor: `${RARITY_COLORS[selectedForTraining.rarity]}40`,
+                    borderWidth: 4,
+                    borderColor: RARITY_COLORS[selectedForTraining.rarity],
+                  }}
+                  animate={{
+                    scale: [1, 1.1, 1],
+                  }}
+                  transition={{ duration: 0.5, repeat: 3 }}
+                >
+                  <span className="text-6xl">{selectedForTraining.emoji}</span>
+                  <motion.div
+                    className="absolute -top-4 -right-4"
+                    animate={{
+                      rotate: [0, 360],
+                      scale: [1, 1.2, 1],
+                    }}
+                    transition={{ duration: 0.5, repeat: Number.POSITIVE_INFINITY }}
+                  >
+                    <span className="text-4xl">🎉</span>
+                  </motion.div>
+                </motion.div>
+              )}
+              <h2 className="text-4xl font-bold text-foreground mb-2">LEVEL UP!</h2>
+              {selectedForTraining && (
+                <p className="text-lg text-muted-foreground mb-2">{selectedForTraining.name}</p>
+              )}
               <p className="text-2xl text-secondary font-bold">
                 Lv.{prevLevel} → Lv.{currentData?.level}
               </p>
