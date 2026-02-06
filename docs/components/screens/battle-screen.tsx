@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
 import { RARITY_COLORS, calculateStats, getRankColor, getRankCoinMultiplier, getElementMatchup, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type CollectedHairRoot, type Element } from "@/lib/game-data"
@@ -32,10 +32,17 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
   const currentRank = getBattleRank()
   const coinMultiplier = getRankCoinMultiplier(currentRank)
 
-  const myStats = selectedHairRoot ? calculateStats(selectedHairRoot) : { power: 0, speed: 0, grip: 0 }
-  const opponentStats = opponent?.hairRoot
-    ? { power: opponent.hairRoot.power, speed: opponent.hairRoot.speed, grip: opponent.hairRoot.grip }
-    : { power: 0, speed: 0, grip: 0 }
+  const myStats = useMemo(
+    () => (selectedHairRoot ? calculateStats(selectedHairRoot) : { power: 0, speed: 0, grip: 0 }),
+    [selectedHairRoot]
+  )
+  const opponentStats = useMemo(
+    () =>
+      opponent?.hairRoot
+        ? { power: opponent.hairRoot.power, speed: opponent.hairRoot.speed, grip: opponent.hairRoot.grip }
+        : { power: 0, speed: 0, grip: 0 },
+    [opponent?.hairRoot]
+  )
   
   // Calculate element matchup for grip strength modification
   const myElement = selectedHairRoot?.element as Element | undefined
@@ -71,7 +78,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
     }, 2000)
 
     return () => clearTimeout(introTimer)
-  }, [selectedHairRoot, opponent, onNavigate])
+  }, [selectedHairRoot, opponent?.name, onNavigate])
 
   // Tangling phase - auto progress
   useEffect(() => {
@@ -114,7 +121,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
         clearTimeout(battleTimerRef.current)
       }
     }
-  }, [phase, opponentStats.speed])
+  }, [phase])
 
   useEffect(() => {
     pullProgressRef.current = pullProgress
@@ -131,7 +138,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
     setPullProgress((prev) => Math.max(0, Math.min(100, prev - tapPower)))
 
     setPlayerPower((prev) => prev + 1)
-  }, [phase, myStats.speed, myStats.grip, elementMatchup])
+  }, [phase])
 
   const determinResult = useCallback(() => {
     // Calculate final result based on pull progress and stats
@@ -187,7 +194,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
 
     setResult(battleResult)
     setPhase("result")
-  }, [myStats, opponentStats, addCoins, updateBattleRank, coinMultiplier, selectedHairRoot, trainHairRoot])
+  }, [addCoins, updateBattleRank, coinMultiplier, selectedHairRoot, trainHairRoot])
 
   if (!selectedHairRoot || !opponent) return null
 
