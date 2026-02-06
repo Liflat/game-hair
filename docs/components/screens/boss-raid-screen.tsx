@@ -3,13 +3,14 @@
 import { useState } from "react"
 import { motion } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, BOSS_HAIR_ROOT, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getElementCombatModifiers, getDefenseSkillEffect, BOSS_RAID_SKILLS, type HairRoot, type Skill, type CollectedHairRoot, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, BOSS_HAIR_ROOTS, BOSS_RAID_CONFIGS, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getElementCombatModifiers, getDefenseSkillEffect, type HairRoot, type Skill, type CollectedHairRoot, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 
 interface BossRaidScreenProps {
   onNavigate: (screen: Screen) => void
+  bossId?: number
 }
 
 interface StatusEffect {
@@ -35,9 +36,17 @@ interface BattlePlayer {
 
 type BattlePhase = "preparation" | "selecting" | "action" | "finished"
 
-export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
+export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps) {
   const { collection, defeatBossRaid } = useGame()
   const [phase, setPhase] = useState<BattlePhase>("preparation")
+  
+  // Get boss configuration
+  const bossConfig = BOSS_RAID_CONFIGS[bossId]
+  if (!bossConfig) {
+    // Fallback to default boss if invalid ID
+    console.error(`Invalid boss ID: ${bossId}, falling back to default`)
+  }
+  const config = bossConfig || BOSS_RAID_CONFIGS[53]
   const [selectedTeam, setSelectedTeam] = useState<CollectedHairRoot[]>([])
   const [players, setPlayers] = useState<BattlePlayer[]>([])
   const [round, setRound] = useState(1)
@@ -46,7 +55,9 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
   const [battleLog, setBattleLog] = useState<string[]>([])
   const [isExecuting, setIsExecuting] = useState(false)
 
-  const boss = BOSS_HAIR_ROOT
+  const boss = config.boss
+  const bossSkills = config.skills
+  const bossMaxHp = config.maxHp
   const canStartBattle = selectedTeam.length === 5
 
   const handleTeamSelection = (hairRoot: CollectedHairRoot) => {
@@ -64,12 +75,11 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       level: 1,
       exp: 0,
       count: 1,
-      skills: BOSS_RAID_SKILLS,
+      skills: bossSkills,
     } as CollectedHairRoot
     
     // Calculate boss HP safely
     const bossStats = calculateStats(bossWithRaidSkills)
-    const bossMaxHp = 3000
     
     const bossPlayer: BattlePlayer = {
       id: 999,
@@ -106,7 +116,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
 
     setPlayers([bossPlayer, ...teamPlayers])
     setPhase("selecting")
-    setBattleLog(["魔王ヘアグランドが降臨した！", "「全次元の力で、お前達を消し去ってやる...」"])
+    setBattleLog([`${boss.name}が降臨した！`])
   }
 
   const getElementDamageMod = (attacker: HairRoot, defender: HairRoot): number => {
@@ -147,8 +157,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
       if (attacker.hp <= 0) {
         attacker.isEliminated = true
         if (attacker.id === 999) {
-          newLog.push("ヘアグランドを倒した！")
-          defeatBossRaid()
+          newLog.push(`${boss.name}を倒した！`)
+          defeatBossRaid(bossId)
         } else {
           newLog.push(`${attacker.name}が脱落!`)
         }
@@ -228,8 +238,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
         if (target.hp <= 0) {
           target.isEliminated = true
           if (target.id === 999) {
-            newLog.push("ヘアグランドを倒した！")
-            defeatBossRaid()
+            newLog.push(`${boss.name}を倒した！`)
+            defeatBossRaid(bossId)
           } else {
             newLog.push(`${target.name}が脱落!`)
           }
@@ -265,8 +275,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
               if (target.hp <= 0) {
                 target.isEliminated = true
                 if (target.id === 999) {
-                  newLog.push("ヘアグランドを倒した！")
-                  defeatBossRaid()
+                  newLog.push(`${boss.name}を倒した！`)
+                  defeatBossRaid(bossId)
                 } else {
                   newLog.push(`${target.name}が脱落!`)
                 }
@@ -311,8 +321,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
               if (target.hp <= 0) {
                 target.isEliminated = true
                 if (target.id === 999) {
-                  newLog.push("ヘアグランドを倒した！")
-                  defeatBossRaid()
+                  newLog.push(`${boss.name}を倒した！`)
+                  defeatBossRaid(bossId)
                 } else {
                   newLog.push(`${target.name}が脱落!`)
                 }
@@ -347,8 +357,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             if (target.hp <= 0) {
               target.isEliminated = true
               if (target.id === 999) {
-                newLog.push("ヘアグランドを倒した！")
-                defeatBossRaid()
+                newLog.push(`${boss.name}を倒した！`)
+                defeatBossRaid(bossId)
               } else {
                 newLog.push(`${target.name}が脱落!`)
               }
@@ -427,8 +437,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             if (target.hp <= 0) {
               target.isEliminated = true
               if (target.id === 999) {
-                newLog.push("ヘアグランドを倒した！")
-                defeatBossRaid()
+                newLog.push(`${boss.name}を倒した！`)
+                defeatBossRaid(bossId)
               } else {
                 newLog.push(`${target.name}が脱落!`)
               }
@@ -524,8 +534,8 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
             if (target.hp <= 0) {
               target.isEliminated = true
               if (target.id === 999) {
-                newLog.push("ヘアグランドを倒した！")
-                defeatBossRaid()
+                newLog.push(`${boss.name}を倒した！`)
+                defeatBossRaid(bossId)
               } else {
                 newLog.push(`${target.name}が脱落!`)
               }
@@ -560,7 +570,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
           boss.hp = 0
           boss.isEliminated = true
           newLog.push(`${boss.name}は世界から消滅した!!`)
-          defeatBossRaid()
+          defeatBossRaid(bossId)
         } else {
           newLog.push(`${selectedSkill.name}発動!`)
         }
@@ -1020,7 +1030,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
               <div className="grid grid-cols-4 gap-2 text-xs">
                 <div className="p-2 bg-muted rounded">
                   <p className="text-muted-foreground">HP</p>
-                  <p className="font-bold">3000</p>
+                  <p className="font-bold">{bossMaxHp}</p>
                 </div>
                 <div className="p-2 bg-muted rounded">
                   <p className="text-muted-foreground">力</p>
@@ -1360,19 +1370,22 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
               </h2>
               {boss_player && boss_player.hp <= 0 && (
                 <div className="bg-black/20 rounded-lg p-4 mb-4">
-                  <p className="mb-2">ヘアグランドを倒した！</p>
-                  <p className="text-xl font-bold mb-2">👑 コズミックレア</p>
-                  <p className="text-lg">超次元毛根魔王ヘアグランド</p>
+                  <p className="mb-2">{boss.name}を倒した！</p>
+                  <p className="text-xl font-bold mb-2">
+                    {config.defeatReward.hairRoot.rarity === "master" ? "✨ マスターレア" : 
+                     config.defeatReward.hairRoot.rarity === "cosmic" ? "👑 コズミックレア" : "レア"}
+                  </p>
+                  <p className="text-lg">{config.defeatReward.hairRoot.name}</p>
                   <div className="mt-4 space-y-2">
-                    <p className="text-sm">+1000 コイン</p>
-                    <p className="text-sm">+500 経験値</p>
+                    <p className="text-sm">+{config.defeatReward.coins} コイン</p>
+                    <p className="text-sm">+{config.defeatReward.exp} 経験値</p>
                   </div>
                 </div>
               )}
               {boss_player && boss_player.hp > 0 && (
                 <div className="bg-black/20 rounded-lg p-4 mb-4">
                   <p className="text-2xl font-bold mb-2">毛根が死滅した</p>
-                  <p className="text-sm">魔王ヘアグランドに敗北した...</p>
+                  <p className="text-sm">{boss.name}に敗北した...</p>
                 </div>
               )}
               <Button

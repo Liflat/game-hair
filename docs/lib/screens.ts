@@ -9,6 +9,7 @@ export type Screen =
   | "battle"
   | "battle-royale"
   | "team-royale"
+  | "boss-select"
   | "boss-raid"
   | "tutorial"
   | "profile"

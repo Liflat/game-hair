@@ -21,6 +21,7 @@ const trainingMethods = [
 ]
 
 const RARITY_ORDER: Record<Rarity, number> = {
+  master: 7,
   cosmic: 6,
   legendary: 5,
   epic: 4,

@@ -16,7 +16,7 @@ const menuItems = [
   { id: "matchmaking" as const, label: "1vs1対戦", icon: "⚔️", description: "バトルに挑戦", color: "from-blue-500 to-indigo-600" },
   { id: "battle-royale" as const, label: "ソロバトロワ", icon: "👑", description: "8人で最強決定戦", color: "from-purple-500 to-pink-600" },
   { id: "team-royale" as const, label: "チームバトロワ", icon: "👥", description: "4チーム対抗戦", color: "from-cyan-500 to-teal-600" },
-  { id: "boss-raid" as const, label: "魔王討伐", icon: "😈", description: "ヘアグランドに挑戦", color: "from-red-600 to-rose-900" },
+  { id: "boss-select" as const, label: "魔王討伐", icon: "😈", description: "ボスに挑戦", color: "from-red-600 to-rose-900" },
   { id: "ranking" as const, label: "ランキング", icon: "🏆", description: "順位を確認", color: "from-amber-500 to-orange-600" },
   { id: "tutorial" as const, label: "チュートリアル", icon: "❓", description: "各機能の説明", color: "from-slate-500 to-slate-700" },
 ]

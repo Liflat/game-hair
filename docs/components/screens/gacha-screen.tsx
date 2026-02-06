@@ -201,22 +201,22 @@ export function GachaScreen({ onNavigate }: GachaScreenProps) {
               <div className="flex gap-4">
                 <Button
                   onClick={() => handlePull("single")}
-                  disabled={coins < 10}
+                  disabled={coins < 50}
                   className="flex-1 h-16 text-lg bg-primary hover:bg-primary/90"
                 >
                   <div className="text-center">
                     <p className="font-bold">単発</p>
-                    <p className="text-xs opacity-80">10 コイン</p>
+                    <p className="text-xs opacity-80">50 コイン</p>
                   </div>
                 </Button>
                 <Button
                   onClick={() => handlePull("ten")}
-                  disabled={coins < 100}
+                  disabled={coins < 500}
                   className="flex-1 h-16 text-lg bg-secondary hover:bg-secondary/90 text-secondary-foreground"
                 >
                   <div className="text-center">
                     <p className="font-bold">10連</p>
-                    <p className="text-xs opacity-80">100 コイン</p>
+                    <p className="text-xs opacity-80">500 コイン</p>
                   </div>
                 </Button>
               </div>

@@ -1,4 +1,4 @@
-export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "cosmic"
+export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "cosmic" | "master"
 
 export type Element = "fire" | "water" | "wind" | "light" | "dark" | "divine"
 
@@ -178,6 +178,7 @@ export const RARITY_COLORS: Record<Rarity, string> = {
   epic: "#A855F7",
   legendary: "#F59E0B",
   cosmic: "#FF0080",
+  master: "#00FFFF",
 }
 
 export const RARITY_NAMES: Record<Rarity, string> = {
@@ -187,6 +188,7 @@ export const RARITY_NAMES: Record<Rarity, string> = {
   epic: "ウルトラヘア",
   legendary: "レジェンドヘア",
   cosmic: "コズミックヘア",
+  master: "マスターヘア",
 }
 
 export const HAIR_ROOTS: HairRoot[] = [
@@ -427,8 +429,8 @@ export const HAIR_ROOTS: HairRoot[] = [
   ]},
 ] 
 
-// Gacha pool - excludes boss-only hair (id: 53 - ヘアグランド)
-export const GACHA_HAIR_ROOTS = HAIR_ROOTS.filter(h => h.id !== 53)
+// Gacha pool - excludes boss-only hair (id: 53, 54, 55)
+export const GACHA_HAIR_ROOTS = HAIR_ROOTS.filter(h => h.id !== 53 && h.id !== 54 && h.id !== 55)
 
 // Evolution requirements: 10 duplicates to evolve
 export const EVOLUTION_COST = 10
@@ -440,6 +442,7 @@ export const GACHA_RATES: Record<Rarity, number> = {
   epic: 0.05,
   legendary: 0.01,
   cosmic: 0.001, // 0.1% - extremely rare
+  master: 0, // Not available in gacha - boss exclusive
 }
 
 export function pullGacha(): HairRoot {
@@ -485,7 +488,7 @@ export interface GameState {
 }
 
 export const INITIAL_GAME_STATE: GameState = {
-  coins: 100,
+  coins: 500,
   collection: [],
   selectedHairRoot: null,
   battleRankPoints: 0,
@@ -498,8 +501,8 @@ export const INITIAL_GAME_STATE: GameState = {
   brightness: 1,
 }
 
-// Boss Hair Root - only obtainable by defeating boss raids
-export const BOSS_HAIR_ROOT: HairRoot = {
+// Boss Hair Roots - only obtainable by defeating boss raids
+export const BOSS_HAIR_GRAND: HairRoot = {
   id: 53,
   name: "超次元毛根魔王ヘアグランド",
   rarity: "cosmic",
@@ -517,6 +520,51 @@ export const BOSS_HAIR_ROOT: HairRoot = {
   ]
 }
 
+export const BOSS_ARMAGEDDON: HairRoot = {
+  id: 54,
+  name: "恐皇アルマハゲドン",
+  rarity: "cosmic",
+  element: "fire",
+  description: "終焉を司る恐怖の皇帝。灼熱の業火で全てを焼き尽くす",
+  power: 120,
+  speed: 90,
+  grip: 110,
+  emoji: "🔥",
+  color: "#FF4500",
+  skills: [
+    { id: "apocalypse-flame", name: "アポカリプスフレイム", description: "終末の炎で全てを焼き尽くす。威力180", damage: 180, cooldown: 4, type: "attack" },
+    { id: "emperor-barrier", name: "皇帝の障壁", description: "恐皇の威光で攻撃を遮断する。防御率85%", damage: 0, cooldown: 3, type: "defense" },
+    { id: "inferno-wave", name: "インフェルノウェーブ", description: "灼熱の波動で全体を攻撃。全体に威力120のダメージと継続炎上", damage: 120, cooldown: 5, type: "aoe", maxTargets: 99, dotEffect: { name: "炎上", damage: 30, duration: 3 } }
+  ]
+}
+
+export const BOSS_KEZAG: HairRoot = {
+  id: 55,
+  name: "真理のケ・ズァグ",
+  rarity: "master",
+  element: "divine",
+  description: "真理を司る究極存在。全ての理を超越し、絶対なる力を振るう",
+  power: 150,
+  speed: 120,
+  grip: 140,
+  emoji: "✨",
+  color: "#00FFFF",
+  skills: [
+    { id: "truth-annihilation", name: "真理の殲滅", description: "真理の力で対象を消滅させる。威力250", damage: 250, cooldown: 5, type: "attack" },
+    { id: "absolute-truth", name: "絶対真理", description: "真理の盾で全ての攻撃を無効化。防御率100%", damage: 0, cooldown: 4, type: "defense" },
+    { id: "reality-collapse", name: "現実崩壊", description: "現実を崩壊させ全体に壊滅的ダメージ。全体に威力180と全ステータス30%ダウン", damage: 180, cooldown: 6, type: "aoe", maxTargets: 99 }
+  ]
+}
+
+export const BOSS_HAIR_ROOTS: HairRoot[] = [
+  BOSS_HAIR_GRAND,
+  BOSS_ARMAGEDDON,
+  BOSS_KEZAG,
+]
+
+// Legacy export for backwards compatibility
+export const BOSS_HAIR_ROOT: HairRoot = BOSS_HAIR_GRAND
+
 export const LEVEL_UP_EXP: Record<Rarity, number[]> = {
   common: [0, 100, 250, 500, 800, 1200, 1700, 2300, 3000, 4000],
   uncommon: [0, 120, 300, 600, 960, 1440, 2040, 2760, 3600, 4800],
@@ -524,6 +572,7 @@ export const LEVEL_UP_EXP: Record<Rarity, number[]> = {
   epic: [0, 180, 450, 900, 1440, 2160, 3060, 4140, 5400, 7200],
   legendary: [0, 220, 550, 1100, 1760, 2640, 3740, 5060, 6600, 8800],
   cosmic: [0, 250, 625, 1250, 2000, 3000, 4250, 5750, 7500, 10000],
+  master: [0, 300, 750, 1500, 2400, 3600, 5100, 6900, 9000, 12000],
 }
 
 // Rank System
@@ -622,10 +671,8 @@ export interface BossRaidState {
   rewards: { coins: number; exp: number; hairRoot?: HairRoot }
 }
 
-export const BOSS_HAIR_GRAND: HairRoot = HAIR_ROOTS.find(h => h.id === 53)!
-
-// ボス戦用の独立したスキルセット
-export const BOSS_RAID_SKILLS: Skill[] = [
+// ボス戦用の独立したスキルセット - 各ボス用
+export const BOSS_RAID_SKILLS_GRAND: Skill[] = [
   { id: "normal-attack", name: "通常攻撃", description: "基本的な攻撃", damage: 50, cooldown: 1, type: "attack" },
   { id: "normal-defense", name: "通常防御", description: "基本的な防御態勢", damage: 0, cooldown: 1, type: "defense" },
   { id: "ancient-chaos-raid", name: "エンシェントカオス", description: "古代の混沌を解放する必殺攻撃", damage: 150, cooldown: 4, type: "attack" },
@@ -633,13 +680,71 @@ export const BOSS_RAID_SKILLS: Skill[] = [
   { id: "absolute-zero-raid", name: "アブソリュートゼロ", description: "全次元領域に絶対零度を撃ち込み全体にダメージとデバフ", damage: 100, cooldown: 5, type: "aoe", maxTargets: 8 }
 ]
 
-export const BOSS_RAID_CONFIG = {
+export const BOSS_RAID_SKILLS_ARMAGEDDON: Skill[] = [
+  { id: "normal-attack", name: "通常攻撃", description: "基本的な攻撃", damage: 60, cooldown: 1, type: "attack" },
+  { id: "normal-defense", name: "通常防御", description: "基本的な防御態勢", damage: 0, cooldown: 1, type: "defense" },
+  { id: "apocalypse-flame-raid", name: "アポカリプスフレイム", description: "終末の炎で全てを焼き尽くす", damage: 180, cooldown: 4, type: "attack" },
+  { id: "emperor-barrier-raid", name: "皇帝の障壁", description: "恐皇の威光で攻撃を遮断する", damage: 0, cooldown: 3, type: "defense" },
+  { id: "inferno-wave-raid", name: "インフェルノウェーブ", description: "灼熱の波動で全体を攻撃", damage: 120, cooldown: 5, type: "aoe", maxTargets: 8, dotEffect: { name: "炎上", damage: 30, duration: 3 } }
+]
+
+export const BOSS_RAID_SKILLS_KEZAG: Skill[] = [
+  { id: "normal-attack", name: "通常攻撃", description: "基本的な攻撃", damage: 80, cooldown: 1, type: "attack" },
+  { id: "normal-defense", name: "通常防御", description: "基本的な防御態勢", damage: 0, cooldown: 1, type: "defense" },
+  { id: "truth-annihilation-raid", name: "真理の殲滅", description: "真理の力で対象を消滅させる", damage: 250, cooldown: 5, type: "attack" },
+  { id: "absolute-truth-raid", name: "絶対真理", description: "真理の盾で全ての攻撃を無効化", damage: 0, cooldown: 4, type: "defense" },
+  { id: "reality-collapse-raid", name: "現実崩壊", description: "現実を崩壊させ全体に壊滅的ダメージ", damage: 180, cooldown: 6, type: "aoe", maxTargets: 8 }
+]
+
+// Legacy export for backwards compatibility
+export const BOSS_RAID_SKILLS = BOSS_RAID_SKILLS_GRAND
+
+export interface BossRaidConfig {
+  boss: HairRoot
+  skills: Skill[]
+  maxHp: number
   defeatReward: {
-    coins: 1000,
-    exp: 500,
-    hairRoot: BOSS_HAIR_ROOT,
+    coins: number
+    exp: number
+    hairRoot: HairRoot
+  }
+}
+
+export const BOSS_RAID_CONFIGS: Record<number, BossRaidConfig> = {
+  53: {
+    boss: BOSS_HAIR_GRAND,
+    skills: BOSS_RAID_SKILLS_GRAND,
+    maxHp: 3000,
+    defeatReward: {
+      coins: 1000,
+      exp: 500,
+      hairRoot: BOSS_HAIR_GRAND,
+    },
+  },
+  54: {
+    boss: BOSS_ARMAGEDDON,
+    skills: BOSS_RAID_SKILLS_ARMAGEDDON,
+    maxHp: 3500,
+    defeatReward: {
+      coins: 1500,
+      exp: 750,
+      hairRoot: BOSS_ARMAGEDDON,
+    },
+  },
+  55: {
+    boss: BOSS_KEZAG,
+    skills: BOSS_RAID_SKILLS_KEZAG,
+    maxHp: 5000,
+    defeatReward: {
+      coins: 3000,
+      exp: 1500,
+      hairRoot: BOSS_KEZAG,
+    },
   },
 }
+
+// Legacy export
+export const BOSS_RAID_CONFIG = BOSS_RAID_CONFIGS[53]
 export function calculateSkillBonus(hairRoot: CollectedHairRoot): number {
   // Skill effectiveness increases with level and rarity
   // Level bonus: 8% per level
@@ -652,6 +757,7 @@ export function calculateSkillBonus(hairRoot: CollectedHairRoot): number {
     epic: 1.15,
     legendary: 1.2,
     cosmic: 1.3,
+    master: 1.5,
   }
   return levelBonus * rarityMultiplier[hairRoot.rarity]
 }
@@ -665,6 +771,7 @@ export function getRarityBonus(rarity: Rarity): number {
     epic: 1.3,
     legendary: 1.4,
     cosmic: 1.5,
+    master: 1.8,
   }
   return bonuses[rarity]
 }

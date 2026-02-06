@@ -16,6 +16,7 @@ import { MatchmakingScreen } from "@/components/screens/matchmaking-screen"
 import { BattleScreen } from "@/components/screens/battle-screen"
 import { BattleRoyaleScreen } from "@/components/screens/battle-royale-screen"
 import { TeamRoyaleScreen } from "@/components/screens/team-royale-screen"
+import { BossSelectScreen } from "@/components/screens/boss-select-screen"
 import { BossRaidScreen } from "@/components/screens/boss-raid-screen"
 import { TutorialScreen } from "@/components/screens/tutorial-screen"
 import { ProfileScreen } from "@/components/screens/profile-screen"
@@ -23,15 +24,20 @@ import { ProfileScreen } from "@/components/screens/profile-screen"
 function GameApp() {
   const [currentScreen, setCurrentScreen] = useState<Screen>("splash")
   const [battleOpponent, setBattleOpponent] = useState<{ name: string; hairRoot: HairRoot } | null>(null)
+  const [selectedBossId, setSelectedBossId] = useState<number>(53)
   const { bgmEnabled, bgmVolume, brightness } = useGame()
 
   // BGMを再生
   useBGM(currentScreen, { enabled: bgmEnabled, volume: bgmVolume })
 
-  const handleNavigate = useCallback((screen: Screen) => {
+  const handleNavigate = useCallback((screen: Screen, bossId?: number) => {
     // Reset battle opponent when navigating away from battle
     if (screen !== "battle") {
       setBattleOpponent(null)
+    }
+    // Set boss ID if provided
+    if (bossId !== undefined) {
+      setSelectedBossId(bossId)
     }
     setCurrentScreen(screen)
   }, [])
@@ -82,8 +88,11 @@ function GameApp() {
         {currentScreen === "team-royale" && (
           <TeamRoyaleScreen key="team-royale" onNavigate={handleNavigate} />
         )}
+        {currentScreen === "boss-select" && (
+          <BossSelectScreen key="boss-select" onNavigate={handleNavigate} />
+        )}
         {currentScreen === "boss-raid" && (
-          <BossRaidScreen key="boss-raid" onNavigate={handleNavigate} />
+          <BossRaidScreen key={`boss-raid-${selectedBossId}`} onNavigate={handleNavigate} bossId={selectedBossId} />
         )}
         {currentScreen === "tutorial" && (
           <TutorialScreen key="tutorial" onNavigate={handleNavigate} />

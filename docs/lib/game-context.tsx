@@ -12,8 +12,7 @@ import {
   EVOLUTION_COST,
   getRankFromPoints,
   calculatePointsChange,
-  BOSS_HAIR_ROOT,
-  BOSS_RAID_CONFIG,
+  BOSS_RAID_CONFIGS,
 } from "./game-data"
 
 const STORAGE_KEY = "game-hair-save-data"
@@ -37,7 +36,7 @@ interface GameContextType extends GameState {
   setBgmEnabled: (enabled: boolean) => void
   setBgmVolume: (volume: number) => void
   setBrightness: (brightness: number) => void
-  defeatBossRaid: () => void
+  defeatBossRaid: (bossId: number) => void
   resetGameData: () => void
   exportGameData: () => string
   importGameData: (data: string) => boolean
@@ -85,7 +84,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [state])
 
   const pullSingle = useCallback((): CollectedHairRoot | null => {
-    if (state.coins < 10) return null
+    if (state.coins < 50) return null
     
     const pulled = pullGacha()
     let result: CollectedHairRoot | null = null
@@ -97,7 +96,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         result = updated
         return {
           ...prev,
-          coins: prev.coins - 10,
+          coins: prev.coins - 50,
           collection: prev.collection.map((h) => h.id === pulled.id ? updated : h),
         }
       } else {
@@ -110,7 +109,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         result = newHairRoot
         return {
           ...prev,
-          coins: prev.coins - 10,
+          coins: prev.coins - 50,
           collection: [...prev.collection, newHairRoot],
         }
       }
@@ -120,7 +119,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, [state.coins])
 
   const pullTen = useCallback((): CollectedHairRoot[] => {
-    if (state.coins < 100) return []
+    if (state.coins < 500) return []
     
     const pulledItems: ReturnType<typeof pullGacha>[] = []
     for (let i = 0; i < 10; i++) {
@@ -152,7 +151,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     
     setState((prev) => ({
       ...prev,
-      coins: prev.coins - 100,
+      coins: prev.coins - 500,
       collection: tempCollection,
     }))
     
@@ -289,20 +288,27 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
-  const defeatBossRaid = useCallback(() => {
+  const defeatBossRaid = useCallback((bossId: number) => {
     setState((prev) => {
-      const existingCosmicHair = prev.collection.find((h) => h.id === BOSS_HAIR_ROOT.id)
+      const bossConfig = BOSS_RAID_CONFIGS[bossId]
+      if (!bossConfig) {
+        console.error(`Invalid boss ID: ${bossId}`)
+        return prev
+      }
+
+      const rewardHair = bossConfig.defeatReward.hairRoot
+      const existingBossHair = prev.collection.find((h) => h.id === rewardHair.id)
       let newCollection = [...prev.collection]
       
-      if (existingCosmicHair) {
+      if (existingBossHair) {
         newCollection = newCollection.map((h) =>
-          h.id === BOSS_HAIR_ROOT.id
+          h.id === rewardHair.id
             ? { ...h, count: h.count + 1 }
             : h
         )
       } else {
         const newHairRoot: CollectedHairRoot = {
-          ...BOSS_HAIR_ROOT,
+          ...rewardHair,
           level: 1,
           exp: 0,
           count: 1,
@@ -312,7 +318,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       return {
         ...prev,
-        coins: prev.coins + BOSS_RAID_CONFIG.defeatReward.coins,
+        coins: prev.coins + bossConfig.defeatReward.coins,
         collection: newCollection,
       }
     })
