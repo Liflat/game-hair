@@ -260,7 +260,10 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
       const target = allPlayers.find(p => p.id === selectedTarget)
 
       if (!currentPlayer || currentPlayer.isEliminated) return prev
-      if (!target || target.isEliminated) return prev
+      
+      // Only check target for skills that require one
+      const requiresTarget = selectedSkill.type === "attack" || selectedSkill.type === "dot" || selectedSkill.id === "end-world" || selectedSkill.id === "static-field" || selectedSkill.id === "entangle"
+      if (requiresTarget && (!target || target.isEliminated)) return prev
 
       // Helper function for element damage modifier
       const getElementDamageMod = (attackerHairRoot: HairRoot, defenderHairRoot: HairRoot): number => {
@@ -271,60 +274,64 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
 
       // Execute skill
       if (selectedSkill.type === "attack") {
-        const stats = getBattleStats(currentPlayer)
-        const totalPower = stats.power + currentPlayer.buffedStats.power
-        const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
-        if (triggerAllFather(currentPlayer, target)) {
-          return prev
-        }
-        let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
-        
-        const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
-        if (defBuff) {
-          damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
-        }
+        if (target && !target.isEliminated) {
+          const stats = getBattleStats(currentPlayer)
+          const totalPower = stats.power + currentPlayer.buffedStats.power
+          const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
+          if (triggerAllFather(currentPlayer, target)) {
+            return prev
+          }
+          let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
+          
+          const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+          if (defBuff) {
+            damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
+          }
 
-        target.hp = Math.max(0, target.hp - damage)
-        const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
-        setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${target.name}に${damage}ダメージ!${elementNote}`])
+          target.hp = Math.max(0, target.hp - damage)
+          const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${target.name}に${damage}ダメージ!${elementNote}`])
 
-        if (target.hp <= 0) {
-          target.isEliminated = true
-          setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
+          if (target.hp <= 0) {
+            target.isEliminated = true
+            setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
+          }
         }
       } else if (selectedSkill.type === "dot") {
         // DOT attack
-        const stats = getBattleStats(currentPlayer)
-        const totalPower = stats.power + currentPlayer.buffedStats.power
-        const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
-        if (triggerAllFather(currentPlayer, target)) {
-          return prev
-        }
-        let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
-        
-        const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
-        if (defBuff) {
-          damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
-        }
+        if (target && !target.isEliminated) {
+          const stats = getBattleStats(currentPlayer)
+          const totalPower = stats.power + currentPlayer.buffedStats.power
+          const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
+          if (triggerAllFather(currentPlayer, target)) {
+            return prev
+          }
+          let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100) * elementMod) * (0.9 + Math.random() * 0.2))
+          
+          const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+          if (defBuff) {
+            damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
+          }
 
-        target.hp = Math.max(0, target.hp - damage)
-        const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
-        setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${target.name}に${damage}ダメージ!${elementNote}`])
-        
-        // Apply DOT effect
-        if (selectedSkill.dotEffect) {
-          target.statusEffects.push({
-            type: "dot",
-            name: selectedSkill.dotEffect.name,
-            duration: selectedSkill.dotEffect.duration,
-            value: selectedSkill.dotEffect.damage
-          })
-          setBattleLog((logs) => [...logs, `${target.name}に${selectedSkill.dotEffect?.name}を付与! (${selectedSkill.dotEffect?.duration}ターン)`])
-        }
+          target.hp = Math.max(0, target.hp - damage)
+          const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
+          setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${target.name}に${damage}ダメージ!${elementNote}`])
+          
+          // Apply DOT effect
+          if (selectedSkill.dotEffect) {
+            target.statusEffects.push({
+              type: "dot",
+              name: selectedSkill.dotEffect.name,
+              duration: selectedSkill.dotEffect.duration,
+              value: selectedSkill.dotEffect.damage
+            })
+            setBattleLog((logs) => [...logs, `${target.name}に${selectedSkill.dotEffect?.name}を付与! (${selectedSkill.dotEffect?.duration}ターン)`])
+          }
 
-        if (target.hp <= 0) {
-          target.isEliminated = true
-          setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
+          if (target.hp <= 0) {
+            target.isEliminated = true
+            setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
+          }
         }
       } else if (selectedSkill.type === "defense") {
         // Apply skill bonus from training level
