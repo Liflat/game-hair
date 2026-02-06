@@ -36,6 +36,7 @@ const tutorials = [
       "☀️光 ⇔ 🌙闇：お互いに有利（1.3倍）",
       "✨神 → 🔥炎/💧水/🌪️風に有利（1.3倍）",
       "☀️光/🌙闇 → ✨神に有利（1.3倍）",
+      "◯無属性：他の属性補正を受けない（常に等倍）",
       "属性相性は攻撃・防御の両方に影響します"
     ]
   },
@@ -109,13 +110,13 @@ const tutorials = [
     id: "boss-raid",
     title: "魔王討伐",
     icon: "😈",
-    description: "ヘアグランドに挑戦",
+    description: "ボスを選んで挑戦",
     details: [
-      "5体のチームで超次元毛根魔王ヘアグランドと戦います",
+      "ボス選択で3体の魔王から挑戦できます",
       "通常攻撃・通常防御・スキルを使うターン制バトルです",
       "スキルにはCTがあり連発できません",
       "全員が倒れると敗北します",
-      "勝利するとヘアグランドが仲間に入ります"
+      "勝利すると対応するボス毛根が仲間に入ります"
     ]
   },
   {
@@ -224,7 +225,7 @@ export function TutorialScreen({ onNavigate }: TutorialScreenProps) {
                   "matchmaking": "matchmaking",
                   "battle-royale": "battle-royale",
                   "team-royale": "team-royale",
-                  "boss-raid": "boss-raid",
+                  "boss-raid": "boss-select",
                   "ranking": "ranking"
                 }
                 const screen = screenMap[selectedTutorial.id]

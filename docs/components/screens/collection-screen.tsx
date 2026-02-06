@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Check, X, Filter } from "lucide-react"
 
 const RARITY_ORDER: Record<Rarity, number> = {
+  master: 7,
   cosmic: 6,
   legendary: 5,
   epic: 4,
@@ -24,7 +25,7 @@ interface CollectionScreenProps {
   onNavigate: (screen: Screen) => void
 }
 
-const rarityFilters: (Rarity | "all")[] = ["all", "common", "uncommon", "rare", "epic", "legendary", "cosmic"]
+const rarityFilters: (Rarity | "all")[] = ["all", "common", "uncommon", "rare", "epic", "legendary", "cosmic", "master"]
 
 export function CollectionScreen({ onNavigate }: CollectionScreenProps) {
   const { collection, selectHairRoot, selectedHairRoot, evolveHairRoot, canEvolve } = useGame()
@@ -75,7 +76,7 @@ export function CollectionScreen({ onNavigate }: CollectionScreenProps) {
   const collectionProgress = {
     total: HAIR_ROOTS.length,
     collected: collection.length,
-    byRarity: (["common", "uncommon", "rare", "epic", "legendary", "cosmic"] as Rarity[]).map((rarity) => ({
+    byRarity: (["common", "uncommon", "rare", "epic", "legendary", "cosmic", "master"] as Rarity[]).map((rarity) => ({
       rarity,
       total: HAIR_ROOTS.filter((h) => h.rarity === rarity).length,
       collected: collection.filter((h) => h.rarity === rarity).length,
@@ -109,7 +110,7 @@ export function CollectionScreen({ onNavigate }: CollectionScreenProps) {
             style={{ width: `${(collectionProgress.collected / collectionProgress.total) * 100}%` }}
           />
         </div>
-        <div className="grid grid-cols-6 gap-1.5">
+        <div className="grid grid-cols-7 gap-1.5">
           {collectionProgress.byRarity.map(({ rarity, total, collected }) => (
             <div key={rarity} className="text-center">
               <div

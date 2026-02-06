@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { RARITY_COLORS, RARITY_NAMES, GACHA_HAIR_ROOTS, calculateStats, ELEMENT_NAMES, ELEMENT_COLORS, type CollectedHairRoot, type HairRoot } from "@/lib/game-data"
+import { RARITY_COLORS, RARITY_NAMES, GACHA_HAIR_ROOTS, calculateStats, ELEMENT_NAMES, ELEMENT_COLORS, ELEMENT_EMOJIS, type CollectedHairRoot, type HairRoot } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Coins } from "lucide-react"
@@ -160,7 +160,7 @@ export function GachaScreen({ onNavigate }: GachaScreenProps) {
                             className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[8px] flex items-center justify-center text-white font-bold"
                             style={{ backgroundColor: ELEMENT_COLORS[hr.element] }}
                           >
-                            {ELEMENT_NAMES[hr.element][0]}
+                            {ELEMENT_EMOJIS[hr.element]}
                           </span>
                         )}
                       </div>

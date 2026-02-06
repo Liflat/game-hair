@@ -1,6 +1,6 @@
 export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary" | "cosmic" | "master"
 
-export type Element = "fire" | "water" | "wind" | "light" | "dark" | "divine"
+export type Element = "fire" | "water" | "wind" | "light" | "dark" | "divine" | "neutral"
 
 export const ELEMENT_NAMES: Record<Element, string> = {
   fire: "炎",
@@ -9,6 +9,7 @@ export const ELEMENT_NAMES: Record<Element, string> = {
   light: "光",
   dark: "闇",
   divine: "神",
+  neutral: "無",
 }
 
 export const ELEMENT_COLORS: Record<Element, string> = {
@@ -18,6 +19,7 @@ export const ELEMENT_COLORS: Record<Element, string> = {
   light: "#FBBF24",
   dark: "#6B21A8",
   divine: "#F472B6",
+  neutral: "#9CA3AF",
 }
 
 export const ELEMENT_EMOJIS: Record<Element, string> = {
@@ -27,10 +29,12 @@ export const ELEMENT_EMOJIS: Record<Element, string> = {
   light: "sun",
   dark: "moon",
   divine: "star",
+  neutral: "◯",
 }
 
 // Element matchup: returns multiplier (1.3 = strong, 0.7 = weak, 1.0 = neutral)
 export function getElementMatchup(attacker: Element, defender: Element): number {
+  if (attacker === "neutral" || defender === "neutral") return 1.0
   // Fire > Wind, Water > Fire, Wind > Water
   if (attacker === "fire" && defender === "wind") return 1.3
   if (attacker === "water" && defender === "fire") return 1.3
@@ -134,6 +138,12 @@ export function getDefenseSkillEffect(skillId: string): DefenseSkillEffect {
   }
   if (skillId === "event-horizon") {
     return { reduction: 100, duration: 1, log: "イベントホライズン発動! 全攻撃無効化!" }
+  }
+  if (skillId === "emperor-barrier" || skillId === "emperor-barrier-raid") {
+    return { reduction: 85, duration: 2 }
+  }
+  if (skillId === "absolute-truth" || skillId === "absolute-truth-raid") {
+    return { reduction: 100, duration: 2 }
   }
   if (skillId === "demon-king-shell" || skillId === "demon-king-shell-raid") {
     return { reduction: 90, duration: 1 }
@@ -336,6 +346,16 @@ export const HAIR_ROOTS: HairRoot[] = [
     { id: "demon-king-shell", name: "魔王の外郭", description: "魔王の堅牢な外殻で身を守る。防御率90%", damage: 0, cooldown: 3, type: "defense" },
     { id: "absolute-zero", name: "アブソリュートゼロ", description: "全次元領域に絶対零度を撃ち込む。全体に威力100のダメージと全ステータス20%ダウン", damage: 100, cooldown: 5, type: "aoe", maxTargets: 99 }
   ]},
+  { id: 54, name: "恐皇アルマハゲドン", rarity: "cosmic", element: "divine", description: "終焉を司る恐怖の皇帝。灼熱の業火で全てを焼き尽くす", power: 120, speed: 90, grip: 110, emoji: "🔥", color: "#FF4500", skills: [
+    { id: "apocalypse-flame", name: "アポカリプスフレイム", description: "終末の炎で全てを焼き尽くす。威力180", damage: 180, cooldown: 4, type: "attack" },
+    { id: "emperor-barrier", name: "皇帝の障壁", description: "恐皇の威光で攻撃を遮断する。防御率85%（2ターン）", damage: 0, cooldown: 3, type: "defense" },
+    { id: "inferno-wave", name: "インフェルノウェーブ", description: "灼熱の波動で全体を攻撃。全体に威力120のダメージと継続炎上", damage: 120, cooldown: 5, type: "aoe", maxTargets: 99, dotEffect: { name: "炎上", damage: 30, duration: 3 } }
+  ]},
+  { id: 55, name: "真理のケ・ズァグ", rarity: "master", element: "neutral", description: "真理を司る究極存在。全ての理を超越し、絶対なる力を振るう", power: 150, speed: 120, grip: 140, emoji: "✨", color: "#00FFFF", skills: [
+    { id: "truth-annihilation", name: "真理の殲滅", description: "真理の力で対象を消滅させる。威力250", damage: 250, cooldown: 5, type: "attack" },
+    { id: "absolute-truth", name: "絶対真理", description: "真理の盾で全ての攻撃を無効化。防御率100%（2ターン）", damage: 0, cooldown: 4, type: "defense" },
+    { id: "reality-collapse", name: "現実崩壊", description: "現実を崩壊させ全体に壊滅的ダメージ。全体に威力180と全ステータス30%ダウン", damage: 180, cooldown: 6, type: "aoe", maxTargets: 99 }
+  ]},
 
   // Additional Common (5)
   { id: 33, name: "ねばねば毛根", rarity: "common", element: "water", description: "粘着質で離さない毛根", power: 9, speed: 10, grip: 18, emoji: "🍯", color: "#D97706", evolvesTo: 11, skills: [
@@ -524,7 +544,7 @@ export const BOSS_ARMAGEDDON: HairRoot = {
   id: 54,
   name: "恐皇アルマハゲドン",
   rarity: "cosmic",
-  element: "fire",
+  element: "divine",
   description: "終焉を司る恐怖の皇帝。灼熱の業火で全てを焼き尽くす",
   power: 120,
   speed: 90,
@@ -542,7 +562,7 @@ export const BOSS_KEZAG: HairRoot = {
   id: 55,
   name: "真理のケ・ズァグ",
   rarity: "master",
-  element: "divine",
+  element: "neutral",
   description: "真理を司る究極存在。全ての理を超越し、絶対なる力を振るう",
   power: 150,
   speed: 120,
@@ -684,7 +704,7 @@ export const BOSS_RAID_SKILLS_ARMAGEDDON: Skill[] = [
   { id: "normal-attack", name: "通常攻撃", description: "基本的な攻撃", damage: 60, cooldown: 1, type: "attack" },
   { id: "normal-defense", name: "通常防御", description: "基本的な防御態勢", damage: 0, cooldown: 1, type: "defense" },
   { id: "apocalypse-flame-raid", name: "アポカリプスフレイム", description: "終末の炎で全てを焼き尽くす", damage: 180, cooldown: 4, type: "attack" },
-  { id: "emperor-barrier-raid", name: "皇帝の障壁", description: "恐皇の威光で攻撃を遮断する", damage: 0, cooldown: 3, type: "defense" },
+  { id: "emperor-barrier-raid", name: "皇帝の障壁", description: "恐皇の威光で攻撃を遮断する（2ターン）", damage: 0, cooldown: 3, type: "defense" },
   { id: "inferno-wave-raid", name: "インフェルノウェーブ", description: "灼熱の波動で全体を攻撃", damage: 120, cooldown: 5, type: "aoe", maxTargets: 8, dotEffect: { name: "炎上", damage: 30, duration: 3 } }
 ]
 
@@ -692,8 +712,8 @@ export const BOSS_RAID_SKILLS_KEZAG: Skill[] = [
   { id: "normal-attack", name: "通常攻撃", description: "基本的な攻撃", damage: 80, cooldown: 1, type: "attack" },
   { id: "normal-defense", name: "通常防御", description: "基本的な防御態勢", damage: 0, cooldown: 1, type: "defense" },
   { id: "truth-annihilation-raid", name: "真理の殲滅", description: "真理の力で対象を消滅させる", damage: 250, cooldown: 5, type: "attack" },
-  { id: "absolute-truth-raid", name: "絶対真理", description: "真理の盾で全ての攻撃を無効化", damage: 0, cooldown: 4, type: "defense" },
-  { id: "reality-collapse-raid", name: "現実崩壊", description: "現実を崩壊させ全体に壊滅的ダメージ", damage: 180, cooldown: 6, type: "aoe", maxTargets: 8 }
+  { id: "absolute-truth-raid", name: "絶対真理", description: "真理の盾で全ての攻撃を無効化（2ターン）", damage: 0, cooldown: 4, type: "defense" },
+  { id: "reality-collapse-raid", name: "現実崩壊", description: "現実を崩壊させ全体に壊滅的ダメージと全ステータス30%ダウン", damage: 180, cooldown: 6, type: "aoe", maxTargets: 8 }
 ]
 
 // Legacy export for backwards compatibility

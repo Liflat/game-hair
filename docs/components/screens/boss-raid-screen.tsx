@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { motion } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, BOSS_HAIR_ROOTS, BOSS_RAID_CONFIGS, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getElementCombatModifiers, getDefenseSkillEffect, type HairRoot, type Skill, type CollectedHairRoot, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, BOSS_HAIR_ROOTS, BOSS_RAID_CONFIGS, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getElementCombatModifiers, getDefenseSkillEffect, type HairRoot, type Skill, type CollectedHairRoot, type Element, type Rarity } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -34,6 +34,16 @@ interface BattlePlayer {
   level: number
 }
 
+const RARITY_ORDER: Record<Rarity, number> = {
+  master: 7,
+  cosmic: 6,
+  legendary: 5,
+  epic: 4,
+  rare: 3,
+  uncommon: 2,
+  common: 1,
+}
+
 type BattlePhase = "preparation" | "selecting" | "action" | "finished"
 
 export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps) {
@@ -54,11 +64,38 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
   const [selectedTarget, setSelectedTarget] = useState<number | null>(null)
   const [battleLog, setBattleLog] = useState<string[]>([])
   const [isExecuting, setIsExecuting] = useState(false)
+  const [sortType, setSortType] = useState<"level" | "rarity" | "count">("level")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
 
   const boss = config.boss
   const bossSkills = config.skills
   const bossMaxHp = config.maxHp
   const canStartBattle = selectedTeam.length === 5
+
+  const sortedCollection = useMemo(() => {
+    const sorted = [...collection]
+    sorted.sort((a, b) => {
+      let comparison = 0
+      if (sortType === "level") {
+        comparison = a.level - b.level
+      } else if (sortType === "rarity") {
+        comparison = RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]
+      } else if (sortType === "count") {
+        comparison = a.count - b.count
+      }
+      return sortOrder === "asc" ? comparison : -comparison
+    })
+    return sorted
+  }, [collection, sortType, sortOrder])
+
+  const toggleSort = (type: "level" | "rarity" | "count") => {
+    if (sortType === type) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+    } else {
+      setSortType(type)
+      setSortOrder("desc")
+    }
+  }
 
   const handleTeamSelection = (hairRoot: CollectedHairRoot) => {
     if (selectedTeam.find(h => h.id === hairRoot.id && h.level === hairRoot.level)) {
@@ -905,6 +942,17 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
               : finalDamage
 
             target.hp = Math.max(0, target.hp - damageAfterDefense)
+
+            if (selectedBossSkill.id === "reality-collapse-raid") {
+              target.statusEffects.push({
+                type: "debuff",
+                name: "全ステータスダウン",
+                duration: 2,
+                value: 30,
+                stat: "all"
+              })
+              newLog.push(`${target.name}の全ステータスが30%ダウン!`)
+            }
             
             const defenseNote = defenseEffect ? ` (防御で${finalDamage - damageAfterDefense}軽減)` : ""
             newLog.push(`${target.name}に${damageAfterDefense}ダメージ!${defenseNote}`)
@@ -1055,8 +1103,34 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
             >
               <h3 className="font-bold mb-3">チーム選択 ({selectedTeam.length}/5)</h3>
               <p className="text-xs text-muted-foreground mb-2">※ 所有している毛根5体を選択</p>
+              <div className="flex gap-1 justify-end mb-2">
+                <Button
+                  variant={sortType === "level" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleSort("level")}
+                  className="text-xs h-7 px-2"
+                >
+                  Lv {sortType === "level" && (sortOrder === "asc" ? "↑" : "↓")}
+                </Button>
+                <Button
+                  variant={sortType === "rarity" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleSort("rarity")}
+                  className="text-xs h-7 px-2"
+                >
+                  レア {sortType === "rarity" && (sortOrder === "asc" ? "↑" : "↓")}
+                </Button>
+                <Button
+                  variant={sortType === "count" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleSort("count")}
+                  className="text-xs h-7 px-2"
+                >
+                  所持 {sortType === "count" && (sortOrder === "asc" ? "↑" : "↓")}
+                </Button>
+              </div>
               <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-                {collection.map((hair, idx) => (
+                {sortedCollection.map((hair, idx) => (
                   <button
                     key={`${hair.id}-${idx}`}
                     onClick={() => handleTeamSelection(hair)}

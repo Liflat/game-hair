@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, ELEMENT_EMOJIS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Users, Trophy } from "lucide-react"
@@ -1102,7 +1102,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                               className="w-4 h-4 rounded-full text-[8px] flex items-center justify-center text-white font-bold"
                               style={{ backgroundColor: ELEMENT_COLORS[member.hairRoot.element] }}
                             >
-                              {ELEMENT_NAMES[member.hairRoot.element][0]}
+                              {ELEMENT_EMOJIS[member.hairRoot.element]}
                             </span>
                           )}
                           <span className={`truncate ${!member.isNpc ? "text-primary font-bold" : "text-foreground"}`}>
