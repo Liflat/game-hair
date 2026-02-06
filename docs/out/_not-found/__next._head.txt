@@ -2,6 +2,6 @@
 2:I[9660,["/game-hair/_next/static/chunks/0a56d0bb321f5f46.js"],"ViewportBoundary"]
 4:I[9660,["/game-hair/_next/static/chunks/0a56d0bb321f5f46.js"],"MetadataBoundary"]
 5:"$Sreact.suspense"
-0:{"buildId":"e3ZdZ8AWO1VJ3pIqE5Q1S","rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"loading":null,"isPartial":false}
+0:{"buildId":"9X0AOAM4hqn4I3GBSabX3","rsc":["$","$1","h",{"children":[["$","meta",null,{"name":"robots","content":"noindex"}],["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"loading":null,"isPartial":false}
 3:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"}],["$","meta","2",{"name":"theme-color","content":"#1C1410"}]]
 6:[["$","title","0",{"children":"毛根伝説 | 抜いて育てて絡めて戦え"}],["$","meta","1",{"name":"description","content":"脱毛コインで毛根を引き抜き、育成して対戦する新感覚ガチャゲーム。51種類の毛根をコレクションしよう！伝説のコズミックレア「ゼウスの毛根」を手に入れろ！"}],["$","meta","2",{"name":"generator","content":"v0.app"}]]
