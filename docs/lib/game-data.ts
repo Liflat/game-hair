@@ -254,6 +254,11 @@ export const HAIR_ROOTS: HairRoot[] = [
     { id: "thousand-meteor", name: "サウザンドメテオ", description: "1000の隕石で敵全体を襲う", damage: 150, cooldown: 5, type: "aoe", maxTargets: 99 },
     { id: "end-world", name: "エンドワールド", description: "世界の終わりで敵一体を消滅させる", damage: 9999, cooldown: 7, type: "special" }
   ]},
+  { id: 53, name: "超次元毛根魔王ヘアグランド", rarity: "cosmic", element: "dark", description: "全次元を支配する究極の魔王。超次元の力で全てを従える", power: 100, speed: 100, grip: 100, emoji: "👑", color: "#FF1493", skills: [
+    { id: "ancient-chaos", name: "エンシェントカオス", description: "古代の混沌を解放する必殺攻撃。威力150", damage: 150, cooldown: 4, type: "attack" },
+    { id: "demon-king-shell", name: "魔王の外郭", description: "魔王の堅牢な外殻で身を守る。防御率90%", damage: 0, cooldown: 3, type: "defense" },
+    { id: "absolute-zero", name: "アブソリュートゼロ", description: "全次元領域に絶対零度を撃ち込む。全体に威力100のダメージと全ステータス20%ダウン", damage: 100, cooldown: 5, type: "aoe", maxTargets: 99 }
+  ]},
 
   // Additional Common (5)
   { id: 33, name: "ねばねば毛根", rarity: "common", element: "water", description: "粘着質で離さない毛根", power: 9, speed: 10, grip: 18, emoji: "🍯", color: "#D97706", evolvesTo: 11, skills: [
