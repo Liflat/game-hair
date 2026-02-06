@@ -346,6 +346,7 @@ export function ProfileScreen({ onNavigate }: ProfileScreenProps) {
               { name: "エピック", color: "#8B5CF6", count: collection.filter(h => h.rarity === "epic").length },
               { name: "レジェンド", color: "#F59E0B", count: collection.filter(h => h.rarity === "legendary").length },
               { name: "コズミック", color: "#FF1493", count: collection.filter(h => h.rarity === "cosmic").length },
+              { name: "マスター", color: "#00FFFF", count: collection.filter(h => h.rarity === "master").length },
             ].map((rarity) => (
               <div key={rarity.name} className="flex items-center gap-3">
                 <div 

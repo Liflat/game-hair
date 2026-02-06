@@ -295,7 +295,7 @@ export function CollectionScreen({ onNavigate }: CollectionScreenProps) {
                         className="px-3 py-1 rounded-full text-xs font-bold text-white"
                         style={{ backgroundColor: ELEMENT_COLORS[element] }}
                       >
-                        {ELEMENT_NAMES[element]}属性
+                        {element === "neutral" ? "◯" : `${ELEMENT_NAMES[element][0]}属性`}
                       </span>
                     </div>
                   )

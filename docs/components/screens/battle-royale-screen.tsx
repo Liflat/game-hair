@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, ELEMENT_EMOJIS, type HairRoot, type Skill, type Element, type CollectedHairRoot } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element, type CollectedHairRoot } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Trophy } from "lucide-react"
@@ -1278,7 +1278,9 @@ clearInterval(interval)
                             style={{ backgroundColor: ELEMENT_COLORS[player.hairRoot.element] }}
                             title={ELEMENT_NAMES[player.hairRoot.element]}
                           >
-                            {ELEMENT_EMOJIS[player.hairRoot.element]}
+                            {player.hairRoot.element === "neutral"
+                              ? "◯"
+                              : ELEMENT_NAMES[player.hairRoot.element][0]}
                           </span>
                         )}
                       </div>

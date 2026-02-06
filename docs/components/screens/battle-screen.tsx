@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { RARITY_COLORS, calculateStats, getRankColor, getRankCoinMultiplier, getElementMatchup, ELEMENT_NAMES, ELEMENT_COLORS, ELEMENT_EMOJIS, type HairRoot, type CollectedHairRoot, type Element } from "@/lib/game-data"
+import { RARITY_COLORS, calculateStats, getRankColor, getRankCoinMultiplier, getElementMatchup, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type CollectedHairRoot, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 
@@ -232,7 +232,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
                   className="absolute -top-2 -right-2 w-6 h-6 rounded-full text-[10px] flex items-center justify-center text-white font-bold"
                   style={{ backgroundColor: ELEMENT_COLORS[myElement] }}
                 >
-                  {ELEMENT_EMOJIS[myElement]}
+                  {myElement === "neutral" ? "◯" : ELEMENT_NAMES[myElement][0]}
                 </span>
               )}
             </motion.div>
@@ -273,7 +273,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
                   className="absolute -top-2 -left-2 w-6 h-6 rounded-full text-[10px] flex items-center justify-center text-white font-bold"
                   style={{ backgroundColor: ELEMENT_COLORS[oppElement] }}
                 >
-                  {ELEMENT_EMOJIS[oppElement]}
+                  {oppElement === "neutral" ? "◯" : ELEMENT_NAMES[oppElement][0]}
                 </span>
               )}
             </motion.div>
