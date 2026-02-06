@@ -41,24 +41,51 @@ const NPC_NAMES = [
   "抜け毛戦士", "毛母細胞Z", "ケラチン番長"
 ]
 
-function generateNpcPlayer(index: number, strengthMultiplier: number, rankTier: string): BattlePlayer {
-  // Select hair root based on rank
+function generateNpcPlayer(index: number, strengthMultiplier: number, rankInfo: { tier: string; points: number }): BattlePlayer {
+  // Select hair root based on rank tier and points
   const rarityPool: HairRoot[] = []
+  
+  // Determine rarity weights based on rank tier and points
+  let epicWeight = 1
+  let rareWeight = 1
+  let legendaryWeight = 1
+  
+  // Adjust weights based on rank
+  if (rankInfo.tier === "legend" || rankInfo.tier === "master") {
+    epicWeight = 5
+    rareWeight = 3
+    legendaryWeight = 3
+  } else if (rankInfo.tier === "diamond") {
+    epicWeight = 4
+    rareWeight = 2
+    legendaryWeight = 1
+  } else if (rankInfo.tier === "platinum") {
+    epicWeight = 3
+    rareWeight = 2
+    legendaryWeight = 1
+  } else if (rankInfo.tier === "gold") {
+    epicWeight = 2
+    rareWeight = 2
+    legendaryWeight = 0
+  } else if (rankInfo.tier === "silver") {
+    epicWeight = 2
+    rareWeight = 1
+    legendaryWeight = 0
+  }
+  
   HAIR_ROOTS.forEach((hr) => {
-    if (rankTier === "legend" || rankTier === "master") {
-      if (hr.rarity === "epic" || hr.rarity === "legendary") rarityPool.push(hr, hr, hr)
-      else if (hr.rarity === "rare") rarityPool.push(hr, hr)
-      else rarityPool.push(hr)
-    } else if (rankTier === "diamond" || rankTier === "platinum") {
-      if (hr.rarity === "rare" || hr.rarity === "epic") rarityPool.push(hr, hr, hr)
-      else if (hr.rarity === "uncommon") rarityPool.push(hr, hr)
-      else rarityPool.push(hr)
-    } else if (rankTier === "gold" || rankTier === "silver") {
-      if (hr.rarity === "uncommon" || hr.rarity === "rare") rarityPool.push(hr, hr)
-      else rarityPool.push(hr)
-    } else {
-      if (hr.rarity === "common" || hr.rarity === "uncommon") rarityPool.push(hr, hr, hr)
-      else rarityPool.push(hr)
+    if (hr.rarity === "legendary") {
+      for (let i = 0; i < legendaryWeight; i++) rarityPool.push(hr)
+    } else if (hr.rarity === "epic") {
+      for (let i = 0; i < epicWeight; i++) rarityPool.push(hr)
+    } else if (hr.rarity === "rare") {
+      for (let i = 0; i < rareWeight; i++) rarityPool.push(hr)
+    } else if (hr.rarity === "uncommon") {
+      rarityPool.push(hr)
+    } else if (hr.rarity === "common") {
+      rarityPool.push(hr)
+    } else if (hr.rarity === "cosmic" || hr.rarity === "master") {
+      if (rankInfo.points >= 2500) rarityPool.push(hr) // Only at legend level
     }
   })
   
@@ -180,7 +207,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
       level: selectedHairRoot.level,
     }
 
-    const npcs = Array.from({ length: 7 }, (_, i) => generateNpcPlayer(i, strengthMultiplier, currentRank.tier))
+    const npcs = Array.from({ length: 7 }, (_, i) => generateNpcPlayer(i, strengthMultiplier, { tier: currentRank.tier, points: currentRank.points }))
     setPlayers([myPlayer, ...npcs])
     setPhase("selecting")
     setIsExecuting(false)
@@ -211,7 +238,11 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               const skill = player.hairRoot.skills[Math.floor(Math.random() * 2)]
               
               if (skill.type === "attack" && skill.damage > 0) {
-                const damage = Math.floor(skill.damage * (0.8 + Math.random() * 0.4))
+                const stats = calculateStats({ ...player.hairRoot, level: player.level, exp: 0, count: 1 })
+                const buffedPower = stats.power + (player.buffedStats?.power || 0)
+                const skillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.level, exp: 0, count: 1 })
+                const baseDamage = Math.floor(skill.damage * skillBonus)
+                const damage = Math.floor(baseDamage * (1 + buffedPower / 100))
                 target.hp = Math.max(0, target.hp - damage)
                 setBattleLog((prev) => [...prev, `${player.name}の${skill.name}が${target.name}に${damage}ダメージ!`])
                 

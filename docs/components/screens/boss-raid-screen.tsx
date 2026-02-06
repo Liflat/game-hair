@@ -602,10 +602,8 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
           })
           newLog.push(`全知の力発動! 次の攻撃を完全回避+反撃準備!`)
         } else if (selectedSkill.id === "end-world") {
-          boss.hp = 0
-          boss.isEliminated = true
-          newLog.push(`${boss.name}は世界から消滅した!!`)
-          defeatBossRaid(bossId)
+          // エンドワールドはボスに対して無効
+          newLog.push(`${selectedSkill.name}が発動したが、${boss.name}の力の前に通じなかった!`) 
         } else {
           newLog.push(`${selectedSkill.name}発動!`)
         }
@@ -776,7 +774,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
               value: 100
             })
             newLog.push(`${ally.name}の${chosenSkill.name}で次の攻撃を完全に回避できる態勢を整えた!`)
-          } else if (chosenSkill.type === "attack" || chosenSkill.type === "aoe" || chosenSkill.type === "special") {
+          } else if (chosenSkill.type === "attack" || chosenSkill.type === "aoe") {
             const skillBonus = calculateSkillBonus({ ...ally.hairRoot, level: ally.level, exp: 0, count: 1 })
             const baseDamage = Math.floor((chosenSkill.damage || 0) * skillBonus)
             const label = chosenSkill.id === "normal-attack"
@@ -784,6 +782,19 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
               : `の${chosenSkill.name}が`
             if (!boss.isEliminated) {
               applyAttack(ally, boss, baseDamage, label)
+            }
+          } else if (chosenSkill.type === "special") {
+            // Special skills
+            if (chosenSkill.id === "end-world") {
+              // エンドワールドはボスに対して無効
+              newLog.push(`${ally.name}の${chosenSkill.name}が発動したが、${boss.name}の力の前に通じなかった!`)
+            } else {
+              const skillBonus = calculateSkillBonus({ ...ally.hairRoot, level: ally.level, exp: 0, count: 1 })
+              const baseDamage = Math.floor((chosenSkill.damage || 0) * skillBonus)
+              const label = `の${chosenSkill.name}が`
+              if (!boss.isEliminated) {
+                applyAttack(ally, boss, baseDamage, label)
+              }
             }
           }
 
@@ -865,7 +876,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
         } else {
           const stats = calculateStats(boss.hairRoot as unknown as CollectedHairRoot)
           const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
-          const skillBonus = calculateSkillBonus({ ...boss.hairRoot, level: 5, exp: 0, count: 1 })
+          const skillBonus = calculateSkillBonus({ ...boss.hairRoot, level: 8, exp: 0, count: 1 })
           const baseDamage = calculateNormalAttackDamage({ ...boss.hairRoot, level: boss.level, exp: 0, count: 1 } as CollectedHairRoot)
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
           const finalDamage = Math.floor(baseDamage * skillBonus * (1 + buffedPower / 250) * elementMod)

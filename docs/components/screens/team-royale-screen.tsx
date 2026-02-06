@@ -50,23 +50,50 @@ const NPC_NAMES = [
   "直毛勇者", "白髪賢者"
 ]
 
-function generateNpcPlayer(index: number, teamId: number, strengthMultiplier: number, rankTier: string): BattlePlayer {
+function generateNpcPlayer(index: number, teamId: number, strengthMultiplier: number, rankInfo: { tier: string; points: number }): BattlePlayer {
   const rarityPool: HairRoot[] = []
+  
+  // Determine rarity weights based on rank tier and points
+  let epicWeight = 1
+  let rareWeight = 1
+  let legendaryWeight = 1
+  
+  // Adjust weights based on rank
+  if (rankInfo.tier === "legend" || rankInfo.tier === "master") {
+    epicWeight = 5
+    rareWeight = 3
+    legendaryWeight = 3
+  } else if (rankInfo.tier === "diamond") {
+    epicWeight = 4
+    rareWeight = 2
+    legendaryWeight = 1
+  } else if (rankInfo.tier === "platinum") {
+    epicWeight = 3
+    rareWeight = 2
+    legendaryWeight = 1
+  } else if (rankInfo.tier === "gold") {
+    epicWeight = 2
+    rareWeight = 2
+    legendaryWeight = 0
+  } else if (rankInfo.tier === "silver") {
+    epicWeight = 2
+    rareWeight = 1
+    legendaryWeight = 0
+  }
+  
   HAIR_ROOTS.forEach((hr) => {
-    if (rankTier === "legend" || rankTier === "master") {
-      if (hr.rarity === "epic" || hr.rarity === "legendary") rarityPool.push(hr, hr, hr)
-      else if (hr.rarity === "rare") rarityPool.push(hr, hr)
-      else rarityPool.push(hr)
-    } else if (rankTier === "diamond" || rankTier === "platinum") {
-      if (hr.rarity === "rare" || hr.rarity === "epic") rarityPool.push(hr, hr, hr)
-      else if (hr.rarity === "uncommon") rarityPool.push(hr, hr)
-      else rarityPool.push(hr)
-    } else if (rankTier === "gold" || rankTier === "silver") {
-      if (hr.rarity === "uncommon" || hr.rarity === "rare") rarityPool.push(hr, hr)
-      else rarityPool.push(hr)
-    } else {
-      if (hr.rarity === "common" || hr.rarity === "uncommon") rarityPool.push(hr, hr, hr)
-      else rarityPool.push(hr)
+    if (hr.rarity === "legendary") {
+      for (let i = 0; i < legendaryWeight; i++) rarityPool.push(hr)
+    } else if (hr.rarity === "epic") {
+      for (let i = 0; i < epicWeight; i++) rarityPool.push(hr)
+    } else if (hr.rarity === "rare") {
+      for (let i = 0; i < rareWeight; i++) rarityPool.push(hr)
+    } else if (hr.rarity === "uncommon") {
+      rarityPool.push(hr)
+    } else if (hr.rarity === "common") {
+      rarityPool.push(hr)
+    } else if (hr.rarity === "cosmic" || hr.rarity === "master") {
+      if (rankInfo.points >= 2500) rarityPool.push(hr) // Only at legend level
     }
   })
   
@@ -227,14 +254,14 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
     
     // Add 2 allies to player's team
     for (let j = 0; j < 2; j++) {
-      newTeams[0].members.push(generateNpcPlayer(j, 0, strengthMultiplier, currentRank.tier))
+      newTeams[0].members.push(generateNpcPlayer(j, 0, strengthMultiplier, { tier: currentRank.tier, points: currentRank.points }))
     }
 
     // Add 3 NPCs to each other team
     let npcIndex = 2
     for (let i = 1; i < 4; i++) {
       for (let j = 0; j < 3; j++) {
-        newTeams[i].members.push(generateNpcPlayer(npcIndex++, i, strengthMultiplier, currentRank.tier))
+        newTeams[i].members.push(generateNpcPlayer(npcIndex++, i, strengthMultiplier, { tier: currentRank.tier, points: currentRank.points }))
       }
     }
 
