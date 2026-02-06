@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { RARITY_COLORS, RARITY_NAMES, LEVEL_UP_EXP, calculateStats, type CollectedHairRoot } from "@/lib/game-data"
+import { RARITY_COLORS, RARITY_NAMES, LEVEL_UP_EXP, calculateStats, type CollectedHairRoot, type Rarity } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Zap, Dumbbell, Sparkles, TrendingUp } from "lucide-react"
+import { ArrowLeft, Zap, Dumbbell, Sparkles, TrendingUp, ArrowUpDown } from "lucide-react"
 
 interface TrainingScreenProps {
   onNavigate: (screen: Screen) => void
@@ -18,6 +18,18 @@ const trainingMethods = [
   { id: "intense", name: "ハードトレーニング", exp: 120, cost: 40, icon: Sparkles, color: "bg-primary" },
 ]
 
+const RARITY_ORDER: Record<Rarity, number> = {
+  cosmic: 6,
+  legendary: 5,
+  epic: 4,
+  rare: 3,
+  uncommon: 2,
+  common: 1,
+}
+
+type SortType = "level" | "rarity" | "count"
+type SortOrder = "asc" | "desc"
+
 export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
   const { collection, coins, trainHairRoot, selectHairRoot, selectedHairRoot, addCoins } = useGame()
   const [selectedId, setSelectedId] = useState<number | null>(selectedHairRoot?.id ?? null)
@@ -25,9 +37,37 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
   const [showLevelUp, setShowLevelUp] = useState(false)
   const [prevLevel, setPrevLevel] = useState(0)
   const [selectedForTraining, setSelectedForTraining] = useState<CollectedHairRoot | null>(null)
+  const [sortType, setSortType] = useState<SortType>("level")
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc")
 
   // Always get fresh data from collection
   const currentData = selectedId ? collection.find((h) => h.id === selectedId) : null
+
+  // Sort collection
+  const sortedCollection = useMemo(() => {
+    const sorted = [...collection]
+    sorted.sort((a, b) => {
+      let comparison = 0
+      if (sortType === "level") {
+        comparison = a.level - b.level
+      } else if (sortType === "rarity") {
+        comparison = RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]
+      } else if (sortType === "count") {
+        comparison = a.count - b.count
+      }
+      return sortOrder === "asc" ? comparison : -comparison
+    })
+    return sorted
+  }, [collection, sortType, sortOrder])
+
+  const toggleSort = (type: SortType) => {
+    if (sortType === type) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+    } else {
+      setSortType(type)
+      setSortOrder("desc")
+    }
+  }
 
   const handleTrain = useCallback(
     async (method: (typeof trainingMethods)[0]) => {
@@ -216,11 +256,39 @@ export function TrainingScreen({ onNavigate }: TrainingScreenProps) {
 
         {/* Hair Root Selection */}
         <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">
-            毛根を選択 ({collection.length}体)
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              毛根を選択 ({collection.length}体)
+            </h3>
+            <div className="flex gap-1">
+              <Button
+                variant={sortType === "level" ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleSort("level")}
+                className="text-xs h-7 px-2"
+              >
+                Lv {sortType === "level" && (sortOrder === "asc" ? "↑" : "↓")}
+              </Button>
+              <Button
+                variant={sortType === "rarity" ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleSort("rarity")}
+                className="text-xs h-7 px-2"
+              >
+                レア {sortType === "rarity" && (sortOrder === "asc" ? "↑" : "↓")}
+              </Button>
+              <Button
+                variant={sortType === "count" ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleSort("count")}
+                className="text-xs h-7 px-2"
+              >
+                所持 {sortType === "count" && (sortOrder === "asc" ? "↑" : "↓")}
+              </Button>
+            </div>
+          </div>
           <div className="grid grid-cols-4 gap-2">
-            {collection.map((hairRoot) => (
+            {sortedCollection.map((hairRoot) => (
               <motion.button
                 key={hairRoot.id}
                 whileHover={{ scale: 1.05 }}

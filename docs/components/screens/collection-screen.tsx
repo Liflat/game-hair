@@ -1,12 +1,24 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
 import { HAIR_ROOTS, RARITY_COLORS, RARITY_NAMES, calculateStats, EVOLUTION_COST, ELEMENT_NAMES, ELEMENT_COLORS, type Rarity, type CollectedHairRoot } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Check, X, Filter } from "lucide-react"
+
+const RARITY_ORDER: Record<Rarity, number> = {
+  cosmic: 6,
+  legendary: 5,
+  epic: 4,
+  rare: 3,
+  uncommon: 2,
+  common: 1,
+}
+
+type SortType = "id" | "level" | "rarity" | "count"
+type SortOrder = "asc" | "desc"
 
 interface CollectionScreenProps {
   onNavigate: (screen: Screen) => void
@@ -20,10 +32,45 @@ export function CollectionScreen({ onNavigate }: CollectionScreenProps) {
   const [selectedDetail, setSelectedDetail] = useState<CollectedHairRoot | null>(null)
   const [showEvolution, setShowEvolution] = useState(false)
   const [evolvedResult, setEvolvedResult] = useState<CollectedHairRoot | null>(null)
+  const [sortType, setSortType] = useState<SortType>("id")
+  const [sortOrder, setSortOrder] = useState<SortOrder>("asc")
 
   const collectedIds = new Set(collection.map((h) => h.id))
 
-  const filteredHairRoots = HAIR_ROOTS.filter((h) => filter === "all" || h.rarity === filter)
+  const toggleSort = (type: SortType) => {
+    if (sortType === type) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+    } else {
+      setSortType(type)
+      setSortOrder("asc")
+    }
+  }
+
+  const filteredAndSortedHairRoots = useMemo(() => {
+    const filtered = HAIR_ROOTS.filter((h) => filter === "all" || h.rarity === filter)
+    const sorted = [...filtered]
+    sorted.sort((a, b) => {
+      const aCollected = collection.find(c => c.id === a.id)
+      const bCollected = collection.find(c => c.id === b.id)
+      
+      let comparison = 0
+      if (sortType === "id") {
+        comparison = a.id - b.id
+      } else if (sortType === "level") {
+        const aLevel = aCollected?.level || 0
+        const bLevel = bCollected?.level || 0
+        comparison = aLevel - bLevel
+      } else if (sortType === "rarity") {
+        comparison = RARITY_ORDER[a.rarity] - RARITY_ORDER[b.rarity]
+      } else if (sortType === "count") {
+        const aCount = aCollected?.count || 0
+        const bCount = bCollected?.count || 0
+        comparison = aCount - bCount
+      }
+      return sortOrder === "asc" ? comparison : -comparison
+    })
+    return sorted
+  }, [filter, collection, sortType, sortOrder])
 
   const collectionProgress = {
     total: HAIR_ROOTS.length,
@@ -78,9 +125,10 @@ export function CollectionScreen({ onNavigate }: CollectionScreenProps) {
       </div>
 
       {/* Filter */}
-      <div className="p-4 flex gap-2 overflow-x-auto">
-        <Filter className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-        {rarityFilters.map((r) => (
+      <div className="p-4 border-b border-border">
+        <div className="flex gap-2 overflow-x-auto mb-2">
+          <Filter className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+          {rarityFilters.map((r) => (
           <Button
             key={r}
             variant={filter === r ? "default" : "outline"}
@@ -96,12 +144,47 @@ export function CollectionScreen({ onNavigate }: CollectionScreenProps) {
             {r === "all" ? "すべて" : RARITY_NAMES[r]}
           </Button>
         ))}
+        </div>
+        <div className="flex gap-1 justify-end">
+          <Button
+            variant={sortType === "id" ? "default" : "outline"}
+            size="sm"
+            onClick={() => toggleSort("id")}
+            className="text-xs h-7 px-2"
+          >
+            ID {sortType === "id" && (sortOrder === "asc" ? "↑" : "↓")}
+          </Button>
+          <Button
+            variant={sortType === "level" ? "default" : "outline"}
+            size="sm"
+            onClick={() => toggleSort("level")}
+            className="text-xs h-7 px-2"
+          >
+            Lv {sortType === "level" && (sortOrder === "asc" ? "↑" : "↓")}
+          </Button>
+          <Button
+            variant={sortType === "rarity" ? "default" : "outline"}
+            size="sm"
+            onClick={() => toggleSort("rarity")}
+            className="text-xs h-7 px-2"
+          >
+            レア {sortType === "rarity" && (sortOrder === "asc" ? "↑" : "↓")}
+          </Button>
+          <Button
+            variant={sortType === "count" ? "default" : "outline"}
+            size="sm"
+            onClick={() => toggleSort("count")}
+            className="text-xs h-7 px-2"
+          >
+            所持 {sortType === "count" && (sortOrder === "asc" ? "↑" : "↓")}
+          </Button>
+        </div>
       </div>
 
       {/* Collection Grid */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
-          {filteredHairRoots.map((hairRoot, index) => {
+          {filteredAndSortedHairRoots.map((hairRoot, index) => {
             const collected = collection.find((h) => h.id === hairRoot.id)
             const isCollected = collectedIds.has(hairRoot.id)
 

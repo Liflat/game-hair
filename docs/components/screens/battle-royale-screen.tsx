@@ -246,8 +246,15 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 // NPC won, calculate player's final placement
                 const playerEliminatedIndex = prev.filter((p) => p.isEliminated).findIndex((p) => p.id === player.id)
                 const placement = 8 - playerEliminatedIndex
-setPlayerRank(placement)
-            }
+                setPlayerRank(placement)
+                // Coin rewards based on placement
+                const coinRewards: Record<number, number> = { 1: 500, 2: 300, 3: 150, 4: 80, 5: 50, 6: 30, 7: 15, 8: 5 }
+                setTimeout(() => {
+                  addCoins(coinRewards[placement] || 5)
+                  const change = updateRoyaleRank(placement)
+                  setRankChange(change)
+                }, 0)
+              }
             setIsExecuting(false)
             setPhase("finished")
           } else if (player?.isEliminated) {
@@ -921,11 +928,22 @@ setPlayerRank(placement)
             setWinner(alive[0])
             if (player && !player.isEliminated) {
               setPlayerRank(1)
-              // Delay coin update to avoid setState during render
-              setTimeout(() => addCoins(500), 0)
+              // Delay coin/rank update to avoid setState during render
+              setTimeout(() => {
+                addCoins(500)
+                const change = updateRoyaleRank(1)
+                setRankChange(change)
+              }, 0)
             } else {
               const eliminatedOrder = prev.filter((p) => p.isEliminated)
-              setPlayerRank(eliminatedOrder.length + 1)
+              const placement = eliminatedOrder.length + 1
+              setPlayerRank(placement)
+              const coinRewards: Record<number, number> = { 1: 500, 2: 300, 3: 150, 4: 80, 5: 50, 6: 30, 7: 15, 8: 5 }
+              setTimeout(() => {
+                addCoins(coinRewards[placement] || 5)
+                const change = updateRoyaleRank(placement)
+                setRankChange(change)
+              }, 0)
             }
             setIsExecuting(false)
             setPhase("finished")
