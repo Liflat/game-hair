@@ -766,20 +766,10 @@ export const BOSS_RAID_CONFIGS: Record<number, BossRaidConfig> = {
 // Legacy export
 export const BOSS_RAID_CONFIG = BOSS_RAID_CONFIGS[53]
 export function calculateSkillBonus(hairRoot: CollectedHairRoot): number {
-  // Skill effectiveness increases with level and rarity
+  // Skill effectiveness increases with level only (no rarity bonus)
   // Level bonus: 8% per level
-  // Rarity bonus: 1.0 to 1.3 (smaller than normal attack to keep balance)
   const levelBonus = 1 + (hairRoot.level - 1) * 0.08
-  const rarityMultiplier: Record<Rarity, number> = {
-    common: 1.0,
-    uncommon: 1.05,
-    rare: 1.1,
-    epic: 1.15,
-    legendary: 1.2,
-    cosmic: 1.3,
-    master: 1.5,
-  }
-  return levelBonus * rarityMultiplier[hairRoot.rarity]
+  return levelBonus
 }
 
 // Get rarity bonus multiplier
@@ -796,18 +786,16 @@ export function getRarityBonus(rarity: Rarity): number {
   return bonuses[rarity]
 }
 
-// Calculate normal attack damage based on level and rarity
+// Calculate normal attack damage based on level only (no rarity bonus)
 export function calculateNormalAttackDamage(hairRoot: CollectedHairRoot): number {
   const baseDamage = 15
   const levelBonus = 1 + (hairRoot.level - 1) * 0.15
-  const rarityBonus = getRarityBonus(hairRoot.rarity)
-  return Math.floor(baseDamage * levelBonus * rarityBonus)
+  return Math.floor(baseDamage * levelBonus)
 }
 
-// Calculate normal defense reduction based on level and rarity
+// Calculate normal defense reduction based on level only (no rarity bonus)
 export function calculateNormalDefenseReduction(hairRoot: CollectedHairRoot): number {
   const baseReduction = 15
   const levelBonus = 1 + (hairRoot.level - 1) * 0.15
-  const rarityBonus = getRarityBonus(hairRoot.rarity)
-  return Math.min(60, Math.floor(baseReduction * levelBonus * rarityBonus))
+  return Math.min(60, Math.floor(baseReduction * levelBonus))
 }

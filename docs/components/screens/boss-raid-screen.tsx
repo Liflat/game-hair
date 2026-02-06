@@ -848,7 +848,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
       
       const newLog: string[] = []
 
-      newLog.push(`ヘアグランドが「${selectedBossSkill.name}」を使用した！`)
+      newLog.push(`${boss.name}が「${selectedBossSkill.name}」を使用した！`)
 
       // Update cooldown for this skill
       if (selectedBossSkill.cooldown > 0) {
