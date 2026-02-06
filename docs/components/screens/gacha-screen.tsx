@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { RARITY_COLORS, RARITY_NAMES, HAIR_ROOTS, calculateStats, ELEMENT_NAMES, ELEMENT_COLORS, type CollectedHairRoot, type HairRoot } from "@/lib/game-data"
+import { RARITY_COLORS, RARITY_NAMES, GACHA_HAIR_ROOTS, calculateStats, ELEMENT_NAMES, ELEMENT_COLORS, type CollectedHairRoot, type HairRoot } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Coins } from "lucide-react"
@@ -25,8 +25,8 @@ export function GachaScreen({ onNavigate }: GachaScreenProps) {
   const [selectedDetail, setSelectedDetail] = useState<CollectedHairRoot | null>(null)
   const [pickupDetail, setPickupDetail] = useState<HairRoot | null>(null)
   
-  // Get legendary and cosmic hair roots for pickup display
-  const pickupHairRoots = HAIR_ROOTS.filter(hr => hr.rarity === "legendary" || hr.rarity === "cosmic")
+  // Get legendary and cosmic hair roots for pickup display (excluding boss-only)
+  const pickupHairRoots = GACHA_HAIR_ROOTS.filter(hr => hr.rarity === "legendary" || hr.rarity === "cosmic")
 
   const handlePull = useCallback(
     async (type: "single" | "ten") => {
