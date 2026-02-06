@@ -24,6 +24,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
   const [tangledAmount, setTangledAmount] = useState(0)
   const [pullProgress, setPullProgress] = useState(50)
   const [rankChange, setRankChange] = useState<number | null>(null)
+  const [acquiredExp, setAcquiredExp] = useState(0)
   const tapCountRef = useRef(0)
   const pullProgressRef = useRef(50)
   const battleTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -52,7 +53,19 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
       return
     }
 
-    // Intro phase
+    // Reset all battle state when opponent changes
+    setPhase("intro")
+    setPlayerPower(0)
+    setOpponentPower(0)
+    setResult(null)
+    setTangledAmount(0)
+    setPullProgress(50)
+    setRankChange(null)
+    setAcquiredExp(0)
+    tapCountRef.current = 0
+    pullProgressRef.current = 50
+
+    // Start intro phase
     const introTimer = setTimeout(() => {
       setPhase("tangling")
     }, 2000)
@@ -160,6 +173,7 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
     if (selectedHairRoot) {
       const expRewards = { win: 30, draw: 15, lose: 5 }
       const exp = expRewards[battleResult as keyof typeof expRewards] || 0
+      setAcquiredExp(exp)
       if (exp > 0) {
         trainHairRoot(selectedHairRoot.id, exp)
       }
@@ -436,6 +450,14 @@ export function BattleScreen({ onNavigate, opponent }: BattleScreenProps) {
                   className="text-muted-foreground mb-2"
                 >
                   獲得コイン: {displayedCoins}
+                </motion.p>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 }}
+                  className="text-accent mb-4"
+                >
+                  獲得経験値: {acquiredExp}
                 </motion.p>
                 {rankChange !== null && (
                   <motion.div

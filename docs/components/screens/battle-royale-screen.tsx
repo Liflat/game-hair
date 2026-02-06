@@ -103,6 +103,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
   const [playerRank, setPlayerRank] = useState<number>(0)
   const [rankChange, setRankChange] = useState<number | null>(null)
   const [isExecuting, setIsExecuting] = useState(false)
+  const [acquiredExp, setAcquiredExp] = useState(0)
   const logRef = useRef<HTMLDivElement>(null)
   const isExecutingRef = useRef(false)
   
@@ -283,8 +284,10 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                   addCoins(getRoyaleRewardCoins(1))
                   const change = updateRoyaleRank(1)
                   setRankChange(change)
+                  const exp = getRoyaleRewardExp(1)
+                  setAcquiredExp(exp)
                   if (selectedHairRoot) {
-                    trainHairRoot(selectedHairRoot.id, getRoyaleRewardExp(1))
+                    trainHairRoot(selectedHairRoot.id, exp)
                   }
                 }, 0)
               } else if (player) {
@@ -296,8 +299,10 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                   addCoins(getRoyaleRewardCoins(placement))
                   const change = updateRoyaleRank(placement)
                   setRankChange(change)
+                  const exp = getRoyaleRewardExp(placement)
+                  setAcquiredExp(exp)
                   if (selectedHairRoot) {
-                    trainHairRoot(selectedHairRoot.id, getRoyaleRewardExp(placement))
+                    trainHairRoot(selectedHairRoot.id, exp)
                   }
                 }, 0)
               }
@@ -954,8 +959,10 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 addCoins(getRoyaleRewardCoins(1))
                 const change = updateRoyaleRank(1)
                 setRankChange(change)
+                const exp = getRoyaleRewardExp(1)
+                setAcquiredExp(exp)
                 if (selectedHairRoot) {
-                  trainHairRoot(selectedHairRoot.id, getRoyaleRewardExp(1))
+                  trainHairRoot(selectedHairRoot.id, exp)
                 }
               }, 0)
             } else {
@@ -966,8 +973,10 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 addCoins(getRoyaleRewardCoins(placement))
                 const change = updateRoyaleRank(placement)
                 setRankChange(change)
+                const exp = getRoyaleRewardExp(placement)
+                setAcquiredExp(exp)
                 if (selectedHairRoot) {
-                  trainHairRoot(selectedHairRoot.id, getRoyaleRewardExp(placement))
+                  trainHairRoot(selectedHairRoot.id, exp)
                 }
               }, 0)
             }
@@ -1453,6 +1462,9 @@ clearInterval(interval)
 <p className="text-secondary mb-2">
                   +{getRoyaleRewardCoins(playerRank)}コイン獲得!
   </p>
+                <p className="text-accent mb-2">
+                  +{acquiredExp}経験値獲得!
+                </p>
                 {rankChange !== null && (
                   <div className="mb-4">
                     <span
@@ -1512,6 +1524,7 @@ clearInterval(interval)
               {!winner.isNpc && (
                 <>
                   <p className="text-xl text-secondary mt-4">+{getRoyaleRewardCoins(1)}コイン獲得!</p>
+                  <p className="text-accent mt-1">+{acquiredExp}経験値獲得!</p>
                   {rankChange !== null && (
                     <div className="mt-2">
                       <span

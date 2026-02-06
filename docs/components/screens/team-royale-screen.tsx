@@ -109,6 +109,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
   const [winningTeam, setWinningTeam] = useState<Team | null>(null)
   const [playerTeamRank, setPlayerTeamRank] = useState<number>(0)
   const [rankChange, setRankChange] = useState<number | null>(null)
+  const [acquiredExp, setAcquiredExp] = useState(0)
   const logRef = useRef<HTMLDivElement>(null)
   
   const currentRank = getTeamRoyaleRank()
@@ -787,7 +788,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             const change = updateTeamRoyaleRank(1)
             setRankChange(change)
             if (selectedHairRoot) {
-              trainHairRoot(selectedHairRoot.id, getTeamRoyaleRewardExp(1))
+              const exp = getTeamRoyaleRewardExp(1)
+              setAcquiredExp(exp)
+              trainHairRoot(selectedHairRoot.id, exp)
             }
           } else {
             // Calculate player team's placement
@@ -797,8 +800,10 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             addCoins(getTeamRoyaleRewardCoins(placement))
             const change = updateTeamRoyaleRank(placement)
             setRankChange(change)
+            const exp = getTeamRoyaleRewardExp(placement)
+            setAcquiredExp(exp)
             if (selectedHairRoot) {
-              trainHairRoot(selectedHairRoot.id, getTeamRoyaleRewardExp(placement))
+              trainHairRoot(selectedHairRoot.id, exp)
             }
           }
           setPhase("finished")
@@ -813,8 +818,10 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           addCoins(getTeamRoyaleRewardCoins(placement))
           const change = updateTeamRoyaleRank(placement)
           setRankChange(change)
+          const exp = getTeamRoyaleRewardExp(placement)
+          setAcquiredExp(exp)
           if (selectedHairRoot) {
-            trainHairRoot(selectedHairRoot.id, getTeamRoyaleRewardExp(placement))
+            trainHairRoot(selectedHairRoot.id, exp)
           }
           setPhase("result")
           return newTeams
@@ -1192,6 +1199,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                 <p className="text-secondary mb-2">
                   +{getTeamRoyaleRewardCoins(playerTeamRank)}コイン獲得!
                 </p>
+                <p className="text-accent mb-2">
+                  +{acquiredExp}経験値獲得!
+                </p>
                 {rankChange !== null && (
                   <div className="mb-4">
                     <span className="text-lg font-bold" style={{ color: getRankColor(currentRank.tier) }}>
@@ -1229,6 +1239,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
               {winningTeam.members.some(m => !m.isNpc) ? (
                 <>
                   <p className="text-xl text-secondary mt-4">+{getTeamRoyaleRewardCoins(1)}コイン獲得!</p>
+                  <p className="text-accent mt-1">+{acquiredExp}経験値獲得!</p>
                   {rankChange !== null && (
                     <div className="mt-2">
                       <span className="text-lg font-bold" style={{ color: getRankColor(currentRank.tier) }}>
@@ -1243,6 +1254,9 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                   <p className="text-muted-foreground">あなたのチーム順位: 第{playerTeamRank}位</p>
                   <p className="text-secondary mt-1">
                     +{getTeamRoyaleRewardCoins(playerTeamRank)}コイン獲得!
+                  </p>
+                  <p className="text-accent mt-1">
+                    +{acquiredExp}経験値獲得!
                   </p>
                   {rankChange !== null && (
                     <div className="mt-2">

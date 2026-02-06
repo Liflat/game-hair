@@ -67,7 +67,7 @@ function GameApp() {
         )}
         {currentScreen === "battle" && (
           <BattleScreen
-            key="battle"
+            key={`battle-${battleOpponent?.name || 'empty'}`}
             onNavigate={handleNavigate}
             opponent={battleOpponent}
           />
