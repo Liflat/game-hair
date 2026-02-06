@@ -281,6 +281,17 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
       // Execute skill
       if (selectedSkill.type === "attack") {
         if (target && !target.isEliminated) {
+          // Check if target has dodge preparation buff
+          const dodgePrep = target.statusEffects.find((e) => e.name === "回避準備")
+          if (dodgePrep) {
+            setBattleLog((logs) => [...logs, `${target.name}は${selectedSkill.name}を回避した!`])
+            dodgePrep.duration -= 1
+            if (dodgePrep.duration <= 0) {
+              target.statusEffects = target.statusEffects.filter((e) => e.name !== "回避準備")
+            }
+            return prev
+          }
+
           const stats = getBattleStats(currentPlayer)
           const totalPower = stats.power + currentPlayer.buffedStats.power
           const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
@@ -307,6 +318,17 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
       } else if (selectedSkill.type === "dot") {
         // DOT attack
         if (target && !target.isEliminated) {
+          // Check if target has dodge preparation buff
+          const dodgePrep = target.statusEffects.find((e) => e.name === "回避準備")
+          if (dodgePrep) {
+            setBattleLog((logs) => [...logs, `${target.name}は${selectedSkill.name}を回避した!`])
+            dodgePrep.duration -= 1
+            if (dodgePrep.duration <= 0) {
+              target.statusEffects = target.statusEffects.filter((e) => e.name !== "回避準備")
+            }
+            return prev
+          }
+
           const stats = getBattleStats(currentPlayer)
           const totalPower = stats.power + currentPlayer.buffedStats.power
           const elementMod = getElementDamageMod(currentPlayer.hairRoot, target.hairRoot)
@@ -377,6 +399,14 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             setBattleLog((logs) => [...logs, `${currentPlayer.name}の${selectedSkill.name}! ${finalDefenseValue}%ダメージ軽減!`])
           }
         }
+      } else if (selectedSkill.type === "dodge") {
+        // Player dodge skills (3 turns)
+        currentPlayer.statusEffects.push({
+          type: "buff",
+          name: "回避準備",
+          duration: 3
+        })
+        setBattleLog((logs) => [...logs, `${currentPlayer.name}が${selectedSkill.name}で攻撃を回避準備!`])
       } else if (selectedSkill.type === "aoe") {
         // AOE attack - hit multiple targets
         // Auto-target all enemies for full-party AOE (maxTargets >= 10)
@@ -399,20 +429,30 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
         const totalPower = stats.power + currentPlayer.buffedStats.power
         
         targets.forEach(t => {
-          if (triggerAllFather(currentPlayer, t)) {
-            return
-          }
-          let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
-          const defBuff = t.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
-          if (defBuff) damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
-          
-          t.hp = Math.max(0, t.hp - damage)
-          setBattleLog((logs) => [...logs, `${selectedSkill.name}が${t.name}に${damage}ダメージ!`])
-          
-          if (t.hp <= 0) {
-            t.isEliminated = true
-            t.eliminatedAt = round
-            setBattleLog((logs) => [...logs, `${t.name}が脱落!`])
+          // Check if target has dodge preparation buff
+          const dodgePrep = t.statusEffects.find((e) => e.name === "回避準備")
+          if (dodgePrep) {
+            setBattleLog((logs) => [...logs, `${t.name}は${selectedSkill.name}を回避した!`])
+            dodgePrep.duration -= 1
+            if (dodgePrep.duration <= 0) {
+              t.statusEffects = t.statusEffects.filter((e) => e.name !== "回避準備")
+            }
+          } else {
+            if (triggerAllFather(currentPlayer, t)) {
+              return
+            }
+            let damage = Math.floor((selectedSkill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
+            const defBuff = t.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+            if (defBuff) damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
+            
+            t.hp = Math.max(0, t.hp - damage)
+            setBattleLog((logs) => [...logs, `${selectedSkill.name}が${t.name}に${damage}ダメージ!`])
+            
+            if (t.hp <= 0) {
+              t.isEliminated = true
+              t.eliminatedAt = round
+              setBattleLog((logs) => [...logs, `${t.name}が脱落!`])
+            }
           }
         })
       } else if (selectedSkill.type === "team_heal") {
@@ -584,55 +624,75 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
           const target = enemyPlayers[Math.floor(Math.random() * enemyPlayers.length)]
 
           if (skill.type === "attack") {
-            const stats = getBattleStats(npc)
-            const totalPower = stats.power + npc.buffedStats.power
-            if (triggerAllFather(npc, target)) {
-              continue
-            }
-            let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
-            
-            const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
-            if (defBuff) {
-              damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
-            }
+            // Check if target has dodge preparation buff
+            const dodgePrep = target.statusEffects.find((e) => e.name === "回避準備")
+            if (dodgePrep) {
+              setBattleLog((logs) => [...logs, `${target.name}は${skill.name}を回避した!`])
+              dodgePrep.duration -= 1
+              if (dodgePrep.duration <= 0) {
+                target.statusEffects = target.statusEffects.filter((e) => e.name !== "回避準備")
+              }
+            } else {
+              const stats = getBattleStats(npc)
+              const totalPower = stats.power + npc.buffedStats.power
+              if (triggerAllFather(npc, target)) {
+                continue
+              }
+              let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
+              
+              const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+              if (defBuff) {
+                damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
+              }
 
-            target.hp = Math.max(0, target.hp - damage)
-            setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! ${target.name}に${damage}ダメージ!`])
+              target.hp = Math.max(0, target.hp - damage)
+              setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! ${target.name}に${damage}ダメージ!`])
 
-            if (target.hp <= 0) {
-              target.isEliminated = true
-              target.eliminatedAt = round
-              setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
+              if (target.hp <= 0) {
+                target.isEliminated = true
+                target.eliminatedAt = round
+                setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
+              }
             }
           } else if (skill.type === "dot") {
             // NPC DOT attack
-            const stats = getBattleStats(npc)
-            const totalPower = stats.power + npc.buffedStats.power
-            if (triggerAllFather(npc, target)) {
-              continue
-            }
-            let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
-            
-            const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
-            if (defBuff) damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
+            // Check if target has dodge preparation buff
+            const dodgePrep = target.statusEffects.find((e) => e.name === "回避準備")
+            if (dodgePrep) {
+              setBattleLog((logs) => [...logs, `${target.name}は${skill.name}を回避した!`])
+              dodgePrep.duration -= 1
+              if (dodgePrep.duration <= 0) {
+                target.statusEffects = target.statusEffects.filter((e) => e.name !== "回避準備")
+              }
+            } else {
+              const stats = getBattleStats(npc)
+              const totalPower = stats.power + npc.buffedStats.power
+              if (triggerAllFather(npc, target)) {
+                continue
+              }
+              let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
+              
+              const defBuff = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+              if (defBuff) damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
 
-            target.hp = Math.max(0, target.hp - damage)
-            setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! ${target.name}に${damage}ダメージ!`])
-            
-            if (skill.dotEffect) {
-              target.statusEffects.push({
-                type: "debuff",
-                name: skill.dotEffect.name,
-                duration: skill.dotEffect.duration,
-                value: skill.dotEffect.damage
-              })
-              setBattleLog((logs) => [...logs, `${target.name}に${skill.dotEffect?.name}を付与!`])
-            }
+              target.hp = Math.max(0, target.hp - damage)
+              setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! ${target.name}に${damage}ダメージ!`])
+              
+              if (skill.dotEffect) {
+                target.statusEffects.push({
+                  type: "debuff",
+                  name: skill.dotEffect.name,
+                  duration: skill.dotEffect.duration,
+                  value: skill.dotEffect.damage
+                })
+                setBattleLog((logs) => [...logs, `${target.name}に${skill.dotEffect?.name}を付与!`])
+              }
 
-            if (target.hp <= 0) {
-              target.isEliminated = true
-              target.eliminatedAt = round
-              setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
+              if (target.hp <= 0) {
+                target.isEliminated = true
+                target.eliminatedAt = round
+                setBattleLog((logs) => [...logs, `${target.name}が脱落!`])
+              }
             }
           } else if (skill.type === "aoe") {
             // NPC AOE attack - hit random enemies
@@ -642,20 +702,30 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
             const totalPower = stats.power + npc.buffedStats.power
             
             targets.forEach(t => {
-              if (triggerAllFather(npc, t)) {
-                return
-              }
-              let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
-              const defBuff = t.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
-              if (defBuff) damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
-              
-              t.hp = Math.max(0, t.hp - damage)
-              setBattleLog((logs) => [...logs, `${skill.name}が${t.name}に${damage}ダメージ!`])
-              
-              if (t.hp <= 0) {
-                t.isEliminated = true
-                t.eliminatedAt = round
-                setBattleLog((logs) => [...logs, `${t.name}が脱落!`])
+              // Check if target has dodge preparation buff
+              const dodgePrep = t.statusEffects.find((e) => e.name === "回避準備")
+              if (dodgePrep) {
+                setBattleLog((logs) => [...logs, `${t.name}は${skill.name}を回避した!`])
+                dodgePrep.duration -= 1
+                if (dodgePrep.duration <= 0) {
+                  t.statusEffects = t.statusEffects.filter((e) => e.name !== "回避準備")
+                }
+              } else {
+                if (triggerAllFather(npc, t)) {
+                  return
+                }
+                let damage = Math.floor((skill.damage * (1 + totalPower / 100)) * (0.9 + Math.random() * 0.2))
+                const defBuff = t.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
+                if (defBuff) damage = Math.floor(damage * (1 - (defBuff.value || 30) / 100))
+                
+                t.hp = Math.max(0, t.hp - damage)
+                setBattleLog((logs) => [...logs, `${skill.name}が${t.name}に${damage}ダメージ!`])
+                
+                if (t.hp <= 0) {
+                  t.isEliminated = true
+                  t.eliminatedAt = round
+                  setBattleLog((logs) => [...logs, `${t.name}が脱落!`])
+                }
               }
             })
           } else if (skill.type === "team_heal") {
@@ -702,6 +772,17 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
               } else {
                 setBattleLog((logs) => [...logs, `${npc.name}の${skill.name}! ${defenseValue}%ダメージ軽減!`])
               }
+            }
+          } else if (skill.type === "dodge") {
+            // NPC dodge skills (3 turns)
+            npc.statusEffects.push({
+              type: "buff",
+              name: "回避準備",
+              duration: 3
+            })
+            setBattleLog((logs) => [...logs, `${npc.name}が${skill.name}で攻撃を回避準備!`])
+            if (skill.cooldown > 0) {
+              npc.cooldowns[skill.id] = skill.cooldown
             }
           } else if (skill.type === "special") {
             // NPC special skills

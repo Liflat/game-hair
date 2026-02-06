@@ -1132,7 +1132,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                       }`}
                     >
                       <p className="font-medium">通常攻撃</p>
-                      <p className="text-muted-foreground text-xs">威力: 15</p>
+                      <p className="text-muted-foreground text-xs">威力: {calculateNormalAttackDamage(player.hairRoot as CollectedHairRoot)}</p>
                     </button>
 
                     {/* Normal Defense - always available */}
@@ -1148,7 +1148,7 @@ export function BossRaidScreen({ onNavigate }: BossRaidScreenProps) {
                       }`}
                     >
                       <p className="font-medium">通常防御</p>
-                      <p className="text-muted-foreground text-xs">軽減: 20%</p>
+                      <p className="text-muted-foreground text-xs">軽減: {calculateNormalDefenseReduction(player.hairRoot as CollectedHairRoot)}%</p>
                     </button>
                     {currentSkills.map((skill) => {
                       const onCooldown = (player.cooldowns[skill.id] || 0) > 0

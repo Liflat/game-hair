@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element, type CollectedHairRoot } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Trophy } from "lucide-react"
@@ -353,6 +353,17 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
       switch (selectedSkill.type) {
         case "attack": {
           if (target && !target.isEliminated) {
+            // Check if target has dodge preparation buff
+            const dodgePrep = target.statusEffects.find((e) => e.name === "回避準備")
+            if (dodgePrep) {
+              setBattleLog((prev) => [...prev, `${target.name}は${selectedSkill.name}を回避した!`])
+              dodgePrep.duration -= 1
+              if (dodgePrep.duration <= 0) {
+                target.statusEffects = target.statusEffects.filter((e) => e.name !== "回避準備")
+              }
+              break
+            }
+            
             if (triggerAllFather(player, target)) {
               break
             }
@@ -386,18 +397,28 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             const baseDamage = selectedSkill.damage
             
             targets.forEach((t) => {
-              if (triggerAllFather(player, t)) {
-                return
-              }
-              const elementMod = getElementDamageMod(player.hairRoot, t.hairRoot)
-              const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
-              t.hp = Math.max(0, t.hp - finalDamage)
-              const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
-              setBattleLog((prev) => [...prev, `${selectedSkill.name}が${t.name}に${finalDamage}ダメージ!${elementNote}`])
-              if (t.hp <= 0) {
-                t.isEliminated = true
-                t.eliminatedAt = round
-                setBattleLog((prev) => [...prev, `${t.name}が脱落!`])
+              // Check if target has dodge preparation buff
+              const dodgePrep = t.statusEffects.find((e) => e.name === "回避準備")
+              if (dodgePrep) {
+                setBattleLog((prev) => [...prev, `${t.name}は${selectedSkill.name}を回避した!`])
+                dodgePrep.duration -= 1
+                if (dodgePrep.duration <= 0) {
+                  t.statusEffects = t.statusEffects.filter((e) => e.name !== "回避準備")
+                }
+              } else {
+                if (triggerAllFather(player, t)) {
+                  return
+                }
+                const elementMod = getElementDamageMod(player.hairRoot, t.hairRoot)
+                const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+                t.hp = Math.max(0, t.hp - finalDamage)
+                const elementNote = elementMod > 1 ? " (属性有利!)" : elementMod < 1 ? " (属性不利)" : ""
+                setBattleLog((prev) => [...prev, `${selectedSkill.name}が${t.name}に${finalDamage}ダメージ!${elementNote}`])
+                if (t.hp <= 0) {
+                  t.isEliminated = true
+                  t.eliminatedAt = round
+                  setBattleLog((prev) => [...prev, `${t.name}が脱落!`])
+                }
               }
             })
           }
@@ -405,10 +426,8 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
         }
         case "team_heal": {
           // In solo mode, only heal self
-          // Apply skill bonus from training level
-          const healSkillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.hairRoot.level || 1, exp: 0, count: 1 })
           const baseHealPercent = selectedSkill.id === "olympus-blessing" ? 1.0 : 0.5
-          const healPercent = baseHealPercent * healSkillBonus
+          const healPercent = baseHealPercent
           const healAmount = Math.floor(player.maxHp * healPercent)
           player.hp = Math.min(player.maxHp, player.hp + healAmount)
           setBattleLog((prev) => [...prev, `${selectedSkill.name}でHP${healAmount}回復!`])
@@ -455,7 +474,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             finalDefenseValue = calculateNormalDefenseReduction(player.hairRoot as CollectedHairRoot)
           } else {
             const defenseEffect = getDefenseSkillEffect(selectedSkill.id)
-            finalDefenseValue = Math.min(100, Math.floor(defenseEffect.reduction * skillBonus))
+            finalDefenseValue = Math.min(100, defenseEffect.reduction)
           }
 
           player.statusEffects.push({
@@ -657,6 +676,18 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
           }
           break
         }
+        case "dodge": {
+          // Dodge skills - avoid next attack
+          const skillBonus = calculateSkillBonus({ ...player.hairRoot, level: player.hairRoot.level || 1, exp: 0, count: 1 })
+          const dodgeDuration = Math.floor(1 * skillBonus)
+          player.statusEffects.push({
+            type: "buff",
+            name: "回避準備",
+            duration: dodgeDuration
+          })
+          setBattleLog((prev) => [...prev, `${player.name}が${selectedSkill.name}で攻撃を回避準備!`])
+          break
+        }
       }
 
       // Update cooldowns
@@ -695,7 +726,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             const availableSkills = player.hairRoot.skills.filter(
               (s) => (player.cooldowns[s.id] || 0) <= 0
             )
-            const normalAtk = calculateNormalAttackDamage(player.hairRoot as CollectedHairRoot)
+            const normalAtk = calculateNormalAttackDamage({ ...player.hairRoot, level: 1, exp: 0, count: 1 })
             const skill = availableSkills.length > 0 
               ? availableSkills[Math.floor(Math.random() * availableSkills.length)]
               : { id: "normal-attack", name: "通常攻撃", damage: normalAtk, cooldown: 0, type: "attack" as const, description: "" }
@@ -705,18 +736,28 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
             const defenseReduction = defenseBonus ? (defenseBonus.value || 0) / 100 : 0
 
             if (skill.type === "attack" && skill.damage > 0) {
-              if (triggerAllFather(player, target)) {
-                return
-              }
-              const baseDamage = Math.floor(skill.damage * (0.8 + Math.random() * 0.4))
-              const damage = Math.floor(baseDamage * (1 - defenseReduction))
-              target.hp = Math.max(0, target.hp - damage)
-              setBattleLog((prev) => [...prev, `${player.name}の${skill.name}が${target.name}に${damage}ダメージ!`])
-              
-              if (target.hp <= 0) {
-                target.isEliminated = true
-                target.eliminatedAt = round
-                setBattleLog((prev) => [...prev, `${target.name}が脱落!`])
+              // Check if target has dodge preparation buff
+              const dodgePrep = target.statusEffects.find((e) => e.name === "回避準備")
+              if (dodgePrep) {
+                setBattleLog((prev) => [...prev, `${target.name}は${skill.name}を回避した!`])
+                dodgePrep.duration -= 1
+                if (dodgePrep.duration <= 0) {
+                  target.statusEffects = target.statusEffects.filter((e) => e.name !== "回避準備")
+                }
+              } else {
+                if (triggerAllFather(player, target)) {
+                  return
+                }
+                const baseDamage = Math.floor(skill.damage * (0.8 + Math.random() * 0.4))
+                const damage = Math.floor(baseDamage * (1 - defenseReduction))
+                target.hp = Math.max(0, target.hp - damage)
+                setBattleLog((prev) => [...prev, `${player.name}の${skill.name}が${target.name}に${damage}ダメージ!`])
+                
+                if (target.hp <= 0) {
+                  target.isEliminated = true
+                  target.eliminatedAt = round
+                  setBattleLog((prev) => [...prev, `${target.name}が脱落!`])
+                }
               }
               if (skill.cooldown > 0) {
                 player.cooldowns = {
@@ -816,30 +857,40 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               const enemies = alive.filter((p) => p.id !== player.id && !p.isEliminated)
               if (enemies.length > 0) {
                 const target = enemies[Math.floor(Math.random() * enemies.length)]
-                if (triggerAllFather(player, target)) {
-                  return
-                }
-                const baseDamage = Math.floor(skill.damage * (0.8 + Math.random() * 0.4))
-                const def = target.statusEffects.find((e) => e.name === "防御強化")
-                const reduction = def ? (def.value || 0) / 100 : 0
-                const dmg = Math.floor(baseDamage * (1 - reduction))
-                target.hp = Math.max(0, target.hp - dmg)
-                setBattleLog((prev) => [...prev, `${player.name}の${skill.name}が${target.name}に${dmg}ダメージ!`])
-                
-                if (skill.dotEffect) {
-                  target.statusEffects.push({
-                    type: "dot",
-                    name: skill.dotEffect.name,
-                    duration: skill.dotEffect.duration,
-                    value: skill.dotEffect.damage
-                  })
-                  setBattleLog((prev) => [...prev, `${target.name}に${skill.dotEffect?.name}を付与! (${skill.dotEffect?.duration}ターン)`])
-                }
-                
-                if (target.hp <= 0) {
-                  target.isEliminated = true
-                  target.eliminatedAt = round
-                  setBattleLog((prev) => [...prev, `${target.name}が脱落!`])
+                // Check if target has dodge preparation buff
+                const dodgePrep = target.statusEffects.find((e) => e.name === "回避準備")
+                if (dodgePrep) {
+                  setBattleLog((prev) => [...prev, `${target.name}は${skill.name}を回避した!`])
+                  dodgePrep.duration -= 1
+                  if (dodgePrep.duration <= 0) {
+                    target.statusEffects = target.statusEffects.filter((e) => e.name !== "回避準備")
+                  }
+                } else {
+                  if (triggerAllFather(player, target)) {
+                    return
+                  }
+                  const baseDamage = Math.floor(skill.damage * (0.8 + Math.random() * 0.4))
+                  const def = target.statusEffects.find((e) => e.name === "防御強化")
+                  const reduction = def ? (def.value || 0) / 100 : 0
+                  const dmg = Math.floor(baseDamage * (1 - reduction))
+                  target.hp = Math.max(0, target.hp - dmg)
+                  setBattleLog((prev) => [...prev, `${player.name}の${skill.name}が${target.name}に${dmg}ダメージ!`])
+                  
+                  if (skill.dotEffect) {
+                    target.statusEffects.push({
+                      type: "dot",
+                      name: skill.dotEffect.name,
+                      duration: skill.dotEffect.duration,
+                      value: skill.dotEffect.damage
+                    })
+                    setBattleLog((prev) => [...prev, `${target.name}に${skill.dotEffect?.name}を付与! (${skill.dotEffect?.duration}ターン)`])
+                  }
+                  
+                  if (target.hp <= 0) {
+                    target.isEliminated = true
+                    target.eliminatedAt = round
+                    setBattleLog((prev) => [...prev, `${target.name}が脱落!`])
+                  }
                 }
               }
               if (skill.cooldown > 0) {
@@ -856,18 +907,28 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
               const baseDamage = Math.floor(skill.damage * (0.8 + Math.random() * 0.4))
               
               aoeTargets.forEach((t) => {
-                if (triggerAllFather(player, t)) {
-                  return
-                }
-                const def = t.statusEffects.find((e) => e.name === "防御強化")
-                const reduction = def ? (def.value || 0) / 100 : 0
-                const dmg = Math.floor(baseDamage * (1 - reduction))
-                t.hp = Math.max(0, t.hp - dmg)
-                setBattleLog((prev) => [...prev, `${skill.name}が${t.name}に${dmg}ダメージ!`])
-                if (t.hp <= 0) {
-                  t.isEliminated = true
-                  t.eliminatedAt = round
-                  setBattleLog((prev) => [...prev, `${t.name}が脱落!`])
+                // Check if target has dodge preparation buff
+                const dodgePrep = t.statusEffects.find((e) => e.name === "回避準備")
+                if (dodgePrep) {
+                  setBattleLog((prev) => [...prev, `${t.name}は${skill.name}を回避した!`])
+                  dodgePrep.duration -= 1
+                  if (dodgePrep.duration <= 0) {
+                    t.statusEffects = t.statusEffects.filter((e) => e.name !== "回避準備")
+                  }
+                } else {
+                  if (triggerAllFather(player, t)) {
+                    return
+                  }
+                  const def = t.statusEffects.find((e) => e.name === "防御強化")
+                  const reduction = def ? (def.value || 0) / 100 : 0
+                  const dmg = Math.floor(baseDamage * (1 - reduction))
+                  t.hp = Math.max(0, t.hp - dmg)
+                  setBattleLog((prev) => [...prev, `${skill.name}が${t.name}に${dmg}ダメージ!`])
+                  if (t.hp <= 0) {
+                    t.isEliminated = true
+                    t.eliminatedAt = round
+                    setBattleLog((prev) => [...prev, `${t.name}が脱落!`])
+                  }
                 }
               })
               if (skill.cooldown > 0) {
@@ -894,11 +955,22 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                 duration: defenseEffect.duration,
                 value: defenseEffect.reduction
               })
-              if (defenseEffect.log) {
-                setBattleLog((prev) => [...prev, defenseEffect.log])
-              } else {
-                setBattleLog((prev) => [...prev, `${player.name}は${skill.name}で防御!`])
+              const logMessage = defenseEffect.log || `${player.name}は${skill.name}で防御!`
+              setBattleLog((prev) => [...prev, logMessage])
+              if (skill.cooldown > 0) {
+                player.cooldowns = {
+                  ...player.cooldowns,
+                  [skill.id]: skill.cooldown
+                }
               }
+            } else if (skill.type === "dodge") {
+              // NPC dodge skills (3 turns)
+              player.statusEffects.push({
+                type: "buff",
+                name: "回避準備",
+                duration: 3
+              })
+              setBattleLog((prev) => [...prev, `${player.name}が${skill.name}で攻撃を回避準備!`])
               if (skill.cooldown > 0) {
                 player.cooldowns = {
                   ...player.cooldowns,
@@ -1286,7 +1358,7 @@ clearInterval(interval)
                     <Button
                       variant={selectedSkill?.id === "normal-attack" ? "default" : "outline"}
                       onClick={() => {
-                        const normalAtkDamage = calculateNormalAttackDamage(myPlayer.hairRoot as CollectedHairRoot)
+                        const normalAtkDamage = calculateNormalAttackDamage({ ...myPlayer.hairRoot, level: 1, exp: 0, count: 1 })
                         setSelectedSkill({
                           id: "normal-attack",
                           name: "通常攻撃",
@@ -1304,14 +1376,14 @@ clearInterval(interval)
                         <Swords className="w-4 h-4" />
                         <span className="font-medium text-sm">通常攻撃</span>
                       </div>
-                      <span className="text-xs text-muted-foreground mt-1">威力: {calculateNormalAttackDamage(myPlayer.hairRoot as CollectedHairRoot)}</span>
+                      <span className="text-xs text-muted-foreground mt-1">威力: {calculateNormalAttackDamage({ ...myPlayer.hairRoot, level: 1, exp: 0, count: 1 })}</span>
                     </Button>
                     
                     {/* Normal Defense - always available */}
                     <Button
                       variant={selectedSkill?.id === "normal-defense" ? "default" : "outline"}
                       onClick={() => {
-                        const normalDefReduction = calculateNormalDefenseReduction(myPlayer.hairRoot as CollectedHairRoot)
+                        const normalDefReduction = calculateNormalDefenseReduction({ ...myPlayer.hairRoot, level: 1, exp: 0, count: 1 })
                         setSelectedSkill({
                           id: "normal-defense",
                           name: "通常防御",
@@ -1329,7 +1401,7 @@ clearInterval(interval)
                         <Shield className="w-4 h-4" />
                         <span className="font-medium text-sm">通常防御</span>
                       </div>
-                      <span className="text-xs text-muted-foreground mt-1">軽減: {calculateNormalDefenseReduction(myPlayer.hairRoot as CollectedHairRoot)}%</span>
+                      <span className="text-xs text-muted-foreground mt-1">軽減: {calculateNormalDefenseReduction({ ...myPlayer.hairRoot, level: 1, exp: 0, count: 1 })}%</span>
                     </Button>
                     
                     {/* Skills */}
