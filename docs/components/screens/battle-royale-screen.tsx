@@ -275,11 +275,6 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                   addCoins(getRoyaleRewardCoins(1))
                   const change = updateRoyaleRank(1)
                   setRankChange(change)
-                  const exp = getRoyaleRewardExp(1)
-                  setAcquiredExp(exp)
-                  if (selectedHairRoot) {
-                    trainHairRoot(selectedHairRoot.id, exp)
-                  }
                 }, 0)
               } else if (player) {
                 // NPC won, calculate player's final placement
@@ -290,11 +285,6 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
                   addCoins(getRoyaleRewardCoins(placement))
                   const change = updateRoyaleRank(placement)
                   setRankChange(change)
-                  const exp = getRoyaleRewardExp(placement)
-                  setAcquiredExp(exp)
-                  if (selectedHairRoot) {
-                    trainHairRoot(selectedHairRoot.id, exp)
-                  }
                 }, 0)
               }
             setIsExecuting(false)
@@ -1437,11 +1427,8 @@ clearInterval(interval)
               <div className="text-center">
                 <h2 className="text-3xl font-bold text-destructive mb-4">脱落...</h2>
                 <p className="text-xl text-foreground mb-2">第{playerRank}位</p>
-<p className="text-secondary mb-2">
+                <p className="text-secondary mb-2">
                   +{getRoyaleRewardCoins(playerRank)}コイン獲得!
-  </p>
-                <p className="text-accent mb-2">
-                  +{acquiredExp}経験値獲得!
                 </p>
                 {rankChange !== null && (
                   <div className="mb-4">
@@ -1502,7 +1489,6 @@ clearInterval(interval)
               {!winner.isNpc && (
                 <>
                   <p className="text-xl text-secondary mt-4">+{getRoyaleRewardCoins(1)}コイン獲得!</p>
-                  <p className="text-accent mt-1">+{acquiredExp}経験値獲得!</p>
                   {rankChange !== null && (
                     <div className="mt-2">
                       <span

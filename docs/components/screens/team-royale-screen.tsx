@@ -1178,9 +1178,6 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                 <p className="text-secondary mb-2">
                   +{getTeamRoyaleRewardCoins(playerTeamRank)}コイン獲得!
                 </p>
-                <p className="text-accent mb-2">
-                  +{acquiredExp}経験値獲得!
-                </p>
                 {rankChange !== null && (
                   <div className="mb-4">
                     <span className="text-lg font-bold" style={{ color: getRankColor(currentRank.tier) }}>
@@ -1218,7 +1215,6 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
               {winningTeam.members.some(m => !m.isNpc) ? (
                 <>
                   <p className="text-xl text-secondary mt-4">+{getTeamRoyaleRewardCoins(1)}コイン獲得!</p>
-                  <p className="text-accent mt-1">+{acquiredExp}経験値獲得!</p>
                   {rankChange !== null && (
                     <div className="mt-2">
                       <span className="text-lg font-bold" style={{ color: getRankColor(currentRank.tier) }}>
@@ -1233,9 +1229,6 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                   <p className="text-muted-foreground">あなたのチーム順位: 第{playerTeamRank}位</p>
                   <p className="text-secondary mt-1">
                     +{getTeamRoyaleRewardCoins(playerTeamRank)}コイン獲得!
-                  </p>
-                  <p className="text-accent mt-1">
-                    +{acquiredExp}経験値獲得!
                   </p>
                   {rankChange !== null && (
                     <div className="mt-2">
