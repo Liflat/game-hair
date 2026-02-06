@@ -74,7 +74,7 @@ function generateNpcPlayer(index: number, strengthMultiplier: number, rankTier: 
   
   const npcLevel = Math.floor(Math.random() * 5) + 1
   const stats = calculateStats({ ...scaledHairRoot, level: npcLevel, exp: 0, count: 1 })
-  const maxHp = Math.floor((100 + stats.power + stats.grip) * strengthMultiplier)
+  const maxHp = Math.floor((300 + stats.power + stats.grip) * strengthMultiplier)
 
   return {
     id: index + 100,
@@ -162,7 +162,7 @@ export function BattleRoyaleScreen({ onNavigate }: BattleRoyaleScreenProps) {
     if (!selectedHairRoot) return
 
     const stats = calculateStats(selectedHairRoot)
-    const maxHp = 100 + stats.power + stats.grip
+    const maxHp = 300 + stats.power + stats.grip
 
     const myPlayer: BattlePlayer = {
       id: 0,
