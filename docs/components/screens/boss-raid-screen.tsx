@@ -621,8 +621,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
               healAmount = Math.floor(ally.maxHp * 0.5 * skillBonus)
             } else {
               // olympus-blessing fully recovers HP
-              const baseHeal = selectedSkill.damage || 50
-              healAmount = Math.floor(baseHeal * skillBonus)
+              healAmount = ally.maxHp
             }
             ally.hp = Math.min(ally.maxHp, ally.hp + healAmount)
           })
@@ -712,8 +711,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
                   healAmount = Math.floor(allyTarget.maxHp * 0.5)
                 } else {
                   // olympus-blessing fully recovers HP
-                  const baseHeal = chosenSkill.damage || 50
-                  healAmount = baseHeal
+                  healAmount = allyTarget.maxHp
                 }
                 allyTarget.hp = Math.min(allyTarget.maxHp, allyTarget.hp + healAmount)
               })
@@ -879,7 +877,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
           const skillBonus = calculateSkillBonus({ ...boss.hairRoot, level: 8, exp: 0, count: 1 })
           const baseDamage = calculateNormalAttackDamage({ ...boss.hairRoot, level: boss.level, exp: 0, count: 1 } as CollectedHairRoot)
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
-          const finalDamage = Math.floor(baseDamage * skillBonus * (1 + buffedPower / 100) * elementMod)
+          const finalDamage = Math.floor(baseDamage * skillBonus * (1 + buffedPower / 100) * elementMod * 1.5)
           
           const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
           const damageAfterDefense = defenseEffect?.value 
@@ -917,7 +915,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
           const skillBonus = calculateSkillBonus({ ...boss.hairRoot, level: boss.level, exp: 0, count: 1 })
           const baseDamage = Math.floor((selectedBossSkill.damage || 0) * skillBonus)
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
-          const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+          const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod * 1.5)
           
           const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
           const damageAfterDefense = defenseEffect?.value 
@@ -944,7 +942,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
             const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
             const baseDamage = selectedBossSkill.damage || 0
             const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
-            const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod)
+            const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod * 1.5)
             
             const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
             const damageAfterDefense = defenseEffect?.value 
