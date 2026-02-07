@@ -879,7 +879,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
           const skillBonus = calculateSkillBonus({ ...boss.hairRoot, level: 8, exp: 0, count: 1 })
           const baseDamage = calculateNormalAttackDamage({ ...boss.hairRoot, level: boss.level, exp: 0, count: 1 } as CollectedHairRoot)
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
-          const finalDamage = Math.floor(baseDamage * skillBonus * (1 + buffedPower / 250) * elementMod)
+          const finalDamage = Math.floor(baseDamage * skillBonus * (1 + buffedPower / 100) * elementMod)
           
           const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
           const damageAfterDefense = defenseEffect?.value 
