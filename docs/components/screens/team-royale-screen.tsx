@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateMaxHp, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Users, Trophy } from "lucide-react"
@@ -56,28 +56,31 @@ function generateNpcPlayer(index: number, teamId: number, strengthMultiplier: nu
   // Determine rarity weights based on rank tier and points
   let epicWeight = 1
   let rareWeight = 1
-  let legendaryWeight = 1
+  let legendaryWeight = 0
+  let cosmicMasterWeight = 0
   
   // Adjust weights based on rank
   if (rankInfo.tier === "legend" || rankInfo.tier === "master") {
-    epicWeight = 5
+    epicWeight = 10
+    rareWeight = 5
+    legendaryWeight = 10
+    cosmicMasterWeight = rankInfo.points >= 2500 ? 8 : 0
+  } else if (rankInfo.tier === "diamond") {
+    epicWeight = 8
+    rareWeight = 4
+    legendaryWeight = 5
+    cosmicMasterWeight = rankInfo.points >= 2500 ? 3 : 0
+  } else if (rankInfo.tier === "platinum") {
+    epicWeight = 6
     rareWeight = 3
     legendaryWeight = 3
-  } else if (rankInfo.tier === "diamond") {
+  } else if (rankInfo.tier === "gold") {
     epicWeight = 4
-    rareWeight = 2
+    rareWeight = 3
     legendaryWeight = 1
-  } else if (rankInfo.tier === "platinum") {
+  } else if (rankInfo.tier === "silver") {
     epicWeight = 3
     rareWeight = 2
-    legendaryWeight = 1
-  } else if (rankInfo.tier === "gold") {
-    epicWeight = 2
-    rareWeight = 2
-    legendaryWeight = 0
-  } else if (rankInfo.tier === "silver") {
-    epicWeight = 2
-    rareWeight = 1
     legendaryWeight = 0
   }
   
@@ -93,26 +96,39 @@ function generateNpcPlayer(index: number, teamId: number, strengthMultiplier: nu
     } else if (hr.rarity === "common") {
       rarityPool.push(hr)
     } else if (hr.rarity === "cosmic" || hr.rarity === "master") {
-      if (rankInfo.points >= 2500) rarityPool.push(hr) // Only at legend level
+      for (let i = 0; i < cosmicMasterWeight; i++) rarityPool.push(hr)
     }
   })
   
   const baseHairRoot = rarityPool[Math.floor(Math.random() * rarityPool.length)]
-  const scaledHairRoot: HairRoot = {
-    ...baseHairRoot,
-    power: Math.floor(baseHairRoot.power * strengthMultiplier),
-    speed: Math.floor(baseHairRoot.speed * strengthMultiplier),
-    grip: Math.floor(baseHairRoot.grip * strengthMultiplier),
+  
+  // Determine level range based on rank
+  let minLevel = 1
+  let maxLevel = 5
+  if (rankInfo.tier === "legend" || rankInfo.tier === "master") {
+    minLevel = 8
+    maxLevel = 10
+  } else if (rankInfo.tier === "diamond") {
+    minLevel = 6
+    maxLevel = 10
+  } else if (rankInfo.tier === "platinum") {
+    minLevel = 4
+    maxLevel = 8
+  } else if (rankInfo.tier === "gold") {
+    minLevel = 3
+    maxLevel = 7
+  } else if (rankInfo.tier === "silver") {
+    minLevel = 2
+    maxLevel = 6
   }
   
-  const npcLevel = Math.floor(Math.random() * 5) + 1
-  const stats = calculateStats({ ...scaledHairRoot, level: npcLevel, exp: 0, count: 1 })
-  const maxHp = Math.floor((500 + stats.power + stats.grip) * strengthMultiplier)
+  const npcLevel = Math.floor(Math.random() * (maxLevel - minLevel + 1)) + minLevel
+  const maxHp = calculateMaxHp({ ...baseHairRoot, level: npcLevel, exp: 0, count: 1 })
 
   return {
     id: index + 100,
     name: NPC_NAMES[index % NPC_NAMES.length],
-    hairRoot: scaledHairRoot,
+    hairRoot: baseHairRoot,
     level: npcLevel,
     hp: maxHp,
     maxHp,
@@ -220,8 +236,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
   const startBattle = useCallback(() => {
     if (!selectedHairRoot) return
 
-    const stats = calculateStats(selectedHairRoot)
-    const maxHp = 500 + stats.power + stats.grip
+    const maxHp = calculateMaxHp(selectedHairRoot)
 
     // Create player
     const playerChar: BattlePlayer = {
@@ -1131,7 +1146,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                             </span>
                           )}
                           <span className={`truncate ${!member.isNpc ? "text-primary font-bold" : "text-foreground"}`}>
-                            {member.name}
+                            {member.name} Lv.{member.level}
                           </span>
                           <span className="ml-auto text-muted-foreground">{member.hp}/{member.maxHp}</span>
                         </div>
@@ -1325,7 +1340,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                             <div className="text-center w-full">
                               <div className="text-lg">{enemy.hairRoot.emoji}</div>
                               <p className="text-xs truncate">{enemy.name}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{enemy.hairRoot.name}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">{enemy.hairRoot.name} Lv.{enemy.level}</p>
                               <p className="text-xs text-muted-foreground">{enemy.hp}HP</p>
                             </div>
                           </Button>
@@ -1358,7 +1373,7 @@ export function TeamRoyaleScreen({ onNavigate }: TeamRoyaleScreenProps) {
                             <div className="text-center w-full">
                               <div className="text-lg">{enemy.hairRoot.emoji}</div>
                               <p className="text-xs truncate">{enemy.name}</p>
-                              <p className="text-[10px] text-muted-foreground truncate">{enemy.hairRoot.name}</p>
+                              <p className="text-[10px] text-muted-foreground truncate">{enemy.hairRoot.name} Lv.{enemy.level}</p>
                               <p className="text-xs text-muted-foreground">{enemy.hp}HP</p>
                             </div>
                           </Button>

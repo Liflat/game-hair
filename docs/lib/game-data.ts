@@ -680,6 +680,27 @@ export function calculateStats(hairRoot: CollectedHairRoot): { power: number; sp
   }
 }
 
+// Get base HP based on rarity
+export function getBaseHp(rarity: Rarity): number {
+  const baseHpByRarity: Record<Rarity, number> = {
+    common: 150,
+    uncommon: 300,
+    rare: 500,
+    epic: 750,
+    legendary: 1050,
+    cosmic: 1400,
+    master: 1770,
+  }
+  return baseHpByRarity[rarity]
+}
+
+// Calculate max HP: base HP (by rarity) + power + grip
+export function calculateMaxHp(hairRoot: CollectedHairRoot): number {
+  const stats = calculateStats(hairRoot)
+  const baseHp = getBaseHp(hairRoot.rarity)
+  return baseHp + stats.power + stats.grip
+}
+
 // Boss Raid System
 export interface BossRaidState {
   isActive: boolean

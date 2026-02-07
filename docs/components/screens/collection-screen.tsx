@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, RARITY_NAMES, calculateStats, EVOLUTION_COST, ELEMENT_NAMES, ELEMENT_COLORS, type Rarity, type CollectedHairRoot } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, RARITY_NAMES, calculateStats, calculateMaxHp, EVOLUTION_COST, ELEMENT_NAMES, ELEMENT_COLORS, type Rarity, type CollectedHairRoot } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Check, X, Filter } from "lucide-react"
@@ -259,8 +259,8 @@ export function CollectionScreen({ onNavigate }: CollectionScreenProps) {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.8, y: 50 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-card rounded-2xl max-w-sm w-full border-2 flex flex-col"
-              style={{ borderColor: RARITY_COLORS[selectedDetail.rarity], maxHeight: "85vh" }}
+              className="bg-card rounded-2xl max-w-sm w-full border-2 flex flex-col my-auto"
+              style={{ borderColor: RARITY_COLORS[selectedDetail.rarity], maxHeight: "90vh" }}
             >
               <div className="flex justify-between items-start p-6 pb-4 flex-shrink-0">
                 <div
@@ -315,6 +315,24 @@ export function CollectionScreen({ onNavigate }: CollectionScreenProps) {
                   </div>
 
                   <div className="space-y-2 mt-4">
+                    {/* HP Display */}
+                    {(() => {
+                      const maxHp = calculateMaxHp(selectedDetail)
+                      return (
+                        <div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span className="text-muted-foreground">HP</span>
+                            <span className="text-foreground font-medium">{maxHp}</span>
+                          </div>
+                          <div className="h-2 bg-background rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-destructive transition-all duration-500"
+                              style={{ width: `${Math.min(maxHp / 10, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })()}
                     {(["power", "speed", "grip"] as const).map((stat) => {
                       const stats = calculateStats(selectedDetail)
                       const labels = { power: "パワー", speed: "スピード", grip: "グリップ" }

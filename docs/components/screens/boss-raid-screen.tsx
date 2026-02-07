@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { motion } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, BOSS_HAIR_ROOTS, BOSS_RAID_CONFIGS, calculateStats, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getElementCombatModifiers, getDefenseSkillEffect, type HairRoot, type Skill, type CollectedHairRoot, type Element, type Rarity } from "@/lib/game-data"
+import { HAIR_ROOTS, BOSS_HAIR_ROOTS, BOSS_RAID_CONFIGS, calculateStats, calculateMaxHp, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getElementCombatModifiers, getDefenseSkillEffect, type HairRoot, type Skill, type CollectedHairRoot, type Element, type Rarity } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
@@ -133,10 +133,8 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
 
     // Create team players
     const teamPlayers: BattlePlayer[] = selectedTeam.map((hair, idx) => {
-      const stats = calculateStats(hair)
-      const power = stats?.power ?? 0
-      const grip = stats?.grip ?? 0
-      const maxHp = Math.max(1, Math.floor((500 + power + grip) * 1.2))
+      const baseMaxHp = calculateMaxHp(hair)
+      const maxHp = Math.max(1, Math.floor(baseMaxHp * 1.2))
       return {
         id: idx,
         name: hair.name,

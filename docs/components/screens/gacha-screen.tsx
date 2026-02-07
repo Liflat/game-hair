@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { RARITY_COLORS, RARITY_NAMES, GACHA_HAIR_ROOTS, calculateStats, ELEMENT_NAMES, ELEMENT_COLORS, type CollectedHairRoot, type HairRoot } from "@/lib/game-data"
+import { RARITY_COLORS, RARITY_NAMES, GACHA_HAIR_ROOTS, calculateStats, getBaseHp, ELEMENT_NAMES, ELEMENT_COLORS, type CollectedHairRoot, type HairRoot } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Coins } from "lucide-react"
@@ -691,6 +691,7 @@ export function GachaScreen({ onNavigate }: GachaScreenProps) {
                     <h3 className="text-sm font-medium text-foreground mb-3">ステータス</h3>
                     <div className="space-y-2">
                       {[
+                        { label: "HP", value: (() => { const s = calculateStats({...selectedDetail, level: 1, exp: 0, count: 1}); return getBaseHp(selectedDetail.rarity) + s.power + s.grip; })(), color: "#DC2626" },
                         { label: "パワー", value: selectedDetail.power, color: "#EF4444" },
                         { label: "スピード", value: selectedDetail.speed, color: "#3B82F6" },
                         { label: "グリップ", value: selectedDetail.grip, color: "#10B981" },
@@ -803,6 +804,7 @@ export function GachaScreen({ onNavigate }: GachaScreenProps) {
                   <h3 className="text-sm font-medium text-foreground mb-3">ステータス</h3>
                   <div className="space-y-2">
                     {[
+                      { label: "HP", value: getBaseHp(pickupDetail.rarity) + pickupDetail.power + pickupDetail.grip, max: 2000, color: "#DC2626" },
                       { label: "パワー", value: pickupDetail.power, max: 100, color: "#EF4444" },
                       { label: "スピード", value: pickupDetail.speed, max: 100, color: "#3B82F6" },
                       { label: "グリップ", value: pickupDetail.grip, max: 100, color: "#22C55E" },
