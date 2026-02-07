@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateMaxHp, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateMaxHp, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element, type Rarity } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Users, Trophy } from "lucide-react"
@@ -44,6 +44,26 @@ interface TeamBattlePlayer extends BattlePlayer {}
 
 const TEAM_NAMES = ["炎チーム", "水チーム", "風チーム", "雷チーム"]
 const TEAM_COLORS = ["#EF4444", "#3B82F6", "#22C55E", "#F59E0B"]
+
+const getDodgeChanceByRarity = (rarity: Rarity): number => {
+  switch (rarity) {
+    case "common":
+      return 0.3
+    case "uncommon":
+      return 0.4
+    case "rare":
+      return 0.55
+    case "epic":
+      return 0.7
+    case "legendary":
+    case "cosmic":
+    case "master":
+      return 1
+    default:
+      return 1
+  }
+}
+
 const NPC_NAMES = [
   "ハゲ田", "毛無し郎", "抜け毛王", "薄毛侍", "ツルピカ丸",
   "毛根仙人", "フサフサ姫", "剛毛騎士", "軟毛僧侶", "縮毛魔王",

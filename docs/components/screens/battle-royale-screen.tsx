@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useGame } from "@/lib/game-context"
-import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateMaxHp, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element, type CollectedHairRoot } from "@/lib/game-data"
+import { HAIR_ROOTS, RARITY_COLORS, calculateStats, calculateMaxHp, calculateSkillBonus, calculateNormalAttackDamage, calculateNormalDefenseReduction, getRankColor, getNpcStrengthMultiplier, getRankCoinMultiplier, getElementCombatModifiers, getDefenseSkillEffect, ELEMENT_NAMES, ELEMENT_COLORS, type HairRoot, type Skill, type Element, type CollectedHairRoot, type Rarity } from "@/lib/game-data"
 import type { Screen } from "@/lib/screens"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Swords, Shield, Zap, Crown, Trophy } from "lucide-react"
@@ -34,6 +34,25 @@ interface BattlePlayer {
   cooldowns: { [skillId: string]: number }
   statusEffects: StatusEffect[]
   buffedStats: { power: number; speed: number; grip: number }
+}
+
+const getDodgeChanceByRarity = (rarity: Rarity): number => {
+  switch (rarity) {
+    case "common":
+      return 0.3
+    case "uncommon":
+      return 0.4
+    case "rare":
+      return 0.55
+    case "epic":
+      return 0.7
+    case "legendary":
+    case "cosmic":
+    case "master":
+      return 1
+    default:
+      return 1
+  }
 }
 
 const NPC_NAMES = [

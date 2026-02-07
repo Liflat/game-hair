@@ -234,7 +234,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
         setBattleLog((prev) => [...prev, ...newLog])
         setPhase("action")
         setTimeout(() => {
-          executeBossAction()
+          executeBossTurn()
         }, 1500)
         return prev
       }
@@ -875,7 +875,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
           const skillBonus = calculateSkillBonus({ ...boss.hairRoot, level: 8, exp: 0, count: 1 })
           const baseDamage = calculateNormalAttackDamage({ ...boss.hairRoot, level: boss.level, exp: 0, count: 1 } as CollectedHairRoot)
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
-          const finalDamage = Math.floor(baseDamage * skillBonus * (1 + buffedPower / 100) * elementMod * 1.7)
+          const finalDamage = Math.floor(baseDamage * skillBonus * (1 + buffedPower / 100) * elementMod * 2)
           
           const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
           const damageAfterDefense = defenseEffect?.value 
@@ -913,7 +913,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
           const skillBonus = calculateSkillBonus({ ...boss.hairRoot, level: boss.level, exp: 0, count: 1 })
           const baseDamage = Math.floor((selectedBossSkill.damage || 0) * skillBonus)
           const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
-          const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod * 1.3)
+          const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod * 1.5)
           
           const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
           const damageAfterDefense = defenseEffect?.value 
@@ -940,7 +940,7 @@ export function BossRaidScreen({ onNavigate, bossId = 53 }: BossRaidScreenProps)
             const buffedPower = (stats?.power ?? 0) + (boss.buffedStats.power || 0)
             const baseDamage = selectedBossSkill.damage || 0
             const elementMod = getElementDamageMod(boss.hairRoot, target.hairRoot)
-            const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod * 1.5)
+            const finalDamage = Math.floor(baseDamage * (1 + buffedPower / 100) * elementMod * 1.7)
             
             const defenseEffect = target.statusEffects.find(e => e.type === "buff" && e.name === "防御強化")
             const damageAfterDefense = defenseEffect?.value 
