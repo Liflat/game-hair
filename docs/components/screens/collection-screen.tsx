@@ -259,8 +259,8 @@ export function CollectionScreen({ onNavigate }: CollectionScreenProps) {
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.8, y: 50 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-card rounded-2xl max-w-sm w-full border-2 flex flex-col my-auto"
-              style={{ borderColor: RARITY_COLORS[selectedDetail.rarity], maxHeight: "90vh" }}
+              className="bg-card rounded-2xl max-w-sm w-full border-2 flex flex-col"
+              style={{ borderColor: RARITY_COLORS[selectedDetail.rarity], maxHeight: "85vh" }}
             >
               <div className="flex justify-between items-start p-6 pb-4 flex-shrink-0">
                 <div
